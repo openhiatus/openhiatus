@@ -41,7 +41,7 @@ let captures=0, inputs=0, disposed=0;
 const computer=new NativeComputer({overviewScaleDivisor:16, desktopCoordinator:new DesktopCoordinator(), createSession:async()=>({
  screenshot:async()=>{captures++;return result({images:[{mimeType:'image/png',dataBase64:png}],structuredJson:JSON.stringify({screenshot_width:width,screenshot_height:height,screen_width:width,screen_height:height,scale_factor:1.5})});},
  screenSize:async()=>result({structuredJson:JSON.stringify({width,height,scale_factor:1.5})}),
- act:async()=>{inputs++;throw new Error('Desktop input forbidden in this fixture');},dispose:async()=>{disposed++;}
+ act:async()=>{inputs++;return result({isError:true,text:'foreground_unavailable: exact target HWND 123 or a verified same-process post-action window was not foreground after the click (synthetic)'});},dispose:async()=>{disposed++;}
 })});
 const window=new BrowserWindow({show:false,width:1100,height:800,webPreferences:{preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true,backgroundThrottling:false}});
 const registry=createToolRegistry([createComputerToolContribution({computer})]);
@@ -50,6 +50,7 @@ globalThis.fixture={
  capture:()=>binding.call('computer',{action:'screenshot'}),
  inspect:(frameId,viewId)=>binding.call('computer',{action:'inspect',frameId,viewId,x:60,y:34,width:60,height:34}),
  original:()=>binding.call('computer',{action:'screenshot',resolution:'original'}),
+ failClick:(frameId,viewId)=>binding.call('computer',{action:'click',frameId,viewId,x:10,y:10}),
  legacy:()=>window.webContents.send('frame',{dataUrl:'data:image/png;base64,'+png,frameId:'legacy',width,height,at:new Date().toISOString()}),
  counts:()=>({captures,inputs,disposed}),
 };
@@ -101,12 +102,21 @@ try {
   assert.equal(restoredMetadata.overviewScaleDivisor,16);
   await expect(dialog.getByRole('heading',{name:'Übersicht',exact:true})).toBeVisible();
   assert.deepEqual(await dialog.locator('img').first().evaluate(element=>[element.naturalWidth,element.naturalHeight]),[240,135]);
+  const failure = await instance.evaluate((_electron,value)=>globalThis.fixture.failClick(value.frameId,value.views[0].viewId),restoredMetadata);
+  assert.equal(failure.success,false);
+  const failureMetadata = JSON.parse(failure.contentItems.find(item=>item.type==='inputText'&&item.text.startsWith('OPENHIATUS_COMPUTER_METADATA_V2 ')).text.slice('OPENHIATUS_COMPUTER_METADATA_V2 '.length));
+  assert.notEqual(failureMetadata.frameId,restoredMetadata.frameId);
+  assert.equal(failureMetadata.overviewScaleDivisor,16);
+  assert.equal(JSON.parse(failureMetadata.observation).driverFailure.failureStage,'after-input');
+  assert.deepEqual(await dialog.locator('img').evaluateAll(elements=>elements.map(element=>element.getAttribute('src'))),failure.contentItems.filter(item=>item.type==='inputImage').map(item=>item.imageUrl));
+  const failureCounts = await instance.evaluate(()=>globalThis.fixture.counts());
+  assert.equal(failureCounts.inputs,1); assert.ok(failureCounts.captures>3&&failureCounts.captures<=12);
   await dialog.getByRole('button', { name:'Stopp', exact:true }).click();
-  await expect.poll(()=>instance.evaluate(()=>globalThis.fixture.counts())).toEqual({captures:3,inputs:0,disposed:1});
+  await expect.poll(()=>instance.evaluate(()=>globalThis.fixture.counts())).toEqual({...failureCounts,disposed:1});
   await dialog.getByRole('button', {name:'Bildschirmansicht schließen',exact:true}).click(); await expect(trigger).toBeFocused();
   await instance.evaluate(()=>globalThis.fixture.legacy()); await trigger.click();
   await expect(dialog.locator('img')).toHaveCount(1); await expect(dialog).toContainText('Vollbild');
   await page.keyboard.press('Escape'); await expect(dialog).not.toBeVisible(); await expect(trigger).toBeFocused();
   assert.deepEqual(errors,[]);
-  console.log(JSON.stringify({passed:true,original:[3840,2160],overview:[240,135],detail:[960,544],captures:3,inputs:0,responsive:true,legacy:true,originalOnRequest:true,configuredFactorRestored:true}));
+  console.log(JSON.stringify({passed:true,original:[3840,2160],overview:[240,135],detail:[960,544],captures:failureCounts.captures,syntheticInputs:1,nativeInputs:0,responsive:true,legacy:true,originalOnRequest:true,configuredFactorRestored:true,failureImageMatchesPreview:true}));
 } finally { await instance?.close(); }

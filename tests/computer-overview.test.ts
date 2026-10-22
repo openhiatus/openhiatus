@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { deflateSync } from 'node:zlib';
 import type { ToolResult } from '@trycua/cua-driver';
-import { NativeComputer, DesktopCoordinator, parseComputerInput, type ComputerSession, type ComputerResult } from '../src/main/computer';
+import { NativeComputer, ComputerDriverError, DesktopCoordinator, parseComputerInput, type ComputerSession, type ComputerResult } from '../src/main/computer';
 import type { ComputerAction } from '../src/main/computer-input';
 import type { ComputerImageProcessor, DecodedComputerImage } from '../src/main/computer-images';
 import type { ComputerRect, ComputerSize } from '../src/shared/computer-views';
@@ -24,7 +24,7 @@ function png(size: ComputerSize, color = 0): string {
 }
 const toolResult = (fields: Partial<ToolResult> = {}): ToolResult => ({ text: '', images: [], isError: false, degraded: false, rawJson: '{}', ...fields });
 function fixture() {
-  let time = 0, paint = 0, divisor = 8, decoded = 0;
+  let time = 0, paint = 0, divisor = 8, decoded = 0, actionResult = toolResult();
   const inputs: ComputerAction[] = [], crops: ComputerRect[] = [];
   let geometry = { width: 1920, height: 1080, scale: 1.25 };
   let pixels = new Uint8Array(geometry.width * geometry.height * 4);
@@ -38,13 +38,14 @@ function fixture() {
       screenshot_width: geometry.width, screenshot_height: geometry.height, screen_width: geometry.width, screen_height: geometry.height, scale_factor: geometry.scale,
     }) }); },
     async screenSize() { return toolResult({ structuredJson: JSON.stringify({ width: geometry.width, height: geometry.height, scale_factor: geometry.scale }) }); },
-    async act(input) { inputs.push(input); return toolResult(); }, dispose: async () => {},
+    async act(input) { inputs.push(input); return actionResult; }, dispose: async () => {},
   };
   const options = { createSession: async () => session, createImageProcessor: async () => processor, now: () => time,
     desktopCoordinator: new DesktopCoordinator(), getOverviewScaleDivisor: () => divisor,
     captureTiming: { now: () => paint, wait: async (ms: number) => { paint += ms; } } };
   const computer = new NativeComputer(options);
   return { computer, inputs, crops, options, processor, get decoded() { return decoded; }, setTime: (now: number) => { time = now; },
+    setActionResult: (result: ToolResult) => { actionResult = result; },
     setDivisor: (value: number) => { divisor = value; }, setGeometry: (value: typeof geometry) => { geometry = value; pixels = new Uint8Array(value.width * value.height * 4); },
     change(rect: ComputerRect) { for (let y = rect.y; y < rect.y + rect.height; y++) for (let x = rect.x; x < rect.x + rect.width; x++) pixels[(y * geometry.width + x) * 4] = 255; } };
 }
@@ -59,6 +60,24 @@ test('overview is true divisor, retains native screen geometry and initially con
   assert.deepEqual([overview(first).imageWidth, overview(first).imageHeight], [240, 135]);
   assert.deepEqual([first.width, first.height, first.observation!.scaleFactor], [1920, 1080, 1.25]);
   assert.equal(first.observation!.views.length, 1); assert.equal(first.observation!.selection.reason, 'none');
+  await f.computer.dispose();
+});
+
+test('a refused detail action keeps a fresh configured overview/control view without reusing or replaying old coordinates', async () => {
+  const f = fixture(); f.setDivisor(16); const first = await inspect(f), detail = first.observation!.views[1];
+  f.setActionResult(toolResult({ isError: true, action: { effect: 4, route: 2, delivery: { mode: 1, deliveredCount: 0 } } }));
+  let recovery!: ComputerResult;
+  await assert.rejects(f.computer.execute({ action: 'click', frameId: first.frameId, viewId: detail.viewId, x: 100, y: 100 }), error => {
+    assert.ok(error instanceof ComputerDriverError); assert.ok(error.recovery); recovery = error.recovery;
+    assert.notEqual(recovery.frameId, first.frameId); assert.equal(recovery.observation!.overviewScaleDivisor, 16);
+    assert.equal(error.diagnostic.effect, 'refused'); assert.equal(error.diagnostic.delivery?.deliveredCount, 0); return true;
+  });
+  assert.equal(f.inputs.length, 1);
+  f.setActionResult(toolResult());
+  const currentView = recovery.observation!.views[0];
+  await f.computer.execute({ action: 'click', frameId: recovery.frameId, viewId: currentView.viewId, x: 10, y: 10 });
+  assert.equal(f.inputs.length, 2); assert.equal(f.inputs[1].action, 'click');
+  assert.deepEqual(f.inputs[1], { action: 'click', frameId: recovery.frameId, x: 160, y: 159, button: 'left', count: 1 });
   await f.computer.dispose();
 });
 test('original-resolution screenshot returns one fresh full image and post-action output resumes the configured factor', async () => {

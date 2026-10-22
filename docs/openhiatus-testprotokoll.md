@@ -1,5 +1,15 @@
 # openHiatus – Testprotokoll
 
+## Treiberfehler und Kontrollbilder – 22. Oktober 2026
+
+`isError` und eine ausdrücklich gemeldete Ablehnung sind getrennte Fälle. Die Windows-Implementierung des installierten cua-driver 0.22.0 prüft das Vordergrundfenster auch **nach** dem gesendeten Klick. Ein Fensterwechsel kann deshalb eine Fehlermeldung auslösen, obwohl die Eingabe bereits gesendet wurde. Ein solcher Fehler beweist weder eine ausgebliebene Eingabe noch den fachlichen Erfolg. Grundlage: [Windows-Klickpfad des installierten Tags](https://github.com/trycua/cua/blob/cua-driver-rs-v0.22.0/libs/cua-driver/rust/crates/platform-windows/src/input/mouse.rs#L630-L710).
+
+openHiatus klassifiziert bekannte Fehlersignaturen lokal und übergibt nur feste Fehlercodes, Zustellungs-/Effekt-Enums und begrenzte Verifikationsmetadaten. Native Texte, HWNDs, beobachtete Werte und JSON-Rohdaten werden nicht in Diagnostik übernommen. Unbekannte Fehlercodes werden als unbekannt markiert. Ein Treiberfehler nach zugelassener Eingabe liefert nach Möglichkeit das aktuelle Kontrollbild mit neuer Bildkennung; Modell und Vorschau erhalten dieselben Bilder. Der Werkzeugstatus bleibt fehlerhaft. Es gibt keine automatische Eingabewiederholung, Methodenumschaltung oder Umdeutung einer Bildänderung als Erfolg.
+
+Gezielte synthetische Prüfungen decken Fehler vor und nach dem Klick, unklare SendInput-Zustellung, explizite Ablehnung, Kontrollbildfehler, ausbleibendes Einfügen nach Clipboardfehler und Stopp während der Fehlerbeobachtung ab. Der echte Pi-Konverter erhält Fehlerstatus und Kontrollbild sowohl im Vollbild- als auch im Übersichtmodus. Die versteckte Electron-Prüfung bestätigt den vollständigen Fehler-/Bild-/Vorschauweg bei Faktor 16 ohne native Desktopaufnahme oder Eingabe.
+
+`npm run check` besteht mit Architekturprüfung, Typprüfung und **581 Tests** ohne Fehler oder Auslassungen. `npm run build` und `npm run test:computer-preview` bestehen; die bekannten lucide-react-Buildwarnungen bleiben. Der Fehlertest führt genau einen synthetischen Aktionsaufruf, keine native Eingabe und keinen Modellaufruf aus. Ein neuer realer Aufgabenlauf bleibt erforderlich; die Änderung beweist keine Behebung jedes nativen Windows-Klickfehlers.
+
 ## Experimentelle Übersicht-/Detailansichten – 22. Oktober 2026
 
 Quellstand auf Basis von 0.1.6; noch kein neues Windows-Paket. Vollbild bleibt Standard. Der wählbare Versuch liefert eine echte Übersichtsskalierung, höchstens einen Originalausschnitt und lokale Bereichsauswahl. `inspect` verwendet dieselbe Aufnahme; `nextDetail` kann einen Bereich für die nächste Antwort vorgeben. Bei fehlender Orientierung kann das Modell mit `screenshot` und `resolution: "original"` ausdrücklich ein frisches Gesamtbild anfordern. Die nächste gewöhnliche Beobachtung verwendet wieder den eingestellten Faktor. Bildkennungen und Koordinaten werden vor einer einzelnen nativen Eingabe geprüft.
