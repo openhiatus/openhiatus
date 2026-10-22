@@ -1,0 +1,33 @@
+Erledige diesen LibreOffice-Praxistest bis zur vollständig geprüften ersten Abgabe.
+
+Monatsabschluss September 2026 – Nordstern Dienstleistungen GmbH (fiktiv).
+Du arbeitest in der Finanzbuchhaltung. Fester Stichtag: 30.09.2026.
+
+Arbeitsordner: <Arbeitsverzeichnis>\LibreOffice-Test Monatsabschluss September 2026
+Inputs: Input\Rechnungen.csv und Input\Zahlungen.csv
+Ergebnisse: Abgabe (Unterordner des Arbeitsordners).
+
+UI-only-Regel: Bearbeite alles in sichtbarem LibreOffice Calc und Writer. Starte LibreOffice bei Bedarf über die sichtbare Windows-Oberfläche. Alle Zugriffe auf Inputs und Dokumente, Importe, Berechnungen, Bearbeitungen, Speichervorgänge, PDF-Exporte und Prüfungen erfolgen ausschließlich über die Oberfläche mit Screenshots, Maus und Tastatur. Normales Einfügen von Tabellen und Formeln in Calc ist erlaubt. Verboten: Shell-/Terminalbefehle, direkte Dateioperationen auch zum CSV-Lesen, Datenverarbeitung mit Python/JavaScript, UNO, Makros, Headless-Konvertierung und externe Rechenwerkzeuge. Keine Codex-Fenster oder weitere Agenten zur Bearbeitung einsetzen. Bei einer UI-Blockade gezielt melden statt die Regel zu umgehen.
+
+A – Datenaufbereitung:
+Importiere beide CSVs (UTF-8, Semikolon, Datumsformat JJJJ-MM-TT) in eine gemeinsame Calc-Arbeitsmappe. Erhalte die Originaldaten in getrennten Blättern mit allen Zeilen einschließlich Dubletten unverändert; auch die Input-CSVs bleiben unverändert. Erstelle einen nachvollziehbaren Abgleich in Arbeitsdaten nach diesen Regeln:
+- Stornierte Rechnungen zählen nicht zur Gesamtforderung.
+- Zahlungen je Rechnung addieren; doppelte Buchungs-IDs nur einmal berücksichtigen.
+- Zahlungen ohne gültige aktive Rechnungsreferenz gesondert ausweisen.
+- Anrechenbar je Rechnung ist höchstens ihr Rechnungsbetrag. Mehrbeträge sind Überzahlungen, keine Verrechnung mit anderen offenen Rechnungen. Offene Beträge sind niemals negativ.
+- Überfällig bedeutet: aktive Rechnung, positiver Restbetrag, Fälligkeit VOR dem 30.09.2026. Am Stichtag fällige Rechnungen sind noch nicht überfällig. Nicht mit dem heutigen Datum rechnen.
+Dokumentiere Datenprobleme und ihre Behandlung in der Arbeitsmappe.
+
+B – Calc-Dashboard:
+Zeige Anzahl aktiver Rechnungen und Gesamtforderung, eindeutige Bankeingänge, auf Forderungen anrechenbare Zahlungen, Anzahl/Summe offener Forderungen, Anzahl/Summe überfälliger Rechnungen, nicht zuordenbare Zahlungen, Überzahlungen und doppelt importierten ausgeschlossenen Betrag. Zeige die drei größten offenen Rechnungen absteigend mit Kunde, Rechnungs-ID und Restbetrag. Erstelle ein Diagramm offener Beträge nach Kunden. Verwende nachvollziehbare Formeln für Abgleich und Kennzahlen, keine fest eingetragenen Ergebnissummen. Euroformat, passende Spaltenbreiten, klare Überschriften und sichtbare Hervorhebung überfälliger Rechnungen sind erforderlich.
+
+C – Writer-Bericht:
+Erstelle einen professionellen Bericht mit höchstens einer Seite: Titel, Berichtszeitraum, Stichtag, wichtigste Kennzahlen, drei größte offene Rechnungen, Einschätzung der Zahlungssituation, wichtigste Datenprobleme und mindestens zwei konkrete Handlungsempfehlungen. Verwende ausschließlich tatsächlich berechnete Calc-Ergebnisse.
+
+D – Lieferung im Unterordner Abgabe:
+OP_September_2026.ods
+Managementbericht_September_2026.odt
+Managementbericht_September_2026.pdf
+Prüfe alle gespeicherten Dateien über die Oberfläche. Kontrolliere das vollständige PDF: eine Seite, lesbar, nichts abgeschnitten. Zielabschluss erst nach Speicherung und sichtbarer Prüfung aller drei Dateien. Melde die fertige Abgabe knapp; lasse die Dokumente für einen Folgeauftrag verfügbar.
+
+Zielzeit 60–90 Minuten, keine harte Abbruchgrenze. Die Arbeit ist ausdrücklich freigegeben; beginne ohne weitere Rückfrage. Bei fehlenden notwendigen Angaben gezielt nachfragen.

@@ -1,0 +1,53 @@
+# openHiatus – Roadmap
+
+Stand: 22. Oktober 2026. Aktueller Quellstand: Version 0.1.5, Alpha für die öffentliche Weiterentwicklung unter MIT. Anzeigename ist openHiatus; technische Namen und Profil bleiben `openhiatus`.
+
+## Implementiert
+
+- Eigenes Repository und eigenes Profil; frühere Installationen werden nicht verändert.
+- Pi-SDK 1.3.0 im isolierten Agent-Host mit Streaming, Sitzungsfortsetzung, Steering und bestätigtem Prozessbaum-Stopp.
+- Anbieteroberfläche für Anthropic, Google, OpenRouter, OpenAI und lokale kompatible Server; geschützte Schlüssel und getrennte Modellrollen.
+- Offizielle ChatGPT-Anmeldung für persönliche lokale Apps; Kontomodellliste, geschützte Token-Erneuerung und Abmelden. Automatische Gedächtnisberichte über ChatGPT benötigen eine gesonderte Freigabe.
+- Bestehende Inworld-Sprache, native F8/F9-Hotkeys, passives Transkript-Overlay und Sprachwarteschlange.
+- Gesprächsagent mit ausschließlich Dialogwerkzeugen, zwei Hintergrundworker und Ressourcenkonfliktprüfung.
+- Native Desktopsteuerung mit aktuellen Bildern, frameId und geordnetem Zugriff.
+- Direkte Gedächtnisberichte mit JSON-Vertrag, Quellen, Versionen und eigenem Abbruch.
+- Eigene lokale Pi-Skills, Fähigkeitenübersicht und Verbrauchsanzeige je Auftrag. Das Repository und die Pakete enthalten keine mitgelieferten Skills.
+- Sichtbare Hinweise bei belegten F8/F9-/Stopp-Hotkeys sowie Unterscheidung zwischen fehlender Kontextmessung und leerem Gespräch.
+- Erster Architekturabschnitt im Quellcode: eigenes Gesprächsmodul mit Zustandsbesitz und Fachports; langlebige Audio-Runtime mit getrenntem Browseradapter und React-Anbindung. Automatische Importregeln werden über `npm run check` zusammen mit Typen und Verhalten geprüft.
+- Desktopbesitz endet mit der interaktiven Arbeit eines Turns, auch wenn dessen verwalteter Hintergrundprozess erhalten bleibt. Gezielte Tests prüfen Freigabe, Stopp-Rennen und unbestätigtes Cleanup.
+- Zweiter Architekturabschnitt im Quellcode: Gedächtnisberichte mit eigener Zeitplanung/Einwilligung/Abbruch; allgemeine, rollenbezogene Werkzeugregistrierung; Desktop als konkreter Beitrag und Dienstbroker für kontogebundene Leseoperationen. Zwei synthetische Diensttypen sind geprüft; eine echte Gmail-Verbindung folgt auf dieser Grundlage.
+- Dritter Architekturabschnitt im Quellcode: typisierte Feature-IPC mit Laufzeitprüfung und ausdrücklichen UI-Datenprojektionen; eigenes Auftragsmodul für Annahmekontext, Worker, Archivfortsetzungen, Ergebnisse und Stopp. Der bestehende Fenster-/Frame-/URL-Guard bleibt an der Electron-Grenze erhalten.
+- Vierter Architekturabschnitt im Quellcode: eigene Modell-/Providerkoordination und eigener direkter Aufgabenpfad; geprüfte interne Host-Nachrichten mit korrelierten Antworten. Ein Zustandsjournal trennt dauerhafte Barrieren, gewöhnliche Speicherstände und UI-Veröffentlichung. Ein kleiner Gedächtnis-Leseport liefert Identität/Kern ohne vollständigen Archivsnapshot; ein reproduzierbarer Speicherbenchmark erfasst die verbleibende synchrone Arbeit.
+- Fünfter Architekturabschnitt im Quellcode: geordneter Verlaufsspeicher in eigenem Worker, gebündelte Checkpoints und bestätigte dauerhafte Übergänge vor externer Arbeit. Stopp bleibt bei blockiertem Worker bedienbar. Fehler verwerfen abhängige wartende Stände; nie angenommene Nachrichten werden nicht archiviert. Gedächtnis- und Zugangsspeicher bleiben synchron.
+- Sechster Architekturabschnitt im Quellcode: eigener Gedächtnis-Worker für Validierung, Suche, Abrufe und dauerhafte Änderungen; bestätigter kleiner Identitäts-/Kerncache. Asynchrone Quellenarchivierung, Versionsprüfung und Berichte bleiben nach Stopp und Neustart zugeordnet. Der Zugangsspeicher bleibt synchron.
+- Siebter Architekturabschnitt im Quellcode: eigener Navigationsrahmen und langlebige UI-Sitzung; Gespräch, Aufgaben, Dienste, Gedächtnis, Skills und Einstellungen als getrennte Ansichten. Aufgaben zeigen Filter, Ergebnisse, Verbrauch und Einzelstopp; Einstellungen trennen Modelle, Sprache und Bedienung. Entwurf, Aufnahme, Auswahl und laufende Arbeit bleiben beim Wechsel erhalten. Der Dienstbereich ist Vorbereitung; die Windows-Auslieferung 0.1.5 wird separat neu gebaut und abgenommen.
+
+Der belastbare Prüfstand steht im [Testprotokoll](openhiatus-testprotokoll.md). Der erste Meilenstein ist ein startbares Windows-Paket mit einem nachgewiesenen vollständigen Auftragsablauf.
+
+## Geplanter Ausbau
+
+Die aktuelle [Vision](vision.md) beschreibt das Produktziel. Der [Gesamtplan](gesamtplan.md) verbindet die folgenden Lieferstrecken mit konkreten Ergebnissen und Abnahmekriterien:
+
+- **Architektur:** Fachzustände, UI-/Host-Nachrichten und langlebige UI-Sitzung sind abgegrenzt; Verlauf und Gedächtnis arbeiten außerhalb des Hauptprozesses. Als nächster Lieferteil erhält die Computer-Beobachtung ihren eigenen Vertrag. Die [Architekturprüfung](architekturpruefung.md) belegt Ausgangslage, Zielstruktur und Abnahme.
+- **UI weiter ausbauen:** Der Rahmen mit eigener Aufgabenübersicht, Ergebnisdarstellung und getrennten Einstellungen ist umgesetzt. Strukturierte Ergebniskarten und echte persönliche Dienstverbindungen folgen; alltägliche Sprache und Bedienung werden weiter abgenommen.
+- **Dienste:** eigenes Modul mit allgemeinen Konto-, Fähigkeits- und Adapterverträgen; Gmail als erster Pilot: verbinden, suchen/lesen und lokalen Antwortentwurf vorbereiten. Gmail-Entwürfe und Versand folgen als getrennte Fähigkeiten. Persönlicher Pilot und öffentliche OAuth-Freigabe werden getrennt vorbereitet.
+- **Öffentliche Entwicklung und Auslieferung:** Der Quellcode startet als öffentliche Alpha unter MIT. Downloadpakete mit frischem Profil und eigenen Konten, reproduzierbarem Windows-Build sowie passenden Dienst- und Fremdlizenzhinweisen werden gesondert vorbereitet.
+
+Geplant ist außerdem eine allgemeine Computer-Use-Ansicht mit variabler Übersichtsskalierung, einem Detailausschnitt in Originalauflösung und einer Koordinatenschicht. Die tatsächliche Auflösung wird erkannt. Echte Verkleinerungsfaktoren wie 1:4, 1:8, 1:16 und 1:32 werden als Profile verglichen; Full HD und UHD werden dabei nicht pauschal auf dieselbe Bildgröße normiert. Aus den Versuchen entsteht ein gemeinsamer Standard, der auf fremden Rechnern ohne manuelle Anpassung funktioniert. Auswahl und Bedienung bleiben unabhängig vom jeweiligen Windows-Programm. Die Bereichsauswahl ist eine offene Messfrage: lokaler Bildvergleich nach Aktionen, Bereichswiederverwendung und Vorauswahl im vorherigen Modellschritt werden mit ausdrücklicher Modellwahl verglichen. Maßstab ist die gesamte Aufgabendauer einschließlich Korrekturen. Der [Umsetzungsplan](computer-use-uebersicht-und-detail-plan.md) beschreibt Protokoll, Arbeitsschritte und Abnahme für eine spätere Veröffentlichung; die Funktion ist noch nicht implementiert.
+
+## Nächste Abnahme im Alltag
+
+1. Gewünschte Anbieter und Inworld über die Oberfläche einrichten.
+2. Echte Spracheingabe und Sprachausgabe mit gewählter Stimme prüfen.
+3. Desktopabläufe mit den tatsächlich gewählten bildfähigen Modellen durchführen; Qualität, Laufzeit und Verbrauch vergleichen.
+4. Verhalten bei längerer Nutzung und vorübergehenden Provider-/Desktopfehlern beobachten. Ein einmaliger initialer Screenshotfehler ist dokumentiert; die Ursache ist noch nicht belegt.
+
+## Zurückgestellt
+
+- `/goal` mit klarer Abschlussbestätigung und ausdrücklichen Budgetgrenzen.
+- Einmaliger, ausdrücklich ausgelöster Import aus früheren Installationen.
+- Spätere Neubewertung eines Live-Modus.
+- Signierte Verteilung und bewusster Pi-Updateprozess. Die Projektlizenz ist bereits als MIT festgelegt; die GitHub-Veröffentlichung steht noch aus.
+
+Es werden keine pauschalen Tagesabschätzungen als Fortschrittsnachweis verwendet. Jeder weitere Schritt erhält konkrete Abnahmekriterien.

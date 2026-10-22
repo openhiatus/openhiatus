@@ -1,0 +1,123 @@
+/* openhiatus presence: one visible state instead of scattered status lines. */
+.presence{--level:0;--size:42px;--tint:212,239,155;position:relative;width:var(--size);height:var(--size);flex-shrink:0;display:inline-flex;align-items:center;justify-content:center}
+.presence>span{position:absolute;border-radius:50%;pointer-events:none}
+.presence-core{inset:0;display:flex;align-items:center;justify-content:center;border:1px solid #4b5a39;background:radial-gradient(circle at 36% 30%,#3f4c2d 0%,#273120 48%,#1a2116 100%);box-shadow:0 0 calc(6px + var(--level) * 34px) rgba(var(--tint),calc(.1 + var(--level) * .5)),inset 0 0 calc(4px + var(--level) * 16px) rgba(var(--tint),calc(.06 + var(--level) * .3));transform:scale(calc(1 + var(--level) * .14));transition:border-color .4s,filter .4s,opacity .4s}
+.presence-halo{inset:-30%;background:radial-gradient(circle,rgba(var(--tint),calc(.08 + var(--level) * .22)) 0%,transparent 66%);opacity:.75;transform:scale(calc(.9 + var(--level) * .35))}
+.presence-ring{inset:-5px;border:1px solid rgba(var(--tint),.18);opacity:0;transition:opacity .4s}
+.presence-orbit{inset:-7px;opacity:0;transition:opacity .4s}
+.presence-orbit i{position:absolute;top:-2px;left:50%;width:5px;height:5px;margin-left:-2.5px;border-radius:50%;background:rgb(var(--tint));box-shadow:0 0 8px rgba(var(--tint),.8)}
+.presence.large .presence-ring{inset:-9px}
+.presence.large .presence-orbit{inset:-12px}
+.presence.large .presence-orbit i{width:7px;height:7px;margin-left:-3.5px;top:-3px}
+
+/* The openhiatus mark, drawn inside the core and scaled with it. */
+.presence-mark{position:relative;display:inline-flex;align-items:center;justify-content:center;width:32px;height:35px;transform:scale(.62)}
+.presence-mark:before,.presence-mark:after{content:'';position:absolute;border:1.6px solid rgb(var(--tint));height:28px;width:19px;border-radius:50%;transform:rotate(29deg)}
+.presence-mark:after{transform:rotate(-29deg)}
+.presence-mark>span{width:4px;height:4px;background:rgb(var(--tint));border-radius:50%}
+.presence-mark i{position:absolute;width:5px;height:5px;background:#273120;border:1px solid rgb(var(--tint));border-radius:50%;right:0;top:7px}
+
+.presence.idle .presence-core{animation:presence-breathe 4.8s ease-in-out infinite}
+.presence.listening{--tint:236,201,160}
+.presence.listening .presence-core{border-color:#8a6c4f}
+.presence.listening .presence-ring{opacity:1;border-color:rgba(236,201,160,.45);transform:scale(calc(1 + var(--level) * .3))}
+.presence.thinking .presence-ring{opacity:1;border-color:transparent;border-top-color:rgba(var(--tint),.85);border-right-color:rgba(var(--tint),.3);animation:presence-spin 1.1s linear infinite}
+.presence.thinking .presence-core{animation:presence-breathe 1.6s ease-in-out infinite}
+.presence.speaking .presence-core{border-color:#76904f}
+.presence.speaking .presence-ring{opacity:1;animation:presence-ripple 1.8s ease-out infinite}
+.presence.working .presence-orbit{opacity:1;animation:presence-spin 3.2s linear infinite}
+.presence.working .presence-core{animation:presence-breathe 3.2s ease-in-out infinite}
+.presence.offline{--tint:150,160,140}
+.presence.offline .presence-core{filter:saturate(.2);opacity:.6}
+.presence.error{--tint:232,152,124}
+.presence.error .presence-core{border-color:#7a4535}
+.presence.error .presence-ring{opacity:1;border-color:rgba(232,152,124,.5)}
+
+@keyframes presence-breathe{0%,100%{transform:scale(calc(1 + var(--level) * .14))}50%{transform:scale(calc(1.035 + var(--level) * .14))}}
+@keyframes presence-spin{to{transform:rotate(360deg)}}
+@keyframes presence-ripple{0%{transform:scale(1);opacity:.7}100%{transform:scale(1.35);opacity:0}}
+@media (prefers-reduced-motion:reduce){.presence *{animation:none!important;transition:none!important}}
+
+/* Voice first: openhiatus stands in the middle; history and typing are secondary. */
+.presence.large{--size:clamp(120px,22vh,184px)}
+.presence.large .presence-mark{transform:scale(1.9)}
+.voice-stage{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px 34px 12px;text-align:center;overflow-y:auto}
+.voice-stage .presence.large{margin-bottom:14px}
+.stage-text{display:flex;flex-direction:column;gap:6px;max-width:560px}
+.stage-text strong{font-family:Georgia,'Times New Roman',serif;font-size:clamp(26px,3.2vw,38px);line-height:1.15;font-weight:400;letter-spacing:-.8px;color:#efeedf}
+.stage-text span{font-size:12px;color:#93a483}
+.voice-stage.listening .stage-text strong{color:#f1d3ae}
+.voice-stage.error .stage-text strong{color:#eba58b}
+.stage-actions{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;min-height:46px}
+.mic-button.stage-mic{height:46px;padding:0 22px;border-radius:23px;font-size:13px;gap:9px;background:#33431f;border-color:#5a6f3f;color:#e2f2c8;box-shadow:0 4px 20px #0003}
+.mic-button.stage-mic:hover{background:#405528}
+.mic-button.stage-mic.recording{background:#5a382a;border-color:#a06c50;color:#ffd6b8}
+.mic-button.stage-mic kbd{font-size:10px;color:inherit;opacity:.7}
+.stage-secondary{display:flex;align-items:center;gap:6px;font-size:11px;padding:9px 14px;border:1px solid #3d4a33;border-radius:20px;color:#cbdcb4;background:#1e2819}
+.stage-secondary:hover{background:#28351f}
+.stage-captions{display:flex;flex-direction:column;gap:12px;width:100%;max-width:620px;margin-top:8px;text-align:left}
+.stage-caption{margin:0;padding:12px 16px;border-radius:12px;font-size:12px;line-height:1.65;color:#d9e3cb;background:#1d241a;border:1px solid #2f3a29;max-height:9.5em;overflow:hidden;-webkit-mask-image:linear-gradient(#000 75%,transparent)}
+.stage-caption>span{display:block;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:#8a9b7a;margin-bottom:4px}
+.stage-caption.user{color:#aebba0;background:transparent;border-style:dashed}
+.stage-caption .message-body{font-size:12px}
+.voice-stage .setup-inline{margin-top:6px}
+
+/* With history open the stage folds into one row above the conversation. */
+.history-open .voice-stage{flex:0 0 auto;flex-direction:row;justify-content:flex-start;gap:14px;padding:14px 34px 10px;text-align:left;border-bottom:1px solid #262e23}
+.history-open .stage-text strong{font-family:inherit;font-size:13px;font-weight:550;letter-spacing:.1px}
+.history-open .stage-text span{font-size:10px}
+.history-open .stage-text{flex:1;min-width:0;gap:2px}
+.history-open .stage-actions{min-height:0}
+.history-open .mic-button.stage-mic{height:34px;padding:0 14px;font-size:11px}
+.history-open .messages{padding-top:16px}
+.history-empty{font-size:12px;color:#859676}
+
+.composer.slim{display:flex;align-items:flex-end;gap:8px;padding:7px 8px 7px 7px;border-radius:12px}
+.composer.slim textarea{flex:1;min-height:34px;padding:8px 6px;font-size:12px;line-height:1.5}
+.composer.slim .send-button{margin-left:0;height:34px;width:36px}
+.composer.slim .composer-tip{align-self:center;white-space:nowrap}
+.history-toggle{height:34px;display:flex;align-items:center;gap:6px;padding:0 11px;border-radius:8px;font-size:10px;color:#a9bb95;border:1px solid #38442f;background:#1c2318;white-space:nowrap}
+.history-toggle:hover{background:#26311f;color:#dbe9c6}
+.history-toggle.selected{background:#2c3a22;color:#e2f0cd;border-color:#566b40}
+.history-toggle span{font-size:9px;padding:1px 6px;border-radius:9px;background:#33402a;color:#c8dab1}
+@media(max-height:760px){.presence.large .presence-mark{transform:scale(1.45)}.voice-stage{gap:12px;padding-top:12px}.voice-stage .presence.large{margin-bottom:6px}.stage-caption{max-height:6.8em}}
+.speech-mode-bar{min-height:52px}
+/* Jobs float above the stage, so they never push openhiatus out of the centre. */
+.voice-first{position:relative}
+.voice-first>.background-jobs.collapsible{position:absolute;top:14px;left:30px;z-index:5;margin:0;max-width:min(520px,calc(100% - 60px));box-shadow:0 8px 28px #0005}
+.voice-first>.background-jobs.collapsed{border-radius:18px;max-height:none;overflow:visible}
+.voice-first>.background-jobs.open{width:min(520px,calc(100% - 60px));max-height:min(320px,60%)}
+.background-jobs.collapsible .background-jobs-heading{width:100%;justify-content:flex-start;gap:8px;text-align:left;cursor:pointer}
+.background-jobs.collapsed .background-jobs-heading{padding:7px 12px}
+.background-jobs.collapsible .background-jobs-heading svg{margin-left:auto;color:#a7bd8f;transition:transform .16s}
+.background-jobs.collapsible .background-jobs-heading svg.rotate{transform:rotate(180deg)}
+.background-jobs-heading em{font-style:normal;font-size:9px;padding:1px 7px;border-radius:9px;background:#4a3324;color:#f0c39f}
+/* With history open the stage is a top row; jobs then flow above it instead of covering the compact orb. */
+.voice-first.history-open>.background-jobs.collapsible{position:static;margin:14px 30px 0;width:auto;max-width:none;box-shadow:none}
+.voice-first.history-open>.background-jobs.collapsed{align-self:flex-start}
+
+/* Skill favourites: empty = nothing, silver = goes along, gold = full SKILL.md goes along. */
+.skill-star{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:8px;flex-shrink:0;color:#6f7868}
+.skill-card-top .skill-star{margin-left:2px}
+.skill-star:not(:disabled):hover{background:#262e22;color:#c5ccbb}
+.skill-star.favorite{color:#c9d0d8;filter:drop-shadow(0 0 4px #c9d0d855)}
+.skill-star.full{color:#e8b83a;filter:drop-shadow(0 0 5px #e8b83a77)}
+.skills-star-legend .skill-star{width:auto;height:auto;vertical-align:-2px;margin:0 3px 0 10px}
+.skills-star-legend .skill-star:first-child{margin-left:0}
+.skills-star-legend{font-size:10px;color:#8b9a7c;margin:-4px 0 14px;line-height:1.8}
+.skills-favorite-filter{display:inline-flex;align-items:center;gap:5px;font-size:10px;padding:4px 10px;border-radius:12px;border:1px solid #3d4a33;color:#a9bb95;margin-left:auto;margin-right:12px}
+.skills-favorite-filter.selected{background:#3a3220;border-color:#7a6430;color:#ecc867}
+
+/* Context fill of the conversation thread. */
+.context-meter{width:min(300px,100%);display:flex;flex-direction:column;gap:6px;text-align:left;--meter:#a9cf73}
+.context-meter.warn{--meter:#e2b45a}
+.context-meter.full{--meter:#e8836a}
+.context-meter-head{display:flex;justify-content:space-between;align-items:baseline;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#8d9d7d}
+.context-meter-head strong{font-size:13px;letter-spacing:0;text-transform:none;color:var(--meter);font-weight:600}
+.context-meter.fresh .context-meter-head strong{color:#8d9d7d}
+.context-meter-bar{height:6px;border-radius:3px;background:#2a3325;overflow:hidden}
+.context-meter-bar i{display:block;height:100%;border-radius:3px;background:var(--meter);box-shadow:0 0 8px var(--meter);transition:width .6s ease,background .4s}
+.context-meter small{font-size:10px;color:#8b9a7c}
+.context-meter.full small{color:#e8a08a}
+.history-open .context-meter{width:190px;flex-shrink:0;gap:3px}
+.history-open .context-meter small{display:none}

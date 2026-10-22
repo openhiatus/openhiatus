@@ -1,0 +1,50 @@
+.settings-feature{min-height:0;color:var(--text);font-size:14px}
+.settings-feature .settings-content{max-width:1050px;padding:36px clamp(20px,4vw,48px) 42px}
+.settings-feature-heading .eyebrow{font-size:12px;letter-spacing:1.6px}
+.settings-feature .settings-feature-heading h1{font-size:clamp(30px,3.3vw,38px);margin:10px 0 12px}
+.settings-feature .settings-lead{font-size:14px;line-height:1.75;color:#a7b29e;margin-bottom:26px}
+.settings-tabs{display:flex;gap:5px;padding:5px;background:#111810;border:1px solid var(--border);border-radius:11px;margin-bottom:25px}
+.settings-tabs>button{display:flex;flex:1;justify-content:center;align-items:center;gap:9px;min-width:0;min-height:44px;padding:10px 12px;border-radius:7px;color:#9cae90;font-size:14px;line-height:1.4;text-align:center}
+.settings-tabs>button:hover{background:#24301e;color:#e1ebd6}
+.settings-tabs>button[aria-selected=true]{background:#304127;color:#e6f1d8;box-shadow:inset 0 0 0 1px #4a5d3b}
+.settings-feature .settings-tab-panel[hidden]{display:none!important}
+.settings-panel-intro{font-size:14px;line-height:1.75;color:#a5b39b;margin:0 2px 22px;max-width:740px}
+.settings-feature .settings-card{padding:24px;background:linear-gradient(135deg,#232e1ed9,#1a2218);border-color:#384731}
+.settings-feature .settings-card-head{gap:13px;flex-wrap:wrap;margin-bottom:23px}
+.settings-feature .settings-card-head>div{min-width:0;flex:1}
+.settings-feature .settings-card h2{font-size:17px;line-height:1.45}
+.settings-feature .settings-card-head p{font-size:13px;line-height:1.65;color:#a0b090;margin-top:4px}
+.settings-feature .service-status{font-size:12px;padding:6px 8px;line-height:1.4}
+.settings-feature .field-label{font-size:13px;line-height:1.6;flex-wrap:wrap}
+.settings-feature .muted,.settings-feature .model-roles .field-label small{font-size:12px;line-height:1.65;color:#94a585}
+.settings-feature .provider-input,.settings-feature .input-action input,.settings-feature .select-wrap select{font-size:14px;line-height:1.5;min-height:42px}
+.settings-feature .input-action input::placeholder{font-size:13px}
+.settings-feature .select-wrap>svg{top:14px}
+.settings-feature .secondary-button,.settings-feature .primary-button,.settings-feature .text-button,.settings-feature .device-test{font-size:13px;line-height:1.5;min-height:38px}
+.settings-feature .text-button{display:inline-flex;align-items:center;gap:7px}
+.settings-feature .device-test{padding-top:10px;align-items:center}
+.settings-feature .billing-note,.settings-feature .provider-error,.settings-feature .provider-options summary{font-size:13px;line-height:1.8;color:#9eae90}
+.settings-feature .provider-error{color:#e3b198}
+.settings-feature .provider-models{flex-wrap:wrap;gap:8px 22px;font-size:12px;line-height:1.7;color:#92a77d}
+.settings-feature .settings-footnote{color:#99b17f;margin-top:24px}
+.settings-feature .settings-footnote p{font-size:13px;line-height:1.8;color:#9aaa8d}
+.settings-feature .audio-device-grid{margin-top:0;gap:24px}
+.settings-feature .settings-audio-state{font-size:13px;line-height:1.6;flex-wrap:wrap;gap:9px}
+.settings-feature .settings-audio-state .text-button{margin-left:auto}
+.settings-feature .chatgpt-intro,.settings-feature .chatgpt-signing-in,.settings-feature .chatgpt-account,.settings-feature .chatgpt-background-consent{font-size:14px;line-height:1.8}
+.settings-feature .chatgpt-plan-state strong,.settings-feature .chatgpt-plan-unavailable strong{font-size:14px}
+.settings-feature .chatgpt-plan-state p,.settings-feature .chatgpt-plan-unavailable p,.settings-feature .chatgpt-background-consent small{font-size:13px;line-height:1.8}
+.settings-feature .chatgpt-signin-button{font-size:14px}
+.settings-toggle{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:20px 0;border-top:1px solid #35432e;cursor:pointer}
+.settings-toggle>span{max-width:620px}
+.settings-toggle strong{display:block;font-size:14px;line-height:1.6;font-weight:550;color:#e1e9d7}
+.settings-toggle small{display:block;font-size:13px;line-height:1.8;color:#a3b395;margin-top:5px}
+.settings-toggle input{flex-shrink:0;width:19px;height:19px;accent-color:var(--accent);cursor:pointer}
+.settings-toggle input:disabled{cursor:not-allowed}
+.settings-shortcuts dl{margin:0}
+.settings-shortcuts dl>div{display:grid;grid-template-columns:minmax(185px,1fr) 2fr;align-items:center;gap:20px;padding:15px 0;border-top:1px solid #35432e}
+.settings-shortcuts dt{font-size:13px;white-space:nowrap}
+.settings-shortcuts dd{margin:0;font-size:14px;line-height:1.7;color:#b8c8aa}
+.settings-shortcuts kbd{display:inline-block;padding:4px 7px;font-size:12px;line-height:1.5;color:#d5e5c5;border:1px solid #4d5e41;border-bottom-width:2px;border-radius:5px;background:#162011}
+@media(max-width:850px){.settings-feature .settings-content{padding:26px 20px 32px}.settings-tabs{gap:3px}.settings-tabs>button{gap:6px;padding:9px 6px;font-size:13px}.settings-feature .settings-card{padding:20px}.settings-feature .audio-device-grid{grid-template-columns:1fr;gap:24px}.settings-feature .settings-card-head .service-status{margin-left:53px}.settings-shortcuts dl>div{grid-template-columns:1fr;gap:8px}.settings-toggle{gap:18px}.settings-feature .model-roles .field-label{flex:auto;width:auto}}
+@media(max-width:540px){.settings-feature .settings-content{padding-left:14px;padding-right:14px}.settings-tabs>button{flex-direction:column;font-size:12px;gap:6px}.settings-feature .settings-card{padding:17px}.settings-feature .input-action{flex-wrap:wrap}.settings-feature .input-action input{flex-basis:100%;width:100%}.settings-feature .input-action>.secondary-button{width:100%}.settings-feature .settings-card-head>div{flex-basis:calc(100% - 60px)}.settings-feature .provider-actions{align-items:stretch}.settings-feature .provider-actions .subtle-danger{margin-left:0}}

@@ -1,0 +1,24 @@
+Bereinige den Auftragsexport vollständig in sichtbarem LibreOffice Calc. Liefere eine geprüfte neue ODS-Datei.
+
+Nordstern Servicehandel GmbH (fiktiv), Exportstand 30.09.2026; auch ältere Aufträge sind möglich.
+Arbeitsordner: <Arbeitsverzeichnis>\LibreOffice-Test Auftragschaos September 2026
+Input: Input\Auftragsexport September 2026.xlsx
+Ergebnis: Abgabe\Auftraege September 2026 bereinigt.ods
+
+Untersuche den gesamten Bereich einschließlich ferner Zeilen und rechter Spalten. Ein sichtbares Blatt; bestimme die Ausdehnung selbst. Originaldatei unverändert erhalten, per Speichern unter eine neue ODS-Datei erstellen. Geschäftsspalten A–V und Datensatz_IDs bewahren. Hilfsspalten rechts und ein Prüfprotokollblatt sind erlaubt.
+
+Regeln des Exports:
+- Datensatz_ID ist eine unveränderliche Exportzeilen-ID, keine Auftragsnummer. Verschiedene Positionen desselben Auftrags sind gültig. Nur vollständig gleiche Geschäftsdaten B–V sind Dubletten: genau eine Zeile behalten, entfernte ID und erhaltene ID im Prüfprotokoll dokumentieren. Keine andere Zeile löschen.
+- Vereinheitliche echte Datums-, Zahlen- und Statuswerte, nicht nur deren Darstellung. Eindeutige ISO-Daten und TT.MM.JJJJ sind konvertierbar. Datumszeichenfolgen mit Schrägstrichen ohne bekannte Herkunft sind unklar; das Programmgebietsschema beweist ihre Bedeutung nicht.
+- Eindeutige deutsche Geldtexte wie 1.250,50 oder 1250,50 € sind konvertierbar. Ein alleiniger Punkt ohne eindeutigen Dezimal-/Tausendernachweis ist unklar. Zahlen dürfen danach kein Text sein. IDs und PLZ bleiben Text.
+- Menge, Einzelpreis und Rabatt sind maßgeblich. Positionssumme = Menge × Einzelpreis × (1 − Rabatt), kaufmännisch auf zwei Nachkommastellen runden. Rabatt ist ein Anteil: 0,10 bedeutet 10 %, 10 % als Text wird zu 0,10. Eine widersprechende Positionssumme darf anhand eindeutiger Faktoren korrigiert werden.
+- Kanonische Statuswerte: Offen, In Bearbeitung, Geliefert, Bezahlt, Storniert. Groß-/Kleinschreibung und überflüssige Randzeichen vereinheitlichen. Zahlungen nicht ohne Beleg passend machen.
+- Land: DE/AT/CH; Deutschland entspricht DE. DE-PLZ haben fünf, AT/CH vier Stellen; führende Nullen erhalten. Zahlungsziel ist eine Zahl in Tagen.
+- Kundennummer und Kunde sind Pflichtwerte. Fehlende Werte nur ergänzen, wenn die vorhandenen Daten eine eindeutige Zuordnung belegen. Bei widersprüchlichen Quellen die betroffene Zeile samt Angaben erhalten und zur Klärung markieren. Auftragsnummern nicht aus IDs, Reihenfolge oder Zahlenmustern erfinden.
+- Null bei Rabatt, Zahlung oder Zahlungsziel ist gültig. Lieferdatum darf bei noch nicht gelieferten/stornierten Aufträgen fehlen; Zahlungsdatum bei Zahlung null. Dokumentierte Retouren mit negativen Mengen, Summen und Erstattungen sind gültig. Sinnvolle mehrzeilige Lieferhinweise erhalten. Bereinige ausschließlich erkennbare Textschäden.
+
+Füge W=Prüfstatus und X=Prüfhinweis hinzu. Prüfstatus: OK, Korrigiert oder Unklar. Unklare Werte unverändert erhalten und ihren konkreten Klärungsbedarf in X beschreiben. Kennzeichne korrigierte Zeilen nachvollziehbar. Dokumentiere entfernte Dubletten im Prüfprotokoll. Beim Sortieren müssen IDs und sämtliche zugehörigen Spalten zusammenbleiben. Formatiere Zahlen/Euro/Datum lesbar.
+
+Speichere und prüfe die vollständige ODS-Datei über die Oberfläche. Berichte: geprüfte ursprüngliche Datensätze, korrigierte verbleibende Zeilen, entfernte Dubletten, verbleibende unklare Zeilen. Zeilen jeweils einmal zählen; Dubletten nicht zusätzlich als korrigiert. Kein Writer/PDF nötig.
+
+UI-only: Alle Datei-/Datenzugriffe und Bearbeitungen nur über sichtbares LibreOffice und Screenshot/Maus/Tastatur. Calc-Formeln und normales Einfügen sind erlaubt. Keine Shell, Skripte, direkten Dateioperationen, Python/JavaScript, UNO, Makros oder Headless-Verarbeitung. Keine Codex-Fenster oder weiteren Agenten. Bei einer Blockade gezielt melden. Beginne ohne weitere Rückfrage.

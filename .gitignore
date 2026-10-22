@@ -1,0 +1,21 @@
+node_modules/
+dist/
+release/
+.test-data/
+.tmp/
+artifacts/
+spike/output/
+*.log
+.env*
+
+# Skills are maintained locally and are not part of the public source package.
+/skills/
+
+# Python caches and locally generated benchmark runs
+__pycache__/
+*.py[cod]
+benchmarks/**/Vorbereitung/
+benchmarks/**/auswertungen/
+benchmarks/**/fixture.json
+benchmarks/**/laufvorbereitung.json
+benchmarks/**/Vorbereitungspruefung.json

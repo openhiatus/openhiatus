@@ -1,0 +1,842 @@
+{
+  "stichtag": "2026-09-30",
+  "vorher": {
+    "kennzahlen": {
+      "aktive_rechnungen": 17,
+      "gesamtforderung": "13990.00",
+      "bankeingang_eindeutig": "10310.00",
+      "zahlungen_aktive_rechnungen": "9790.00",
+      "anrechenbare_zahlungen": "9740.00",
+      "offene_forderungen": "4250.00",
+      "offene_rechnungen": 7,
+      "ueberfaelliger_betrag": "900.00",
+      "ueberfaellige_rechnungen": 2,
+      "nicht_zuordenbar": "520.00",
+      "ueberzahlung": "50.00",
+      "doppelt_importiert": "200.00"
+    },
+    "rechnungen": [
+      {
+        "rechnungs_id": "R-2401",
+        "kunde": "Adler Bau",
+        "faellig_am": "2026-09-05",
+        "aktiv": true,
+        "forderung": "1200.00",
+        "zahlung_gesamt": "1200.00",
+        "anrechenbar": "1200.00",
+        "offen": "0.00",
+        "ueberzahlung": "0.00",
+        "ueberfaellig": false
+      },
+      {
+        "rechnungs_id": "R-2402",
+        "kunde": "Bergmann IT",
+        "faellig_am": "2026-09-10",
+        "aktiv": true,
+        "forderung": "850.00",
+        "zahlung_gesamt": "850.00",
+        "anrechenbar": "850.00",
+        "offen": "0.00",
+        "ueberzahlung": "0.00",
+        "ueberfaellig": false
+      },
+      {
+        "rechnungs_id": "R-2403",
+        "kunde": "Cobalt Media",
+        "faellig_am": "2026-09-15",
+        "aktiv": true,
+        "forderung": "640.00",
+        "zahlung_gesamt": "640.00",
+        "anrechenbar": "640.00",
+        "offen": "0.00",
+        "ueberzahlung": "0.00",
+        "ueberfaellig": false
+      },
+      {
+        "rechnungs_id": "R-2404",
+        "kunde": "Delta Logistik",
+        "faellig_am": "2026-09-20",
+        "aktiv": true,
+        "forderung": "1450.00",
+        "zahlung_gesamt": "1200.00",
+        "anrechenbar": "1200.00",
+        "offen": "250.00",
+        "ueberzahlung": "0.00",
+        "ueberfaellig": true
+      },
+      {
+        "rechnungs_id": "R-2405",
+        "kunde": "Eichenhof",
+        "faellig_am": "2026-09-25",
+        "aktiv": true,
+        "forderung": "900.00",
+        "zahlung_gesamt": "900.00",
+        "anrechenbar": "900.00",
+        "offen": "0.00",
+        "ueberzahlung": "0.00",
+        "ueberfaellig": false
+      },
+      {
+        "rechnungs_id": "R-2406",
+        "kunde": "Falken Design",
+        "faellig_am": "2026-09-30",
+        "aktiv": true,
+        "forderung": "720.00",
+        "zahlung_gesamt": "720.00",
+        "anrechenbar": "720.00",
+        "offen": "0.00",
+        "ueberzahlung": "0.00",
+        "ueberfaellig": false
+      },
+      {
+        "rechnungs_id": "R-2407",
+        "kunde": "Gamma Service",
+        "faellig_am": "2026-10-05",
+        "aktiv": true,
+        "forderung": "1100.00",
+        "zahlung_gesamt": "550.00",
+        "anrechenbar": "550.00",
+        "offen": "550.00",
+        "ueberzahlung": "0.00",
+        "ueberfaellig": false
+      },
+      {
+        "rechnungs_id": "R-2408",
+        "kunde": "Hanse Soft",
+        "faellig_am": "2026-09-18",
+        "aktiv": true,
+        "forderung": "430.00",
+        "zahlung_gesamt": "430.00",
+        "anrechenbar": "430.00",
+        "offen": "0.00",
+        "ueberzahlung": "0.00",
+        "ueberfaellig": false
+      },
+      {
+        "rechnungs_id": "R-2409",
+        "kunde": "Isar Elektro",
+        "faellig_am": "2026-09-22",
+        "aktiv": true,
+        "forderung": "760.00",
+        "zahlung_gesamt": "760.00",
+        "anrechenbar": "760.00",
+        "offen": "0.00",
+        "ueberzahlung": "0.00",
+        "ueberfaellig": false
+      },
+      {
+        "rechnungs_id": "R-2410",
+        "kunde": "Jade Gastro",
+        "faellig_am": "2026-09-28",
+        "aktiv": true,
+        "forderung": "500.00",
+        "zahlung_gesamt": "550.00",
+        "anrechenbar": "500.00",
+        "offen": "0.00",
+        "ueberzahlung": "50.00",
+        "ueberfaellig": false
+      },
+      {
+        "rechnungs_id": "R-2411",
+        "kunde": "Komet Werbe",
+        "faellig_am": "2026-09-12",
+        "aktiv": false,
+        "forderung": "0.00",
+        "zahlung_gesamt": "0.00",
+        "anrechenbar": "0.00",
+        "offen": "0.00",
+        "ueberzahlung": "0.00",
+        "ueberfaellig": false
+      },
+      {
+        "rechnungs_id": "R-2412",
+        "kunde": "Linden Möbel",
+        "faellig_am": "2026-09-30",
+        "aktiv": true,
+        "forderung": "980.00",
+        "zahlung_gesamt": "300.00",
+        "anrechenbar": "300.00",
+        "offen": "680.00",
+        "ueberzahlung": "0.00",
+        "ueberfaellig": false
+      },
+      {
+        "rechnungs_id": "R-2413",
+        "kunde": "Marmor GmbH",
+        "faellig_am": "2026-10-10",
+        "aktiv": true,
+        "forderung": "620.00",
+        "zahlung_gesamt": "0.00",
+        "anrechenbar": "0.00",
+        "offen": "620.00",
+        "ueberzahlung": "0.00",
+        "ueberfaellig": false
+      },
+      {
+        "rechnungs_id": "R-2414",
+        "kunde": "Nexus GmbH",
+        "faellig_am": "2026-09-29",
+        "aktiv": true,
+        "forderung": "1250.00",
+        "zahlung_gesamt": "600.00",
+        "anrechenbar": "600.00",
+        "offen": "650.00",
+        "ueberzahlung": "0.00",
+        "ueberfaellig": true
+      },
+      {
+        "rechnungs_id": "R-2415",
+        "kunde": "Orion Versand",
+        "faellig_am": "2026-09-30",
+        "aktiv": true,
+        "forderung": "460.00",
+        "zahlung_gesamt": "160.00",
+        "anrechenbar": "160.00",
+        "offen": "300.00",
+        "ueberzahlung": "0.00",
+        "ueberfaellig": false
+      },
+      {
+        "rechnungs_id": "R-2416",
+        "kunde": "Polartechnik",
+        "faellig_am": "2026-09-26",
+        "aktiv": true,
+        "forderung": "540.00",
+        "zahlung_gesamt": "540.00",
+        "anrechenbar": "540.00",
+        "offen": "0.00",
+        "ueberzahlung": "0.00",
+        "ueberfaellig": false
+      },
+      {
+        "rechnungs_id": "R-2417",
+        "kunde": "Quartz Labs",
+        "faellig_am": "2026-09-24",
+        "aktiv": true,
+        "forderung": "390.00",
+        "zahlung_gesamt": "390.00",
+        "anrechenbar": "390.00",
+        "offen": "0.00",
+        "ueberzahlung": "0.00",
+        "ueberfaellig": false
+      },
+      {
+        "rechnungs_id": "R-2418",
+        "kunde": "Rhein Druck",
+        "faellig_am": "2026-10-15",
+        "aktiv": true,
+        "forderung": "1200.00",
+        "zahlung_gesamt": "0.00",
+        "anrechenbar": "0.00",
+        "offen": "1200.00",
+        "ueberzahlung": "0.00",
+        "ueberfaellig": false
+      }
+    ],
+    "top_drei": [
+      {
+        "rechnungs_id": "R-2418",
+        "kunde": "Rhein Druck",
+        "faellig_am": "2026-10-15",
+        "aktiv": true,
+        "forderung": "1200.00",
+        "zahlung_gesamt": "0.00",
+        "anrechenbar": "0.00",
+        "offen": "1200.00",
+        "ueberzahlung": "0.00",
+        "ueberfaellig": false
+      },
+      {
+        "rechnungs_id": "R-2412",
+        "kunde": "Linden Möbel",
+        "faellig_am": "2026-09-30",
+        "aktiv": true,
+        "forderung": "980.00",
+        "zahlung_gesamt": "300.00",
+        "anrechenbar": "300.00",
+        "offen": "680.00",
+        "ueberzahlung": "0.00",
+        "ueberfaellig": false
+      },
+      {
+        "rechnungs_id": "R-2414",
+        "kunde": "Nexus GmbH",
+        "faellig_am": "2026-09-29",
+        "aktiv": true,
+        "forderung": "1250.00",
+        "zahlung_gesamt": "600.00",
+        "anrechenbar": "600.00",
+        "offen": "650.00",
+        "ueberzahlung": "0.00",
+        "ueberfaellig": true
+      }
+    ]
+  },
+  "nachher": {
+    "kennzahlen": {
+      "aktive_rechnungen": 17,
+      "gesamtforderung": "13990.00",
+      "bankeingang_eindeutig": "10410.00",
+      "zahlungen_aktive_rechnungen": "9890.00",
+      "anrechenbare_zahlungen": "9840.00",
+      "offene_forderungen": "4150.00",
+      "offene_rechnungen": 7,
+      "ueberfaelliger_betrag": "800.00",
+      "ueberfaellige_rechnungen": 2,
+      "nicht_zuordenbar": "520.00",
+      "ueberzahlung": "50.00",
+      "doppelt_importiert": "200.00"
+    },
+    "rechnungen": [
+      {
+        "rechnungs_id": "R-2401",
+        "kunde": "Adler Bau",
+        "faellig_am": "2026-09-05",
+        "aktiv": true,
+        "forderung": "1200.00",
+        "zahlung_gesamt": "1200.00",
+        "anrechenbar": "1200.00",
+        "offen": "0.00",
+        "ueberzahlung": "0.00",
+        "ueberfaellig": false
+      },
+      {
+        "rechnungs_id": "R-2402",
+        "kunde": "Bergmann IT",
+        "faellig_am": "2026-09-10",
+        "aktiv": true,
+        "forderung": "850.00",
+        "zahlung_gesamt": "850.00",
+        "anrechenbar": "850.00",
+        "offen": "0.00",
+        "ueberzahlung": "0.00",
+        "ueberfaellig": false
+      },
+      {
+        "rechnungs_id": "R-2403",
+        "kunde": "Cobalt Media",
+        "faellig_am": "2026-09-15",
+        "aktiv": true,
+        "forderung": "640.00",
+        "zahlung_gesamt": "640.00",
+        "anrechenbar": "640.00",
+        "offen": "0.00",
+        "ueberzahlung": "0.00",
+        "ueberfaellig": false
+      },
+      {
+        "rechnungs_id": "R-2404",
+        "kunde": "Delta Logistik",
+        "faellig_am": "2026-09-20",
+        "aktiv": true,
+        "forderung": "1450.00",
+        "zahlung_gesamt": "1200.00",
+        "anrechenbar": "1200.00",
+        "offen": "250.00",
+        "ueberzahlung": "0.00",
+        "ueberfaellig": true
+      },
+      {
+        "rechnungs_id": "R-2405",
+        "kunde": "Eichenhof",
+        "faellig_am": "2026-09-25",
+        "aktiv": true,
+        "forderung": "900.00",
+        "zahlung_gesamt": "900.00",
+        "anrechenbar": "900.00",
+        "offen": "0.00",
+        "ueberzahlung": "0.00",
+        "ueberfaellig": false
+      },
+      {
+        "rechnungs_id": "R-2406",
+        "kunde": "Falken Design",
+        "faellig_am": "2026-09-30",
+        "aktiv": true,
+        "forderung": "720.00",
+        "zahlung_gesamt": "720.00",
+        "anrechenbar": "720.00",
+        "offen": "0.00",
+        "ueberzahlung": "0.00",
+        "ueberfaellig": false
+      },
+      {
+        "rechnungs_id": "R-2407",
+        "kunde": "Gamma Service",
+        "faellig_am": "2026-10-05",
+        "aktiv": true,
+        "forderung": "1100.00",
+        "zahlung_gesamt": "550.00",
+        "anrechenbar": "550.00",
+        "offen": "550.00",
+        "ueberzahlung": "0.00",
+        "ueberfaellig": false
+      },
+      {
+        "rechnungs_id": "R-2408",
+        "kunde": "Hanse Soft",
+        "faellig_am": "2026-09-18",
+        "aktiv": true,
+        "forderung": "430.00",
+        "zahlung_gesamt": "430.00",
+        "anrechenbar": "430.00",
+        "offen": "0.00",
+        "ueberzahlung": "0.00",
+        "ueberfaellig": false
+      },
+      {
+        "rechnungs_id": "R-2409",
+        "kunde": "Isar Elektro",
+        "faellig_am": "2026-09-22",
+        "aktiv": true,
+        "forderung": "760.00",
+        "zahlung_gesamt": "760.00",
+        "anrechenbar": "760.00",
+        "offen": "0.00",
+        "ueberzahlung": "0.00",
+        "ueberfaellig": false
+      },
+      {
+        "rechnungs_id": "R-2410",
+        "kunde": "Jade Gastro",
+        "faellig_am": "2026-09-28",
+        "aktiv": true,
+        "forderung": "500.00",
+        "zahlung_gesamt": "550.00",
+        "anrechenbar": "500.00",
+        "offen": "0.00",
+        "ueberzahlung": "50.00",
+        "ueberfaellig": false
+      },
+      {
+        "rechnungs_id": "R-2411",
+        "kunde": "Komet Werbe",
+        "faellig_am": "2026-09-12",
+        "aktiv": false,
+        "forderung": "0.00",
+        "zahlung_gesamt": "0.00",
+        "anrechenbar": "0.00",
+        "offen": "0.00",
+        "ueberzahlung": "0.00",
+        "ueberfaellig": false
+      },
+      {
+        "rechnungs_id": "R-2412",
+        "kunde": "Linden Möbel",
+        "faellig_am": "2026-09-30",
+        "aktiv": true,
+        "forderung": "980.00",
+        "zahlung_gesamt": "300.00",
+        "anrechenbar": "300.00",
+        "offen": "680.00",
+        "ueberzahlung": "0.00",
+        "ueberfaellig": false
+      },
+      {
+        "rechnungs_id": "R-2413",
+        "kunde": "Marmor GmbH",
+        "faellig_am": "2026-10-10",
+        "aktiv": true,
+        "forderung": "620.00",
+        "zahlung_gesamt": "0.00",
+        "anrechenbar": "0.00",
+        "offen": "620.00",
+        "ueberzahlung": "0.00",
+        "ueberfaellig": false
+      },
+      {
+        "rechnungs_id": "R-2414",
+        "kunde": "Nexus GmbH",
+        "faellig_am": "2026-09-29",
+        "aktiv": true,
+        "forderung": "1250.00",
+        "zahlung_gesamt": "700.00",
+        "anrechenbar": "700.00",
+        "offen": "550.00",
+        "ueberzahlung": "0.00",
+        "ueberfaellig": true
+      },
+      {
+        "rechnungs_id": "R-2415",
+        "kunde": "Orion Versand",
+        "faellig_am": "2026-09-30",
+        "aktiv": true,
+        "forderung": "460.00",
+        "zahlung_gesamt": "160.00",
+        "anrechenbar": "160.00",
+        "offen": "300.00",
+        "ueberzahlung": "0.00",
+        "ueberfaellig": false
+      },
+      {
+        "rechnungs_id": "R-2416",
+        "kunde": "Polartechnik",
+        "faellig_am": "2026-09-26",
+        "aktiv": true,
+        "forderung": "540.00",
+        "zahlung_gesamt": "540.00",
+        "anrechenbar": "540.00",
+        "offen": "0.00",
+        "ueberzahlung": "0.00",
+        "ueberfaellig": false
+      },
+      {
+        "rechnungs_id": "R-2417",
+        "kunde": "Quartz Labs",
+        "faellig_am": "2026-09-24",
+        "aktiv": true,
+        "forderung": "390.00",
+        "zahlung_gesamt": "390.00",
+        "anrechenbar": "390.00",
+        "offen": "0.00",
+        "ueberzahlung": "0.00",
+        "ueberfaellig": false
+      },
+      {
+        "rechnungs_id": "R-2418",
+        "kunde": "Rhein Druck",
+        "faellig_am": "2026-10-15",
+        "aktiv": true,
+        "forderung": "1200.00",
+        "zahlung_gesamt": "0.00",
+        "anrechenbar": "0.00",
+        "offen": "1200.00",
+        "ueberzahlung": "0.00",
+        "ueberfaellig": false
+      }
+    ],
+    "top_drei": [
+      {
+        "rechnungs_id": "R-2418",
+        "kunde": "Rhein Druck",
+        "faellig_am": "2026-10-15",
+        "aktiv": true,
+        "forderung": "1200.00",
+        "zahlung_gesamt": "0.00",
+        "anrechenbar": "0.00",
+        "offen": "1200.00",
+        "ueberzahlung": "0.00",
+        "ueberfaellig": false
+      },
+      {
+        "rechnungs_id": "R-2412",
+        "kunde": "Linden Möbel",
+        "faellig_am": "2026-09-30",
+        "aktiv": true,
+        "forderung": "980.00",
+        "zahlung_gesamt": "300.00",
+        "anrechenbar": "300.00",
+        "offen": "680.00",
+        "ueberzahlung": "0.00",
+        "ueberfaellig": false
+      },
+      {
+        "rechnungs_id": "R-2413",
+        "kunde": "Marmor GmbH",
+        "faellig_am": "2026-10-10",
+        "aktiv": true,
+        "forderung": "620.00",
+        "zahlung_gesamt": "0.00",
+        "anrechenbar": "0.00",
+        "offen": "620.00",
+        "ueberzahlung": "0.00",
+        "ueberfaellig": false
+      }
+    ]
+  },
+  "originaldaten": {
+    "rechnungen": [
+      {
+        "Rechnungs_ID": "R-2401",
+        "Kunde": "Adler Bau",
+        "Rechnungsdatum": "2026-08-15",
+        "Faellig_am": "2026-09-05",
+        "Betrag_EUR": "1200",
+        "Status": "Aktiv"
+      },
+      {
+        "Rechnungs_ID": "R-2402",
+        "Kunde": "Bergmann IT",
+        "Rechnungsdatum": "2026-08-20",
+        "Faellig_am": "2026-09-10",
+        "Betrag_EUR": "850",
+        "Status": "Aktiv"
+      },
+      {
+        "Rechnungs_ID": "R-2403",
+        "Kunde": "Cobalt Media",
+        "Rechnungsdatum": "2026-08-25",
+        "Faellig_am": "2026-09-15",
+        "Betrag_EUR": "640",
+        "Status": "Aktiv"
+      },
+      {
+        "Rechnungs_ID": "R-2404",
+        "Kunde": "Delta Logistik",
+        "Rechnungsdatum": "2026-09-01",
+        "Faellig_am": "2026-09-20",
+        "Betrag_EUR": "1450",
+        "Status": "Aktiv"
+      },
+      {
+        "Rechnungs_ID": "R-2405",
+        "Kunde": "Eichenhof",
+        "Rechnungsdatum": "2026-09-02",
+        "Faellig_am": "2026-09-25",
+        "Betrag_EUR": "900",
+        "Status": "Aktiv"
+      },
+      {
+        "Rechnungs_ID": "R-2406",
+        "Kunde": "Falken Design",
+        "Rechnungsdatum": "2026-09-03",
+        "Faellig_am": "2026-09-30",
+        "Betrag_EUR": "720",
+        "Status": "Aktiv"
+      },
+      {
+        "Rechnungs_ID": "R-2407",
+        "Kunde": "Gamma Service",
+        "Rechnungsdatum": "2026-09-04",
+        "Faellig_am": "2026-10-05",
+        "Betrag_EUR": "1100",
+        "Status": "Aktiv"
+      },
+      {
+        "Rechnungs_ID": "R-2408",
+        "Kunde": "Hanse Soft",
+        "Rechnungsdatum": "2026-09-05",
+        "Faellig_am": "2026-09-18",
+        "Betrag_EUR": "430",
+        "Status": "Aktiv"
+      },
+      {
+        "Rechnungs_ID": "R-2409",
+        "Kunde": "Isar Elektro",
+        "Rechnungsdatum": "2026-09-06",
+        "Faellig_am": "2026-09-22",
+        "Betrag_EUR": "760",
+        "Status": "Aktiv"
+      },
+      {
+        "Rechnungs_ID": "R-2410",
+        "Kunde": "Jade Gastro",
+        "Rechnungsdatum": "2026-09-07",
+        "Faellig_am": "2026-09-28",
+        "Betrag_EUR": "500",
+        "Status": "Aktiv"
+      },
+      {
+        "Rechnungs_ID": "R-2411",
+        "Kunde": "Komet Werbe",
+        "Rechnungsdatum": "2026-09-08",
+        "Faellig_am": "2026-09-12",
+        "Betrag_EUR": "300",
+        "Status": "Storniert"
+      },
+      {
+        "Rechnungs_ID": "R-2412",
+        "Kunde": "Linden Möbel",
+        "Rechnungsdatum": "2026-09-09",
+        "Faellig_am": "2026-09-30",
+        "Betrag_EUR": "980",
+        "Status": "Aktiv"
+      },
+      {
+        "Rechnungs_ID": "R-2413",
+        "Kunde": "Marmor GmbH",
+        "Rechnungsdatum": "2026-09-10",
+        "Faellig_am": "2026-10-10",
+        "Betrag_EUR": "620",
+        "Status": "Aktiv"
+      },
+      {
+        "Rechnungs_ID": "R-2414",
+        "Kunde": "Nexus GmbH",
+        "Rechnungsdatum": "2026-09-11",
+        "Faellig_am": "2026-09-29",
+        "Betrag_EUR": "1250",
+        "Status": "Aktiv"
+      },
+      {
+        "Rechnungs_ID": "R-2415",
+        "Kunde": "Orion Versand",
+        "Rechnungsdatum": "2026-09-12",
+        "Faellig_am": "2026-09-30",
+        "Betrag_EUR": "460",
+        "Status": "Aktiv"
+      },
+      {
+        "Rechnungs_ID": "R-2416",
+        "Kunde": "Polartechnik",
+        "Rechnungsdatum": "2026-09-13",
+        "Faellig_am": "2026-09-26",
+        "Betrag_EUR": "540",
+        "Status": "Aktiv"
+      },
+      {
+        "Rechnungs_ID": "R-2417",
+        "Kunde": "Quartz Labs",
+        "Rechnungsdatum": "2026-09-14",
+        "Faellig_am": "2026-09-24",
+        "Betrag_EUR": "390",
+        "Status": "Aktiv"
+      },
+      {
+        "Rechnungs_ID": "R-2418",
+        "Kunde": "Rhein Druck",
+        "Rechnungsdatum": "2026-09-15",
+        "Faellig_am": "2026-10-15",
+        "Betrag_EUR": "1200",
+        "Status": "Aktiv"
+      }
+    ],
+    "zahlungen": [
+      {
+        "Buchungs_ID": "P-001",
+        "Datum": "2026-09-06",
+        "Rechnungs_ID": "R-2401",
+        "Betrag_EUR": "1200"
+      },
+      {
+        "Buchungs_ID": "P-002",
+        "Datum": "2026-09-08",
+        "Rechnungs_ID": "R-2402",
+        "Betrag_EUR": "350"
+      },
+      {
+        "Buchungs_ID": "P-003",
+        "Datum": "2026-09-12",
+        "Rechnungs_ID": "R-2402",
+        "Betrag_EUR": "500"
+      },
+      {
+        "Buchungs_ID": "P-004",
+        "Datum": "2026-09-16",
+        "Rechnungs_ID": "R-2403",
+        "Betrag_EUR": "640"
+      },
+      {
+        "Buchungs_ID": "P-005",
+        "Datum": "2026-09-21",
+        "Rechnungs_ID": "R-2404",
+        "Betrag_EUR": "1000"
+      },
+      {
+        "Buchungs_ID": "P-006",
+        "Datum": "2026-09-22",
+        "Rechnungs_ID": "R-2404",
+        "Betrag_EUR": "200"
+      },
+      {
+        "Buchungs_ID": "P-007",
+        "Datum": "2026-09-26",
+        "Rechnungs_ID": "R-2405",
+        "Betrag_EUR": "900"
+      },
+      {
+        "Buchungs_ID": "P-008",
+        "Datum": "2026-09-28",
+        "Rechnungs_ID": "R-2406",
+        "Betrag_EUR": "720"
+      },
+      {
+        "Buchungs_ID": "P-009",
+        "Datum": "2026-09-29",
+        "Rechnungs_ID": "R-2407",
+        "Betrag_EUR": "550"
+      },
+      {
+        "Buchungs_ID": "P-010",
+        "Datum": "2026-09-20",
+        "Rechnungs_ID": "R-2408",
+        "Betrag_EUR": "430"
+      },
+      {
+        "Buchungs_ID": "P-011",
+        "Datum": "2026-09-27",
+        "Rechnungs_ID": "R-2409",
+        "Betrag_EUR": "760"
+      },
+      {
+        "Buchungs_ID": "P-012",
+        "Datum": "2026-09-28",
+        "Rechnungs_ID": "R-2410",
+        "Betrag_EUR": "550"
+      },
+      {
+        "Buchungs_ID": "P-013",
+        "Datum": "2026-09-29",
+        "Rechnungs_ID": "R-2412",
+        "Betrag_EUR": "300"
+      },
+      {
+        "Buchungs_ID": "P-014",
+        "Datum": "2026-09-30",
+        "Rechnungs_ID": "R-2414",
+        "Betrag_EUR": "600"
+      },
+      {
+        "Buchungs_ID": "P-015",
+        "Datum": "2026-09-30",
+        "Rechnungs_ID": "R-2416",
+        "Betrag_EUR": "540"
+      },
+      {
+        "Buchungs_ID": "P-016",
+        "Datum": "2026-09-30",
+        "Rechnungs_ID": "R-9999",
+        "Betrag_EUR": "220"
+      },
+      {
+        "Buchungs_ID": "P-017",
+        "Datum": "2026-09-30",
+        "Rechnungs_ID": "R-2411",
+        "Betrag_EUR": "300"
+      },
+      {
+        "Buchungs_ID": "P-018",
+        "Datum": "2026-09-30",
+        "Rechnungs_ID": "R-2417",
+        "Betrag_EUR": "390"
+      },
+      {
+        "Buchungs_ID": "P-019",
+        "Datum": "2026-09-29",
+        "Rechnungs_ID": "R-2415",
+        "Betrag_EUR": "160"
+      },
+      {
+        "Buchungs_ID": "P-006",
+        "Datum": "2026-09-22",
+        "Rechnungs_ID": "R-2404",
+        "Betrag_EUR": "200"
+      }
+    ]
+  },
+  "fehlerfaelle": [
+    {
+      "buchungs_id": "P-006",
+      "typ": "identische Dublette",
+      "betrag": "200.00"
+    },
+    {
+      "buchungs_id": "P-012",
+      "typ": "Überzahlung",
+      "rechnungs_id": "R-2410",
+      "betrag": "50.00"
+    },
+    {
+      "buchungs_id": "P-016",
+      "typ": "unbekannte Rechnung",
+      "rechnungs_id": "R-9999",
+      "betrag": "220.00"
+    },
+    {
+      "buchungs_id": "P-017",
+      "typ": "stornierte Rechnung",
+      "rechnungs_id": "R-2411",
+      "betrag": "300.00"
+    }
+  ]
+}
