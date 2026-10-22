@@ -1,74 +1,108 @@
 # openHiatus
 
-A personal Windows assistant for talking, writing, and getting tasks done. openHiatus combines a local desktop app with your choice of AI models, speech services, and personal memory.
+**A personal Windows assistant you can talk to, write to, and hand tasks off to.**
 
-**Status: Alpha · Version 0.1.5 · Windows x64 · MIT**
+openHiatus is a desktop app that combines your choice of AI models, speech services, and a personal memory. You keep the conversation going while up to two tasks run in the background, and each task returns a result you can trace.
 
-This project is being developed publicly as an alpha. Features, the interface, and data formats may change; bugs and incomplete areas are expected. This repository contains the source code and development documentation. Prebuilt Windows packages are not included.
+![Status: alpha](https://img.shields.io/badge/status-alpha-orange)
+![Version 0.1.5](https://img.shields.io/badge/version-0.1.5-blue)
+![Platform: Windows x64](https://img.shields.io/badge/platform-Windows%20x64-0078D6)
+![License: MIT](https://img.shields.io/badge/license-MIT-green)
 
-## Available features
+> [!WARNING]
+> openHiatus is an **early public alpha**. Features, the interface, and data formats may change, and you should expect bugs and unfinished areas. This repository contains the source code only; there are no prebuilt Windows packages yet.
 
-- Text and voice conversations, with separate views for tasks, memory, skills, and settings.
-- ChatGPT sign-in and your own credentials for Anthropic, Google, OpenRouter, OpenAI, and local OpenAI-compatible model servers.
-- Up to two background tasks while conversation remains available, with results and usage shown for each task.
-- Tools for files, the shell, and Windows desktop control, plus support for your own local skills.
-- Personal memory with sources, reports, and editable core instructions.
+## Features
 
-The agent runtime is based on Pi; speech uses Inworld. openHiatus does not require a separate Codex or OpenClaw installation. Configure model providers and speech services with your own credentials. Availability, usage limits, and costs depend on the selected service.
+- 🎙️ **Talk or type.** Voice and text conversations, with push-to-talk via global hotkeys and an optional transcript review before sending.
+- ⚙️ **Background tasks.** Up to two tasks run while the conversation stays available. Each task shows its progress, result, and usage.
+- 🖥️ **Works on your computer.** Tools for files, the shell, and Windows desktop control, plus your own local skills.
+- 🧠 **Personal memory.** Memories with sources, reports, and history, along with core instructions you can edit.
+- 🔌 **Bring your own models.** Sign in with ChatGPT or use your own credentials for Anthropic, Google, OpenRouter, OpenAI, or a local OpenAI-compatible server.
 
-## Run from source
+openHiatus is built on Electron, React, and TypeScript. It uses [Pi](https://www.npmjs.com/package/@earendil-works/pi-coding-agent) as its agent runtime and [Inworld](https://inworld.ai) for speech. No separate Codex or OpenClaw installation is needed.
 
-Requirements:
+## Getting started
 
-- Windows x64 and Node.js 24 with npm.
-- Windows PowerShell and the .NET Framework 4 64-bit C# compiler at `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`. The build uses it for the native process and hotkey helpers.
+### Requirements
 
-From the project directory:
+- Windows x64
+- Node.js 24 with npm
+- Windows PowerShell and the .NET Framework 4 64-bit C# compiler (`%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`). The build uses it for the native process and hotkey helpers.
+
+### Run from source
 
 ```powershell
+git clone https://github.com/openhiatus/openhiatus.git
+cd openhiatus
 npm ci
-npm run check
 npm start
 ```
 
-`npm start` builds the application and opens it in Electron. Development and the native helpers currently target Windows.
+`npm start` builds the app and opens it in Electron.
 
-## Setup and controls
+### First-time setup
 
-The current app interface uses German labels; their English meanings are shown below.
+The app interface is currently in German. English meanings are shown in parentheses.
 
-1. On first launch, read and acknowledge the access permissions notice.
-2. Under **Einstellungen → Modelle & Zugänge** (Settings → Models & access), sign in with ChatGPT or configure your own provider. Choose models for conversation, work, and memory. For local servers, enter the base URL and model ID.
-3. For speech, add your own Inworld credentials under **Einstellungen → Sprache & Geräte** (Settings → Speech & devices), select your devices, and run the speech test. Text input also works without a speech service.
+1. **Permissions:** On first launch, read and acknowledge the access permissions notice.
+2. **Models:** Under **Einstellungen → Modelle & Zugänge** (Settings → Models & access), sign in with ChatGPT or set up your own provider. Then pick models for conversation, work, and memory. For a local server, enter its base URL and model ID.
+3. **Speech (optional):** Under **Einstellungen → Sprache & Geräte** (Settings → Speech & devices), add your Inworld credentials, choose your audio devices, and run the speech test. Text input works without a speech service.
+
+Model and speech providers are used with your own accounts. Their availability, usage limits, and costs depend on the service you choose.
+
+### Keyboard shortcuts
 
 | Key | Action |
 | --- | --- |
-| F8 | Start or stop recording |
-| F9 | Send the transcript draft when **Transkript prüfen** (Review transcript) is enabled |
-| Ctrl+Enter | Send a message in the app window |
-| Escape / Ctrl+Alt+F12 | Stop conversation and managed execution |
+| <kbd>F8</kbd> | Start or stop recording |
+| <kbd>F9</kbd> | Send the transcript draft (when **Transkript prüfen** / Review transcript is on) |
+| <kbd>Ctrl</kbd>+<kbd>Enter</kbd> | Send a message in the app window |
+| <kbd>Esc</kbd> / <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>F12</kbd> | Stop the conversation and managed execution |
 
-Tasks can also be stopped individually in the task view. If global hotkeys are already in use, the app shows a notice; the buttons in the window remain available.
+You can also stop individual tasks in the task view. If another program already uses a global hotkey, the app shows a notice, and the buttons in the window keep working.
 
-## Data and permissions
+## Privacy and safety
 
-Settings, history, and memory are stored under `%APPDATA%/openhiatus`; your own skills are stored under `%APPDATA%/openhiatus/pi/skills`. Credentials are protected with Electron safeStorage and Windows DPAPI. Personal profiles and credentials must not be committed to the repository.
+> [!IMPORTANT]
+> openHiatus runs with **your Windows user's permissions and has no sandbox**. Desktop actions can operate visible applications and modify files.
 
-Maintain your own skills as local folders containing a `SKILL.md` file. New profiles start without preinstalled skills; the source code and Windows package do not include a skill collection.
+- **Stopping:** Stop prevents further managed execution, but changes that were already made stay in place. Work windows that were explicitly handed off as independent keep running.
+- **Clipboard:** Text input through the clipboard replaces the clipboard's contents.
+- **Cloud services:** When you use cloud models or speech services, the data a task needs is sent to the selected provider. Local storage alone does not make the assistant offline.
+- **Local data:** Settings, history, and memory are stored in `%APPDATA%\openhiatus`. Credentials are protected with Electron safeStorage and Windows DPAPI.
+- **Skills:** Your own skills are local folders containing a `SKILL.md` file, stored in `%APPDATA%\openhiatus\pi\skills`. New profiles start without skills, and neither the repository nor the Windows package includes a skill collection.
 
-openHiatus runs with the permissions of your Windows user account and has no sandbox. Desktop actions can operate visible applications and modify files. Stop prevents further managed execution; changes already made remain in place. Explicitly handed-off independent work windows continue running. Text input through the clipboard replaces its contents.
+## Known limitations
 
-When using cloud models and speech services, the data required for the task is sent to the selected provider. Local storage therefore does not make the assistant fully offline.
+- Gmail and other personal services aren't connected yet. The services view is a placeholder for future integrations.
+- Live audio is not available yet.
+- How reliably desktop control works depends partly on the selected model and the application being controlled.
+- The interface is not fully responsive to window size and display scaling yet.
 
-## Known limitations and next steps
+## Roadmap
 
-Gmail and other personal services are not connected yet; the services view is a placeholder for future integrations. Live audio and `/goal` are deferred. Desktop control reliability depends in part on the selected model and the application being controlled.
+Planned work is tracked in [GitHub issues](https://github.com/openhiatus/openhiatus/issues?q=is%3Aissue+is%3Aopen+label%3Aplanning):
 
-Upcoming work focuses on computer control, an adaptable interface, and service integrations. The [vision](docs/vision.md), [roadmap](docs/roadmap.md), and [implementation plan](docs/gesamtplan.md) describe the direction and planned work. Public development starts with this alpha.
+| Area | Issue |
+| --- | --- |
+| Personal assistant: conversation and background tasks | [#1](https://github.com/openhiatus/openhiatus/issues/1) |
+| Clearer UI: navigation, tasks, and results | [#2](https://github.com/openhiatus/openhiatus/issues/2) |
+| Responsive UI for window size, scaling, and text size | [#3](https://github.com/openhiatus/openhiatus/issues/3) |
+| Architecture: domain modules and validated interfaces | [#4](https://github.com/openhiatus/openhiatus/issues/4) |
+| Faster computer use with overview and detail views | [#5](https://github.com/openhiatus/openhiatus/issues/5) |
+| Service integrations, starting with Gmail | [#6](https://github.com/openhiatus/openhiatus/issues/6) |
+| Memory and personality | [#7](https://github.com/openhiatus/openhiatus/issues/7) |
+| Voice: interruption, earlier playback, hands-free input | [#8](https://github.com/openhiatus/openhiatus/issues/8) |
 
-## Development and checks
+For more background, see the [vision](docs/vision.md), the [roadmap](docs/roadmap.md), and the [implementation plan](docs/gesamtplan.md). These documents are written in German.
 
-`npm run check` runs the architecture checks, type checking, and tests. For changes to the UI, IPC, or storage, additional checks are available:
+## Development
+
+`npm run check` runs the architecture checks, type checking, and unit tests. Run it, together with `npm run build`, before you submit changes.
+
+<details>
+<summary>Additional checks for UI, IPC, and storage changes</summary>
 
 ```powershell
 npm run build
@@ -82,10 +116,17 @@ npm run test:memory-storage-ui
 npm run test:memory-ui
 ```
 
-`npm run package` creates a local Windows development package; `npm run test:package` checks that package. Generated builds, packages, test profiles, and run reports are not committed. Synthetic practice tasks are available under [benchmarks](benchmarks/README.md).
+</details>
 
-The [architecture overview](docs/architekturpruefung.md) explains the module boundaries. The [test report](docs/openhiatus-testprotokoll.md) records dated local development checks. Older documents describe their respective historical state.
+- **Packaging:** `npm run package` creates a local Windows development package, and `npm run test:package` checks it. Builds, packages, test profiles, and run reports are not committed.
+- **Benchmarks:** Synthetic desktop tasks are available under [benchmarks](benchmarks/README.md).
+- **Architecture:** The [architecture overview](docs/architekturpruefung.md) explains the module boundaries.
+- **Test results:** The [test report](docs/openhiatus-testprotokoll.md) records dated local checks. Older documents describe the state at the time they were written.
+
+## Contributing
+
+Bug reports and feedback are welcome as [issues](https://github.com/openhiatus/openhiatus/issues). Please don't include personal profiles, credentials, or private data in issues or commits. Use synthetic data for examples and tests.
 
 ## License
 
-openHiatus is licensed under the [MIT License](LICENSE). Dependencies and bundled components retain their own licenses.
+openHiatus is licensed under the [MIT License](LICENSE). Dependencies and bundled components keep their own licenses.
