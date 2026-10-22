@@ -1,29 +1,29 @@
 # openHiatus
 
-Ein persönlicher Windows-Assistent zum Sprechen, Schreiben und Ausführen von Aufgaben. openHiatus verbindet eine lokale Desktop-App mit wählbaren KI-Modellen, Sprachdiensten und einem persönlichen Gedächtnis.
+A personal Windows assistant for talking, writing, and getting tasks done. openHiatus combines a local desktop app with your choice of AI models, speech services, and personal memory.
 
 **Status: Alpha · Version 0.1.5 · Windows x64 · MIT**
 
-Der aktuelle Entwicklungsstand wird als Alpha öffentlich weiterentwickelt. Funktionen, Oberfläche und Datenformate können sich ändern; Fehler und unvollständige Bereiche sind zu erwarten. Dieses Repository enthält den Quellcode und die Entwicklungsdokumentation. Vorgefertigte Windows-Pakete sind darin nicht enthalten.
+This project is being developed publicly as an alpha. Features, the interface, and data formats may change; bugs and incomplete areas are expected. This repository contains the source code and development documentation. Prebuilt Windows packages are not included.
 
-## Was bereits funktioniert
+## Available features
 
-- Gespräche per Text oder Sprache, mit getrennten Ansichten für Aufgaben, Gedächtnis, Skills und Einstellungen.
-- ChatGPT-Anmeldung sowie eigene Zugänge für Anthropic, Google, OpenRouter, OpenAI und lokale OpenAI-kompatible Modellserver.
-- Bis zu zwei Hintergrundaufträge, während das Gespräch erreichbar bleibt; Ergebnisse und Verbrauch stehen bei der jeweiligen Aufgabe.
-- Werkzeuge für Dateien, Shell und Windows-Desktopsteuerung sowie Unterstützung für eigene lokale Skills.
-- Persönliches Gedächtnis mit Quellen, Berichten und bearbeitbaren Kernvorgaben.
+- Text and voice conversations, with separate views for tasks, memory, skills, and settings.
+- ChatGPT sign-in and your own credentials for Anthropic, Google, OpenRouter, OpenAI, and local OpenAI-compatible model servers.
+- Up to two background tasks while conversation remains available, with results and usage shown for each task.
+- Tools for files, the shell, and Windows desktop control, plus support for your own local skills.
+- Personal memory with sources, reports, and editable core instructions.
 
-Die Agent-Laufzeit basiert auf Pi; Sprache verwendet Inworld. openHiatus benötigt keine separate Codex- oder OpenClaw-Installation. Modellanbieter und Sprachdienste werden mit eigenen Zugängen eingerichtet. Verfügbarkeit, Kontingente und Kosten richten sich nach dem gewählten Dienst.
+The agent runtime is based on Pi; speech uses Inworld. openHiatus does not require a separate Codex or OpenClaw installation. Configure model providers and speech services with your own credentials. Availability, usage limits, and costs depend on the selected service.
 
-## Aus dem Quellcode starten
+## Run from source
 
-Voraussetzungen:
+Requirements:
 
-- Windows x64 und Node.js 24 mit npm.
-- Windows PowerShell und der 64-Bit-C#-Compiler des .NET Framework 4 unter `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`. Der Build verwendet ihn für die nativen Prozess- und Hotkey-Helfer.
+- Windows x64 and Node.js 24 with npm.
+- Windows PowerShell and the .NET Framework 4 64-bit C# compiler at `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`. The build uses it for the native process and hotkey helpers.
 
-Im Projektordner:
+From the project directory:
 
 ```powershell
 npm ci
@@ -31,42 +31,44 @@ npm run check
 npm start
 ```
 
-`npm start` baut die Anwendung und öffnet sie in Electron. Die Entwicklung und die nativen Helfer sind derzeit auf Windows ausgerichtet.
+`npm start` builds the application and opens it in Electron. Development and the native helpers currently target Windows.
 
-## Einrichten und bedienen
+## Setup and controls
 
-1. Beim ersten Start den Hinweis zu den Zugriffsrechten lesen und bestätigen.
-2. Unter **Einstellungen → Modelle & Zugänge** mit ChatGPT anmelden oder einen eigenen Anbieter einrichten. Modelle für Gespräch, Arbeit und Gedächtnis auswählen. Für lokale Server Basis-URL und Modellkennung eintragen.
-3. Für Sprache unter **Einstellungen → Sprache & Geräte** einen eigenen Inworld-Zugang hinterlegen, Geräte auswählen und den Sprachtest ausführen. Texteingabe ist auch ohne Sprachdienst möglich.
+The current app interface uses German labels; their English meanings are shown below.
 
-| Taste | Aktion |
+1. On first launch, read and acknowledge the access permissions notice.
+2. Under **Einstellungen → Modelle & Zugänge** (Settings → Models & access), sign in with ChatGPT or configure your own provider. Choose models for conversation, work, and memory. For local servers, enter the base URL and model ID.
+3. For speech, add your own Inworld credentials under **Einstellungen → Sprache & Geräte** (Settings → Speech & devices), select your devices, and run the speech test. Text input also works without a speech service.
+
+| Key | Action |
 | --- | --- |
-| F8 | Aufnahme starten oder beenden |
-| F9 | Transkriptentwurf senden, wenn „Transkript prüfen“ aktiviert ist |
-| Strg+Enter | Nachricht im Appfenster senden |
-| Escape / Strg+Alt+F12 | Gespräch und verwaltete Ausführung stoppen |
+| F8 | Start or stop recording |
+| F9 | Send the transcript draft when **Transkript prüfen** (Review transcript) is enabled |
+| Ctrl+Enter | Send a message in the app window |
+| Escape / Ctrl+Alt+F12 | Stop conversation and managed execution |
 
-Aufgaben können außerdem einzeln in ihrer Aufgabenansicht gestoppt werden. Bei belegten globalen Hotkeys zeigt die App einen Hinweis; die Schaltflächen im Fenster bleiben verfügbar.
+Tasks can also be stopped individually in the task view. If global hotkeys are already in use, the app shows a notice; the buttons in the window remain available.
 
-## Daten und Zugriffsrechte
+## Data and permissions
 
-Einstellungen, Verlauf und Gedächtnis liegen unter `%APPDATA%/openhiatus`, eigene Skills unter `%APPDATA%/openhiatus/pi/skills`. Zugangsdaten werden mit Electron safeStorage und Windows DPAPI geschützt. Persönliche Profile und Zugangsdaten gehören nicht ins Repository.
+Settings, history, and memory are stored under `%APPDATA%/openhiatus`; your own skills are stored under `%APPDATA%/openhiatus/pi/skills`. Credentials are protected with Electron safeStorage and Windows DPAPI. Personal profiles and credentials must not be committed to the repository.
 
-Eigene Skills werden als lokale Ordner mit einer `SKILL.md` gepflegt. Neue Profile starten ohne vorinstallierte Skills; Quellcode und Windows-Paket enthalten keine Skill-Sammlung.
+Maintain your own skills as local folders containing a `SKILL.md` file. New profiles start without preinstalled skills; the source code and Windows package do not include a skill collection.
 
-openHiatus arbeitet mit den Rechten des Windows-Benutzerkontos und besitzt keine Sandbox. Desktopaktionen können sichtbare Programme bedienen und Dateien verändern. Stopp hält weitere verwaltete Ausführung an; bereits erfolgte Änderungen bleiben bestehen. Ausdrücklich eigenständig übergebene Arbeitsfenster laufen weiter. Texteingaben über die Zwischenablage ersetzen deren Inhalt.
+openHiatus runs with the permissions of your Windows user account and has no sandbox. Desktop actions can operate visible applications and modify files. Stop prevents further managed execution; changes already made remain in place. Explicitly handed-off independent work windows continue running. Text input through the clipboard replaces its contents.
 
-Bei Cloudmodellen und Sprachdiensten werden die für den jeweiligen Auftrag benötigten Daten an den ausgewählten Anbieter übertragen. Lokale Datenablage bedeutet daher keinen vollständig offline arbeitenden Assistenten.
+When using cloud models and speech services, the data required for the task is sent to the selected provider. Local storage therefore does not make the assistant fully offline.
 
-## Bekannte Grenzen und nächste Schritte
+## Known limitations and next steps
 
-Gmail und andere persönliche Dienste sind noch nicht angebunden; die Dienstansicht ist eine Vorbereitung. Live-Audio und `/goal` sind zurückgestellt. Die Zuverlässigkeit der Desktopsteuerung hängt unter anderem vom gewählten Modell und der jeweiligen Oberfläche ab.
+Gmail and other personal services are not connected yet; the services view is a placeholder for future integrations. Live audio and `/goal` are deferred. Desktop control reliability depends in part on the selected model and the application being controlled.
 
-Die nächsten Arbeiten betreffen Computersteuerung, eine anpassungsfähige Oberfläche und Dienstanbindungen. [Vision](docs/vision.md), [Roadmap](docs/roadmap.md) und [Gesamtplan](docs/gesamtplan.md) beschreiben die Richtung und den geplanten Ausbau. Die öffentliche Weiterentwicklung beginnt bereits mit dieser Alpha.
+Upcoming work focuses on computer control, an adaptable interface, and service integrations. The [vision](docs/vision.md), [roadmap](docs/roadmap.md), and [implementation plan](docs/gesamtplan.md) describe the direction and planned work. Public development starts with this alpha.
 
-## Entwicklung und Prüfungen
+## Development and checks
 
-`npm run check` führt Architekturprüfung, Typprüfung und Tests aus. Weitere Prüfungen bei Änderungen an Oberfläche, IPC oder Speicherung:
+`npm run check` runs the architecture checks, type checking, and tests. For changes to the UI, IPC, or storage, additional checks are available:
 
 ```powershell
 npm run build
@@ -80,10 +82,10 @@ npm run test:memory-storage-ui
 npm run test:memory-ui
 ```
 
-`npm run package` erstellt ein lokales Windows-Entwicklungspaket; `npm run test:package` prüft dieses Paket. Generierte Builds, Pakete, Testprofile und Laufberichte werden nicht eingecheckt. Synthetische Praxisaufgaben stehen unter [benchmarks](benchmarks/README.md).
+`npm run package` creates a local Windows development package; `npm run test:package` checks that package. Generated builds, packages, test profiles, and run reports are not committed. Synthetic practice tasks are available under [benchmarks](benchmarks/README.md).
 
-Die [Architekturübersicht](docs/architekturpruefung.md) erläutert die Modulgrenzen. Das [Testprotokoll](docs/openhiatus-testprotokoll.md) hält datierte lokale Entwicklungsprüfungen fest. Ältere Dokumente beschreiben ihren jeweiligen historischen Stand.
+The [architecture overview](docs/architekturpruefung.md) explains the module boundaries. The [test report](docs/openhiatus-testprotokoll.md) records dated local development checks. Older documents describe their respective historical state.
 
-## Lizenz
+## License
 
-openHiatus steht unter der [MIT-Lizenz](LICENSE). Abhängigkeiten und mitgelieferte Komponenten behalten ihre eigenen Lizenzen.
+openHiatus is licensed under the [MIT License](LICENSE). Dependencies and bundled components retain their own licenses.
