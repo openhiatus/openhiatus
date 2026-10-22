@@ -15,14 +15,14 @@ export function ComputerFrameContent({ frame }: { frame: ComputerFrame }) {
     <p className="computer-preview-geometry">Bildschirm: {observation.screenWidth} × {observation.screenHeight} Pixel · Windows-Skalierungsfaktor: {observation.scaleFactor} · Übersicht: 1:{observation.overviewScaleDivisor}</p>
     <ol className="computer-preview-views" aria-label="Bereitgestellte Modellbilder in Reihenfolge">
       {observation.views.map(view => <li key={view.viewId}><figure className={`computer-preview-view computer-preview-${view.kind}`}>
-        <figcaption><h3>{view.kind === 'overview' ? 'Übersicht' : 'Detail in Originalauflösung'}</h3>
+        <figcaption><h3>{view.kind === 'overview' ? (observation.overviewScaleDivisor === 1 ? 'Vollbild in Originalauflösung' : 'Übersicht') : 'Detail in Originalauflösung'}</h3>
           <p><code>{view.viewId}</code> · {view.imageWidth} × {view.imageHeight} Bildpixel</p>
           <p>Bildkoordinaten: (0, 0) bis ({view.imageWidth - 1}, {view.imageHeight - 1})</p>
           <p>Bildschirmursprung: ({view.sourceRect.x}, {view.sourceRect.y}) · Quellgröße: {view.sourceRect.width} × {view.sourceRect.height} Pixel</p>
         </figcaption>
         <div className="computer-view-image" style={{ width: view.imageWidth }}>
           <img src={view.dataUrl} width={view.imageWidth} height={view.imageHeight}
-            alt={view.kind === 'overview' ? 'Zuletzt bereitgestellte Bildschirmübersicht' : `Zuletzt bereitgestellter Detailausschnitt ab Bildschirmposition ${view.sourceRect.x}, ${view.sourceRect.y}`} />
+            alt={view.kind === 'overview' ? (observation.overviewScaleDivisor === 1 ? 'Zuletzt bereitgestellte Vollbildaufnahme in Originalauflösung' : 'Zuletzt bereitgestellte Bildschirmübersicht') : `Zuletzt bereitgestellter Detailausschnitt ab Bildschirmposition ${view.sourceRect.x}, ${view.sourceRect.y}`} />
           {view.kind === 'overview' && detail && <span className="computer-preview-detail-rect" aria-hidden="true" style={{
             left: `${detail.sourceRect.x / observation.screenWidth * 100}%`, top: `${detail.sourceRect.y / observation.screenHeight * 100}%`,
             width: `${detail.sourceRect.width / observation.screenWidth * 100}%`, height: `${detail.sourceRect.height / observation.screenHeight * 100}%`,

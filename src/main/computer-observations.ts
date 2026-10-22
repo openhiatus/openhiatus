@@ -45,8 +45,9 @@ export class ComputerObservations {
     return { input: { ...rest, ...point }, actionPoint: point, ...(modelHint ? { modelHint } : {}) };
   }
 
-  async prepare(image: SourceImage, at: string, signal: AbortSignal, context: Context = {}): Promise<ComputerObservation | undefined> {
+  async prepare(image: SourceImage, at: string, signal: AbortSignal, context: Context = {}, originalResolution = false): Promise<ComputerObservation | undefined> {
     if (this.divisor === 1) return undefined;
+    const divisor = originalResolution ? 1 : this.divisor;
     check(signal);
     this.processor ??= await this.createProcessor();
     check(signal);
@@ -55,18 +56,20 @@ export class ComputerObservations {
     const before = this.observation;
     const sameGeometry = before?.screenWidth === image.width && before.screenHeight === image.height && before.scaleFactor === image.scale;
     const selectedAt = performance.now();
-    const selection = selectComputerRegion({ current: source, ...(sameGeometry ? {
+    const selection: ComputerRegionSelection = originalResolution ? { reason: 'none' } : selectComputerRegion({ current: source, ...(sameGeometry ? {
       previous: this.source, retained: before.views.find(view => view.kind === 'detail')?.sourceRect, ...context,
     } : {}) });
     const regionSelectionMs = performance.now() - selectedAt;
-    const overview = this.processor.overview(source, this.divisor);
+    // A requested full image is the complete original, never another detail crop.
+    // Keep the configured divisor unchanged for subsequent ordinary observations.
+    const overview = this.processor.overview(source, divisor);
     const views: ComputerViewImage[] = [{ ...createViewDescriptor('overview', randomUUID(),
       { x: 0, y: 0, width: image.width, height: image.height }, overview), dataUrl: `data:image/png;base64,${overview.base64}` }];
     if (selection.rect) views.push(this.detail(source, selection.rect));
     check(signal);
     const observation: ComputerObservation = { version: 2, frameId: image.frameId, at, displayId: 'primary',
       screenWidth: image.width, screenHeight: image.height, scaleFactor: image.scale,
-      overviewScaleDivisor: this.divisor, views, selection,
+      overviewScaleDivisor: divisor, views, selection,
       timings: { imageProcessingMs: Math.max(0, performance.now() - began - regionSelectionMs), regionSelectionMs } };
     this.source = source; this.observation = observation;
     return observation;

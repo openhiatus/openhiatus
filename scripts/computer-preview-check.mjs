@@ -49,6 +49,7 @@ const binding=registry.bind({runId:'synthetic',role:'worker',signal:new AbortCon
 globalThis.fixture={
  capture:()=>binding.call('computer',{action:'screenshot'}),
  inspect:(frameId,viewId)=>binding.call('computer',{action:'inspect',frameId,viewId,x:60,y:34,width:60,height:34}),
+ original:()=>binding.call('computer',{action:'screenshot',resolution:'original'}),
  legacy:()=>window.webContents.send('frame',{dataUrl:'data:image/png;base64,'+png,frameId:'legacy',width,height,at:new Date().toISOString()}),
  counts:()=>({captures,inputs,disposed}),
 };
@@ -88,12 +89,24 @@ try {
   assert.equal(await dialog.locator('.computer-preview-views').evaluate(element=>getComputedStyle(element).gridTemplateColumns.split(' ').length),1);
   assert.ok(await dialog.evaluate(element=>element.scrollWidth<=element.clientWidth));
   await screenshot('artifacts/openhiatus-computer-preview-narrow.png');
+  const original = await instance.evaluate(()=>globalThis.fixture.original());
+  const fullMetadata = JSON.parse(original.contentItems[0].text.slice('OPENHIATUS_COMPUTER_METADATA_V2 '.length));
+  assert.notEqual(fullMetadata.frameId,metadata.frameId); assert.equal(fullMetadata.overviewScaleDivisor,1);
+  await expect(dialog.getByRole('heading',{name:'Vollbild in Originalauflösung',exact:true})).toBeVisible();
+  await expect(dialog.locator('img')).toHaveCount(1);
+  assert.deepEqual(await dialog.locator('img').evaluate(element=>[element.naturalWidth,element.naturalHeight]),[3840,2160]);
+  assert.equal(await dialog.locator('img').getAttribute('src'),original.contentItems.find(item=>item.type==='inputImage').imageUrl);
+  const restored = await instance.evaluate(()=>globalThis.fixture.capture());
+  const restoredMetadata = JSON.parse(restored.contentItems[0].text.slice('OPENHIATUS_COMPUTER_METADATA_V2 '.length));
+  assert.equal(restoredMetadata.overviewScaleDivisor,16);
+  await expect(dialog.getByRole('heading',{name:'Übersicht',exact:true})).toBeVisible();
+  assert.deepEqual(await dialog.locator('img').first().evaluate(element=>[element.naturalWidth,element.naturalHeight]),[240,135]);
   await dialog.getByRole('button', { name:'Stopp', exact:true }).click();
-  await expect.poll(()=>instance.evaluate(()=>globalThis.fixture.counts())).toEqual({captures:1,inputs:0,disposed:1});
+  await expect.poll(()=>instance.evaluate(()=>globalThis.fixture.counts())).toEqual({captures:3,inputs:0,disposed:1});
   await dialog.getByRole('button', {name:'Bildschirmansicht schließen',exact:true}).click(); await expect(trigger).toBeFocused();
   await instance.evaluate(()=>globalThis.fixture.legacy()); await trigger.click();
   await expect(dialog.locator('img')).toHaveCount(1); await expect(dialog).toContainText('Vollbild');
   await page.keyboard.press('Escape'); await expect(dialog).not.toBeVisible(); await expect(trigger).toBeFocused();
   assert.deepEqual(errors,[]);
-  console.log(JSON.stringify({passed:true,original:[3840,2160],overview:[240,135],detail:[960,544],captures:1,inputs:0,responsive:true,legacy:true}));
+  console.log(JSON.stringify({passed:true,original:[3840,2160],overview:[240,135],detail:[960,544],captures:3,inputs:0,responsive:true,legacy:true,originalOnRequest:true,configuredFactorRestored:true}));
 } finally { await instance?.close(); }

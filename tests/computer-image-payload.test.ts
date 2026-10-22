@@ -7,7 +7,7 @@ import { applyComputerImageDetail } from '../src/main/computer-image-payload';
 import { decodeToolResponse } from '../src/main/agent-wire';
 import { createToolRegistry } from '../src/main/modules/tools';
 import { createComputerToolContribution } from '../src/main/platform/tools';
-import { COMPUTER_VIEWS_METADATA_PREFIX } from '../src/main/computer';
+import { COMPUTER_METADATA_PREFIX, COMPUTER_VIEWS_METADATA_PREFIX } from '../src/main/computer';
 import type { AgentEvent, ComputerFrame, DynamicToolResponse } from '../src/shared/contracts';
 import type { ComputerObservation } from '../src/shared/computer-views';
 import { decodeComputerFrame } from '../src/shared/ipc';
@@ -85,5 +85,18 @@ test('v2 tool transport contains exactly overview/detail images and preview gets
   if (metadata.type === 'inputText') { assert.ok(metadata.text.startsWith(COMPUTER_VIEWS_METADATA_PREFIX)); assert.ok(!metadata.text.includes(PNG)); }
   const event = events[0]; assert.equal(event.type, 'computer-frame');
   if (event.type === 'computer-frame') assert.deepEqual(decodeComputerFrame(event.frame), event.frame);
+  await worker.stop(); await registry.dispose();
+});
+test('explicit original screenshot also marks the image for supported provider detail handling in legacy full-screen mode', async () => {
+  const computer = { execute: async () => ({ text: 'captured', frameId: 'frame', width: 1, height: 1,
+    image: { base64: PNG, mimeType: 'image/png' as const } }), stop: async () => {}, dispose: async () => {} };
+  const registry = createToolRegistry([createComputerToolContribution({ computer })]);
+  const worker = registry.bind({ runId: 'run', role: 'worker', signal: new AbortController().signal, emit: () => {} });
+  const reply = await worker.call('computer', { action: 'screenshot', resolution: 'original' });
+  assert.equal(reply.contentItems.length, 2);
+  assert.deepEqual(reply.contentItems[1], { type: 'inputImage', imageUrl, computerView: 'overview' });
+  const metadata = reply.contentItems[0]; assert.equal(metadata.type, 'inputText');
+  if (metadata.type === 'inputText') assert.ok(metadata.text.startsWith(COMPUTER_METADATA_PREFIX));
+  assert.deepEqual(imageContent(reply, 'computer').details, { success: true, computerViews: [1] });
   await worker.stop(); await registry.dispose();
 });

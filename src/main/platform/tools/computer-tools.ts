@@ -27,7 +27,8 @@ export function createComputerToolContribution(options: { computer?: ComputerAda
                 { type: 'inputImage' as const, imageUrl: view.dataUrl, computerView: view.kind },
               ]),
             ] };
-            return { success: true, contentItems: [{ type: 'inputText', text: computerReplyMetadata(result, result.text) }, { type: 'inputImage', imageUrl }] };
+            return { success: true, contentItems: [{ type: 'inputText', text: computerReplyMetadata(result, result.text) },
+              { type: 'inputImage', imageUrl, ...(args.action === 'screenshot' && args.resolution === 'original' ? { computerView: 'overview' as const } : {}) }] };
           },
         })],
         stop: () => computer?.stop() ?? Promise.resolve(),

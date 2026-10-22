@@ -9,7 +9,7 @@ export type ComputerAction =
   | (Framed & Point & { action: 'scroll'; direction: 'up' | 'down' | 'left' | 'right'; amount: number })
   | (Framed & Point & { action: 'move' })
   | (Framed & Point & { action: 'drag'; fromX: number; fromY: number; fromViewId?: string });
-export type ComputerInput = ComputerAction | { action: 'screenshot' }
+export type ComputerInput = ComputerAction | { action: 'screenshot'; resolution?: 'original' }
   | { action: 'inspect'; frameId: string; viewId: string; x: number; y: number; width: number; height: number };
 
 export const COMPUTER_TOOL = {
@@ -19,6 +19,8 @@ export const COMPUTER_TOOL = {
     'When views are listed, supply the current viewId for a coordinate action; the tool maps image coordinates to the physical screen. Never add the crop origin yourself. ' +
     'In legacy full-screen V1 responses no views are listed: omit viewId and use full-image coordinates. inspect and nextDetail require views (V2). ' +
     'If text or the target is too small, use inspect with frameId, viewId and a rectangle in that view (x,y,width,height). ' +
+    'If the overview is too small to locate the right region, request screenshot with resolution:"original" for ONE fresh full-display image at native resolution. ' +
+    'This replaces the current observation and its frameId; use the returned image coordinates and viewId. The next ordinary screenshot or post-action response resumes the configured overview mode. ' +
     'inspect crops the SAME captured image, does not refresh its age, and replaces the previous detail view. Maximum detail area: 1048576 physical pixels. ' +
     'Optionally supply nextDetail with an input action: a rectangle in its viewId predicting the region needed in the next observation. ' +
     'Drag starts in fromViewId (defaults to viewId) and ends in viewId. Do not use stale views. ' +
@@ -39,6 +41,7 @@ export const COMPUTER_TOOL = {
     type: 'object', additionalProperties: false, required: ['action'],
     properties: {
       action: { type: 'string', enum: ['screenshot', 'inspect', 'click', 'type', 'key', 'scroll', 'move', 'drag'] },
+      resolution: { type: 'string', enum: ['original'], description: 'screenshot only. Request one fresh, unscaled full primary-display image if the overview does not provide enough orientation. Omit to use the configured mode.' },
       frameId: { type: 'string', description: 'Required for every input action: frameId of the last returned image.' },
       viewId: { type: 'string', description: 'Current image viewId; coordinates are local to this image. Required for inspect and coordinate actions in overview mode.' },
       fromViewId: { type: 'string', description: 'drag only: current viewId for fromX/fromY; defaults to viewId.' },
@@ -82,13 +85,13 @@ export function parseComputerInput(value: unknown): ComputerInput {
   const input = record(value);
   const action = choice(input.action, ['screenshot', 'inspect', 'click', 'type', 'key', 'scroll', 'move', 'drag']);
   const fields: Record<typeof action, string[]> = {
-    screenshot: [], inspect: ['x', 'y', 'width', 'height'], click: ['x', 'y', 'button', 'count'], type: ['text', 'method'], key: ['key', 'modifiers'],
+    screenshot: ['resolution'], inspect: ['x', 'y', 'width', 'height'], click: ['x', 'y', 'button', 'count'], type: ['text', 'method'], key: ['key', 'modifiers'],
     scroll: ['x', 'y', 'direction', 'amount'], move: ['x', 'y'], drag: ['x', 'y', 'fromX', 'fromY', 'fromViewId'],
   };
   const allowed = ['action', ...(action === 'screenshot' ? [] : ['frameId', 'viewId']),
     ...(action !== 'screenshot' && action !== 'inspect' ? ['nextDetail'] : []), ...fields[action]];
   if (Object.keys(input).some(key => !allowed.includes(key))) throw invalid();
-  if (action === 'screenshot') return { action };
+  if (action === 'screenshot') return { action, ...(input.resolution === undefined ? {} : { resolution: choice(input.resolution, ['original'] as const) }) };
   if (typeof input.frameId !== 'string' || input.frameId.length < 1 || input.frameId.length > 100) throw invalid();
   const frameId = input.frameId;
   const id = (value: unknown): string => {

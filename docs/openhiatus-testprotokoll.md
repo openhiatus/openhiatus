@@ -2,17 +2,18 @@
 
 ## Experimentelle Übersicht-/Detailansichten – 22. Oktober 2026
 
-Quellstand auf Basis von 0.1.6; noch kein neues Windows-Paket. Vollbild bleibt Standard. Der wählbare Versuch liefert eine echte Übersichtsskalierung, höchstens einen Originalausschnitt und lokale Bereichsauswahl. `inspect` verwendet dieselbe Aufnahme; `nextDetail` kann einen Bereich für die nächste Antwort vorgeben. Bildkennungen und Koordinaten werden vor einer einzelnen nativen Eingabe geprüft.
+Quellstand auf Basis von 0.1.6; noch kein neues Windows-Paket. Vollbild bleibt Standard. Der wählbare Versuch liefert eine echte Übersichtsskalierung, höchstens einen Originalausschnitt und lokale Bereichsauswahl. `inspect` verwendet dieselbe Aufnahme; `nextDetail` kann einen Bereich für die nächste Antwort vorgeben. Bei fehlender Orientierung kann das Modell mit `screenshot` und `resolution: "original"` ausdrücklich ein frisches Gesamtbild anfordern. Die nächste gewöhnliche Beobachtung verwendet wieder den eingestellten Faktor. Bildkennungen und Koordinaten werden vor einer einzelnen nativen Eingabe geprüft.
 
 | Prüfung | Ergebnis |
 | --- | --- |
-| `npm run check` | Architektur, Typprüfung und 567 Tests bestanden; keine Fehler oder Auslassungen. |
+| `npm run check` | Architektur, Typprüfung und 572 Tests bestanden; keine Fehler oder Auslassungen. |
 | `npm run build` | Windows-Helfer, Main, Agent-Host und Renderer erfolgreich gebaut. Bestehende Warnungen zu `use client` in lucide-react bleiben ohne Buildfehler. |
 | Geometrie / Auswahl | Originalpixel-Vergleich, kleine Änderungen, entfernte Dialoge, Rauschen, Scroll-/Gesamtänderung, Randfälle, Größenbudget, stabile Auswahl und DPI-/Geometriewechsel synthetisch geprüft. |
 | Lebensdauer / Abbruch | Alte oder ersetzte Ansichten können keine Eingabe auslösen. `inspect` verlängert die Aufnahme nicht. Stop wartet auf laufende Bildinitialisierung; die bestehenden Treiber-, Desktopbesitz- und Einmalaktionsprüfungen bestehen. |
 | `npm run test:computer-images` | Echtes Electron: 64 Übersichten und 36 pixelgenau verglichene Ausschnitte; zehn Bildgeometrien im Hauptlauf, weitere Läufe mit Skalierungsflags 1,25 / 1,5 / 2. Keine Desktopaufnahmen oder Eingaben. |
 | Transport | Der installierte Pi-Converter erzeugt echte Bildblöcke. V2 enthält nur Übersicht/Detail; im Metadatentext steht kein Originalbild. Der Detail-Hook betrifft nur die markierte Computerantwort, auch wenn fremde Anhänge identische Bildbytes haben. |
-| `npm run test:computer-preview` | Verstecktes Electron-Testfenster mit synthetischer Sitzung: eine 3840 × 2160-Aufnahme, 240 × 135-Übersicht, 960 × 544-Originalausschnitt; exakt gleiche Bilder in Modellantwort und Vorschau. Einspaltige schmale Ansicht, Stopp, Fokus, Escape und Vollbildkompatibilität bestanden. Null Desktop-Eingaben. |
+| `npm run test:computer-preview` | Verstecktes Electron-Testfenster mit synthetischer Sitzung: 3840 × 2160-Quelle, 240 × 135-Übersicht, 960 × 544-Originalausschnitt; exakt gleiche Bilder in Modellantwort und Vorschau. Ausdrücklicher Original-Vollbildabruf und anschließende Rückkehr zu Faktor 16 bestehen mit insgesamt drei synthetischen Aufnahmen. Einspaltige schmale Ansicht, Stopp, Fokus, Escape und Vollbildkompatibilität bestanden. Null Desktop-Eingaben. |
+| Original-Vollbild auf Anfrage | Frische Bildkennung, genau ein vollständiges Bild, keine zusätzliche Eingabe, unveränderte Originalpixel, identische Klickkoordinaten und automatische Rückkehr zum gespeicherten Faktor nach einer Aktion oder gewöhnlichen Aufnahme geprüft. Alte Kennungen bleiben ungültig; V1 und Original-Bilddetailbehandlung sind kompatibel. |
 | Einstellungen | Faktor 1 als Standard/Migration, experimentelle Faktoren und benutzerdefinierter gültiger Faktor, Speicher-/IPC-Rundlauf sowie Ablehnung ungültiger Werte geprüft. |
 
 Die Vorschau-Screenshots sind visuell geprüft; generierte Nachweise und synthetische Testprofile werden nicht eingecheckt. Es wurden keine Cloudmodelle, persönlichen Konten, echten Bildschirmaufnahmen oder bestehenden Nutzerprofile für diese Abnahme verwendet. Der Pixelvergleich und die Bildaufbereitung laufen zunächst synchron im Main-Prozess; ihre Zeiten sind getrennt in V2 protokolliert.

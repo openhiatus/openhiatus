@@ -61,6 +61,47 @@ test('overview is true divisor, retains native screen geometry and initially con
   assert.equal(first.observation!.views.length, 1); assert.equal(first.observation!.selection.reason, 'none');
   await f.computer.dispose();
 });
+test('original-resolution screenshot returns one fresh full image and post-action output resumes the configured factor', async () => {
+  const f = fixture(), first = await inspect(f);
+  const full = await f.computer.execute({ action: 'screenshot', resolution: 'original' });
+  const view = overview(full);
+  assert.notEqual(full.frameId, first.frameId);
+  assert.equal(full.observation!.overviewScaleDivisor, 1);
+  assert.deepEqual([view.imageWidth, view.imageHeight, view.sourceRect], [1920, 1080, { x: 0, y: 0, width: 1920, height: 1080 }]);
+  assert.equal(full.image.base64, png({ width: 1920, height: 1080 }));
+  assert.equal(full.observation!.views.length, 1); assert.equal(full.observation!.selection.reason, 'none');
+  assert.equal(JSON.parse(full.text).observationMode, 'full-display-once');
+  assert.equal(f.inputs.length, 0); assert.equal(f.crops.length, 1, 'full image does not create an extra detail');
+  const next = await f.computer.execute({ action: 'click', frameId: full.frameId, viewId: view.viewId, x: 100, y: 200 });
+  assert.deepEqual(f.inputs, [{ action: 'click', frameId: full.frameId, x: 100, y: 200, button: 'left', count: 1 }]);
+  assert.equal(next.observation!.overviewScaleDivisor, 8);
+  assert.deepEqual([overview(next).imageWidth, overview(next).imageHeight], [240, 135]);
+  await f.computer.dispose();
+});
+test('full-image request retires earlier frame IDs and ordinary screenshot restores overview mode', async () => {
+  const f = fixture(), first = await f.computer.execute({ action: 'screenshot' });
+  const full = await f.computer.execute({ action: 'screenshot', resolution: 'original' });
+  const next = await f.computer.execute({ action: 'screenshot' });
+  assert.equal(next.observation!.overviewScaleDivisor, 8);
+  assert.notEqual(next.frameId, full.frameId);
+  await assert.rejects(f.computer.execute({ action: 'click', frameId: first.frameId, viewId: overview(first).viewId, x: 0, y: 0 }), /veraltet/);
+  assert.equal(f.inputs.length, 0); await f.computer.dispose();
+});
+test('full-image requests keep legacy full-screen mode compatible and skip optional image processing', async () => {
+  const f = fixture(); f.setDivisor(1);
+  const full = await f.computer.execute({ action: 'screenshot', resolution: 'original' });
+  assert.equal(full.observation, undefined); assert.equal(f.decoded, 0);
+  assert.deepEqual([full.width, full.height], [1920, 1080]);
+  await f.computer.execute({ action: 'click', frameId: full.frameId, x: 100, y: 200 });
+  assert.equal(f.inputs[0].action, 'click'); assert.equal(f.decoded, 0); await f.computer.dispose();
+});
+test('full-resolution option is explicit and allowed only on screenshot', () => {
+  assert.deepEqual(parseComputerInput({ action: 'screenshot' }), { action: 'screenshot' });
+  assert.deepEqual(parseComputerInput({ action: 'screenshot', resolution: 'original' }), { action: 'screenshot', resolution: 'original' });
+  for (const resolution of ['high', 'full', 1, true, null]) assert.throws(() => parseComputerInput({ action: 'screenshot', resolution }));
+  assert.throws(() => parseComputerInput({ action: 'inspect', frameId: 'f', viewId: 'v', x: 0, y: 0, width: 1, height: 1, resolution: 'original' }));
+  assert.throws(() => parseComputerInput({ action: 'click', frameId: 'f', x: 0, y: 0, resolution: 'original' }));
+});
 test('inspect reuses the same capture and only replaces detail; native detail clicks add its source origin once', async () => {
   const f = fixture(); const result = await inspect(f), view = result.observation!.views[1];
   assert.equal(f.decoded, 1); assert.deepEqual(view.sourceRect, { x: 160, y: 160, width: 480, height: 320 });

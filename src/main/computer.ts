@@ -241,7 +241,8 @@ export class NativeComputer implements ComputerAdapter {
           ? await this.captureAfterAction(session, consumedFrame, signal)
           : { image: imageResult(await session.screenshot(signal)), renderingWait: undefined };
         check(signal);
-        const observation = await this.observations.prepare(image, new Date().toISOString(), signal, observationContext);
+        const originalResolution = input.action === 'screenshot' && input.resolution === 'original';
+        const observation = await this.observations.prepare(image, new Date().toISOString(), signal, observationContext, originalResolution);
         check(signal);
         this.frame = { frameId: image.frameId, width: image.width, height: image.height, scale: image.scale,
           fingerprint: image.fingerprint, createdAt: this.options.now?.() ?? Date.now() };
@@ -249,6 +250,7 @@ export class NativeComputer implements ComputerAdapter {
         const effect = actionResult?.action ? effects[actionResult.action.effect] ?? 'unknown' : undefined;
         const text = JSON.stringify({ action: input.action, display: 'primary', frameId: image.frameId,
           width: image.width, height: image.height, ...(effect ? { effect } : {}),
+          ...(originalResolution ? { requestedResolution: 'original', observationMode: 'full-display-once' } : {}),
           ...(renderingWait ? { renderingWait } : {}),
           ...(input.action === 'type' ? { inputMethod: input.method === 'keys' ? 'keys' : 'clipboard-paste',
             ...(input.method !== 'keys' ? { clipboard: 'replaced-with-input' } : {}) } : {}),
