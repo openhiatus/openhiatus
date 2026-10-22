@@ -1,5 +1,6 @@
+import { AudioDeviceSelect } from './audio-device-select';
 import { useId, useRef, useState, type KeyboardEvent } from 'react';
-import { AudioLines, ChevronDown, Headphones, KeyRound, Keyboard, LoaderCircle, Mic, SlidersHorizontal, Square, Volume2 } from 'lucide-react';
+import { AudioLines, Headphones, KeyRound, Keyboard, LoaderCircle, Mic, SlidersHorizontal, Square, Volume2 } from 'lucide-react';
 import type { PreferencesPatch, Snapshot } from '../../../shared/contracts';
 import { ProvidersView } from '../../ProvidersView';
 import type { AudioPhase } from '../voice';
@@ -50,8 +51,6 @@ export function SettingsView({ state, workBusy, summaryInProgress, voice, onPref
   const actionPending = useRef(false);
   const tabButtons = useRef<Array<HTMLButtonElement | null>>([]);
   const id = useId();
-  const inputs = voice.devices.filter(device => device.kind === 'audioinput' && device.deviceId !== 'default' && device.deviceId !== 'communications');
-  const outputs = voice.devices.filter(device => device.kind === 'audiooutput' && device.deviceId !== 'default' && device.deviceId !== 'communications');
   const recording = voice.phase === 'recording' || voice.phase === 'mic-test';
   const ready = state !== undefined;
 
@@ -115,15 +114,14 @@ export function SettingsView({ state, workBusy, summaryInProgress, voice, onPref
         <section className="settings-card settings-audio-devices">
           <div className="settings-card-head"><span className="service-icon"><Headphones size={22} aria-hidden="true" /></span><div><h2>Mikrofon & Lautsprecher</h2><p>Geräte auswählen und die Verbindung prüfen</p></div></div>
           <div className="audio-device-grid"><div><label className="field-label" htmlFor={`${id}-microphone`}><Mic size={15} aria-hidden="true" /> Mikrofon</label>
-            <div className="select-wrap"><select id={`${id}-microphone`} value={state?.preferences.inputDeviceId ?? 'default'} disabled={!ready || voice.audioBusy} onChange={event => preference({ inputDeviceId: event.target.value })}>
-              <option value="default">Windows-Standardgerät</option>{inputs.map((device, index) => <option key={device.deviceId} value={device.deviceId}>{device.label || `Mikrofon ${index + 1}`}</option>)}</select><ChevronDown size={15} aria-hidden="true" /></div>
+            <AudioDeviceSelect id={`${id}-microphone`} kind="audioinput" preferences={state?.preferences} devices={voice.devices} disabled={!ready || voice.audioBusy} onChange={preference} />
             <button className="device-test" disabled={!ready || workBusy || (voice.audioBusy && voice.phase !== 'mic-test')} onClick={() => voiceAction(() => voice.startRecording(true))}>
               {voice.phase === 'mic-test' ? <Square size={14} aria-hidden="true" /> : <Mic size={14} aria-hidden="true" />}{voice.phase === 'mic-test' ? `Test beenden · ${voice.seconds}s` : 'Mikrofon lokal testen'}</button></div>
             <div><label className="field-label" htmlFor={`${id}-speakers`}><Headphones size={15} aria-hidden="true" /> Lautsprecher</label>
-              <div className="select-wrap"><select id={`${id}-speakers`} value={state?.preferences.outputDeviceId ?? 'default'} disabled={!ready || voice.phase !== 'idle'} onChange={event => preference({ outputDeviceId: event.target.value })}>
-                <option value="default">Windows-Standardgerät</option>{outputs.map((device, index) => <option key={device.deviceId} value={device.deviceId}>{device.label || `Ausgabe ${index + 1}`}</option>)}</select><ChevronDown size={15} aria-hidden="true" /></div>
+              <AudioDeviceSelect id={`${id}-speakers`} kind="audiooutput" preferences={state?.preferences} devices={voice.devices} disabled={!ready || voice.phase !== 'idle'} onChange={preference} />
               <button className="device-test" disabled={!voice.speechReady || workBusy || voice.audioBusy} onClick={() => voiceAction(() => voice.testSpeech())}>{voice.phase === 'synthesizing' ? <Spinner /> : <Volume2 size={14} aria-hidden="true" />} Sprachausgabe testen</button></div></div>
           {voice.phase !== 'idle' && <div className="settings-audio-state"><AudioLines size={16} aria-hidden="true" /><span role="status">{phaseLabels[voice.phase]}{recording ? ` · ${voice.seconds}s` : ''}</span><button className="text-button" onClick={() => voice.cancelAudio()}>Audio beenden</button></div>}
+          <p className="billing-note">Die Geräteauswahl wird automatisch gespeichert. Getrennte Geräte bleiben vorgemerkt und werden beim Wiederverbinden erneut verwendet. Nur Windows-Standardgerät folgt der aktuellen Windows-Auswahl.</p>
           <p className="billing-note">Gerätenamen erscheinen, sobald der Browser auf das Mikrofon zugreifen darf. Der lokale Mikrofontest benötigt keinen Sprachzugang.</p>
         </section>
       </section>

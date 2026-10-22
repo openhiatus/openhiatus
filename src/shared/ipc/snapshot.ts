@@ -14,6 +14,7 @@ export const decodeSnapshot: Decoder<Snapshot> = object({
   activity: array(object({ id, at, kind: choice(['system', 'command', 'file', 'error']), title: body, detail: optional(body) }), 20000),
   task: object({ id, status: taskStatus, threadId: optional(body), turnId: optional(body), error: optional(body) }),
   preferences: object({ inputDeviceId: short, outputDeviceId: short, speakReplies: boolean, voiceId: short, model: short, dialogModel: short, memoryModel: short,
+    inputDeviceLabel: optional(text(1000)), inputDeviceGroupId: optional(text(1000)), outputDeviceLabel: optional(text(1000)), outputDeviceGroupId: optional(text(1000)),
     memoryAutoSummarize: optional(boolean), voiceConversation: optional(boolean), earcons: optional(boolean), skillFavorites: optional(parseSkillFavorites),
     fullAccessAcknowledged: optional(boolean), chatgptBackgroundUsage: optional(boolean) }),
   connections: object({ agent: choice(['offline', 'missing', 'ready', 'connecting']), account: body, speech: choice(['missing', 'saved', 'verified']) }),

@@ -33,6 +33,16 @@ function fixture() {
   return { app, options, computerFrames, saved: () => saved, runs: () => runs, stops: () => stops, setStop: (fn: () => Promise<void>) => { stopImplementation = fn; } };
 }
 
+test('changing a device ID without identity metadata cannot retain the previous device identity', async () => {
+  const f = fixture();
+  await f.app.savePreferences({ inputDeviceId: 'old-mic', inputDeviceLabel: 'Old microphone', inputDeviceGroupId: 'old-group', outputDeviceId: 'old-speaker', outputDeviceLabel: 'Old speakers', outputDeviceGroupId: 'old-group' });
+  await f.app.savePreferences({ inputDeviceId: 'new-mic', outputDeviceId: 'default' });
+  const p = f.app.snapshot().preferences;
+  assert.equal(p.inputDeviceId, 'new-mic'); assert.equal(p.inputDeviceLabel, ''); assert.equal(p.inputDeviceGroupId, '');
+  assert.equal(p.outputDeviceId, 'default'); assert.equal(p.outputDeviceLabel, ''); assert.equal(p.outputDeviceGroupId, '');
+  await f.app.dispose();
+});
+
 test('computer previews are transient and late frames after Stop are not published', async () => {
   const f = fixture();
   const frame: ComputerFrame = { dataUrl: 'data:image/png;base64,cHJpdmF0ZS1zY3JlZW4=', frameId: 'frame-test', width: 10, height: 10, at: new Date().toISOString() };

@@ -30,13 +30,13 @@ assert.ok(files.some(file => /cua_driver_sdk\.dll$/i.test(file)), 'The native de
 const env = { ...process.env, OPENHIATUS_TEST_APP: executable };
 for (const key of Object.keys(env)) if (key.toLowerCase() === 'path' || key === 'ELECTRON_RUN_AS_NODE' || /^(?:OPENAI|ANTHROPIC|GEMINI|GOOGLE|OPENROUTER|XAI)_API_KEY$/.test(key)) delete env[key];
 env.PATH = [env.SystemRoot || 'C:\\Windows', path.join(env.SystemRoot || 'C:\\Windows', 'System32')].join(';');
-for (const check of [['scripts/ui-workflow-check.mjs'], ['scripts/conversation-ui-check.mjs', '--require-context']]) {
+for (const check of [['scripts/ui-workflow-check.mjs'], ['scripts/conversation-ui-check.mjs', '--require-context'], ['scripts/audio-devices-ui-check.mjs']]) {
   const child = spawn(process.execPath, [path.resolve(check[0]), ...check.slice(1)], { env, stdio: 'inherit', windowsHide: true });
   const code = await new Promise((resolve, reject) => { child.once('error', reject); child.once('close', resolve); });
   assert.equal(code, 0, `Packaged ${check[0]} must pass with no Node or Codex on PATH.`);
 }
 await mkdir('artifacts', { recursive: true });
 const evidence = { status: 'passed', version: manifest.version, executable, files: files.length, asar: false,
-  checks: ['own Electron runtime', 'pinned Pi SDK', 'native desktop libraries', 'no repository skills', 'no Codex runtime', 'fresh profile', 'no global Node or Codex on PATH', 'packaged dialog and worker file workflow', 'packaged conversation history and context across restart'] };
+  checks: ['own Electron runtime', 'pinned Pi SDK', 'native desktop libraries', 'no repository skills', 'no Codex runtime', 'fresh profile', 'no global Node or Codex on PATH', 'packaged dialog and worker file workflow', 'packaged conversation history and context across restart', 'packaged pinned audio device selection, disconnect/reconnect and restart'] };
 await writeFile('artifacts/openhiatus-paketpruefung.json', JSON.stringify(evidence, null, 2), 'utf8');
 console.log(JSON.stringify(evidence, null, 2));

@@ -5,6 +5,20 @@ import { OutputMeter } from '../src/renderer/Presence';
 
 function pending() { let resolve!: () => void; const promise = new Promise<void>(yes => { resolve = yes; }); return { promise, resolve }; }
 
+test('earcons never fall back to another output when the pinned speaker is unavailable', async () => {
+  const original = Object.getOwnPropertyDescriptor(globalThis, 'AudioContext');
+  let created = 0;
+  class Context {
+    state = 'running';
+    async setSinkId() { throw new Error('Device disconnected'); }
+    createOscillator() { created++; throw new Error('Unexpected default output'); }
+    async close() { this.state = 'closed'; }
+  }
+  Object.defineProperty(globalThis, 'AudioContext', { configurable: true, value: Context });
+  try { const player = new EarconPlayer(); await player.play('done', 'usb-speaker'); assert.equal(created, 0); player.dispose(); }
+  finally { if (original) Object.defineProperty(globalThis, 'AudioContext', original); else Reflect.deleteProperty(globalThis, 'AudioContext'); }
+});
+
 test('Earcon Stop/dispose invalidates delayed device selection and resume before oscillators start', async () => {
   const original = Object.getOwnPropertyDescriptor(globalThis, 'AudioContext');
   try {

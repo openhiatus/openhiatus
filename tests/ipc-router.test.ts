@@ -34,6 +34,17 @@ const validArgs: { [Name in CommandName]: CommandArgs<Name> } = {
   editMemory: [{ id: 'core', content: 'Neue Fassung', expectedVersion: 1 }], decideMemoryProposal: ['proposal', 'approve'], memorySource: ['source'], searchMemory: ['Grüße'],
 };
 
+test('device identity metadata is accepted and validated before preferences reach the application', async () => {
+  const f = fixture();
+  const patch = { inputDeviceId: 'usb-mic', inputDeviceLabel: 'USB Studio Microphone', inputDeviceGroupId: 'usb-group', outputDeviceId: 'usb-speaker', outputDeviceLabel: 'USB Studio Headphones', outputDeviceGroupId: 'usb-group' };
+  assert.equal((await f.router.dispatch('savePreferences', [patch])).ok, true);
+  assert.deepEqual(f.calls.at(-1), { name: 'savePreferences', args: [patch] });
+  for (const value of [42, null, {}, 'x'.repeat(1001)]) {
+    assert.equal((await f.router.dispatch('savePreferences', [{ inputDeviceLabel: value }])).ok, false);
+  }
+  assert.equal(f.calls.length, 1);
+});
+
 test('every known command validates and produces its declared result through the same router/client contract', async () => {
   const f = fixture();
   for (const name of Object.keys(validArgs)) {

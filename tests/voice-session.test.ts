@@ -41,12 +41,13 @@ class Player implements VoicePlayer {
   onerror: (() => void) | null = null;
   playing = Promise.resolve();
   sink = Promise.resolve();
+  sinkIds: string[] = [];
   played = 0;
   paused = 0;
   unloaded = 0;
   play() { this.played++; return this.playing; }
   pause() { this.paused++; }
-  setSinkId() { return this.sink; }
+  setSinkId(id: string) { this.sinkIds.push(id); return this.sink; }
   removeAttribute() { this.unloaded++; }
   load() {}
   end() { this.onended?.(); }
@@ -73,7 +74,7 @@ function fixture() {
       dispose: () => { meterDisposed++; },
     },
     earcons: { play: async () => {}, stop: () => { earconsStopped++; }, dispose: () => { earconsDisposed++; } },
-    enumerateDevices: async () => [],
+    enumerateDevices: async () => [{ deviceId: 'mic', kind: 'audioinput', label: 'Test microphone', groupId: 'test' }, { deviceId: 'speaker', kind: 'audiooutput', label: 'Test speakers', groupId: 'test' }] as MediaDeviceInfo[],
     onDevicesChanged: listener => { watch = listener; return () => { watch = undefined; unwatch++; }; },
     now: () => now,
     every: (_ms, listener) => { timers.add(listener); return () => { timers.delete(listener); }; },
@@ -236,4 +237,29 @@ test('dispose closes resources once, settles playback and drops late device and 
   assert.deepEqual(f.revoked, ['audio:0']); assert.equal(f.players[0].onended, null);
   await f.session.startRecording(); await f.session.speak('closed'); f.session.updateSnapshot(snapshot({ speech: [speech('closed')] })); await flush();
   assert.equal(f.recorders.length, 0); assert.deepEqual(f.synthesized, ['playing']);
+});
+
+test('unplugging a pinned microphone cancels capture and reconnecting with a new ID uses the saved device', async () => {
+  const f = fixture();
+  const preferences = { ...snapshot().preferences, inputDeviceLabel: 'Test microphone', inputDeviceGroupId: 'test' };
+  f.session.updateSnapshot(snapshot({ preferences })); await flush(); await f.session.startRecording();
+  f.environment.enumerateDevices = async () => []; f.devicesChanged(); await flush();
+  assert.equal(f.session.phase, 'idle'); assert.ok(f.recorders[0].cancelled > 0); assert.deepEqual(f.transcripts, []);
+  assert.match(f.notices.at(-1)!, /Auswahl bleibt gespeichert/);
+  f.environment.enumerateDevices = async () => [{ deviceId: 'mic-reconnected', kind: 'audioinput', label: 'Test microphone', groupId: 'new-group' }] as MediaDeviceInfo[];
+  f.devicesChanged(); await flush(); await f.session.startRecording();
+  assert.equal(f.recorders[1].device, 'mic-reconnected'); assert.equal(preferences.inputDeviceId, 'mic'); f.session.dispose();
+});
+
+test('missing speakers do not trigger synthesis or default playback and reconnecting uses the new sink', async () => {
+  const f = fixture(); await flush();
+  const preferences = { ...snapshot().preferences, outputDeviceId: 'speaker', outputDeviceLabel: 'Test speakers', outputDeviceGroupId: 'test' };
+  f.session.updateSnapshot(snapshot({ preferences }));
+  f.environment.enumerateDevices = async () => []; f.devicesChanged(); await flush();
+  await f.session.speak('offline'); assert.deepEqual(f.synthesized, []); assert.equal(f.players.length, 0);
+  f.environment.enumerateDevices = async () => [{ deviceId: 'new-speaker', kind: 'audiooutput', label: 'Test speakers', groupId: 'new-group' }] as MediaDeviceInfo[];
+  f.devicesChanged(); await flush(); const speaking = f.session.speak('online'); await flush();
+  assert.deepEqual(f.players[0].sinkIds, ['new-speaker']); assert.equal(f.session.phase, 'playing');
+  f.environment.enumerateDevices = async () => []; f.devicesChanged(); await speaking; await flush();
+  assert.equal(f.session.phase, 'idle'); assert.ok(f.players[0].paused > 0); assert.equal(preferences.outputDeviceId, 'speaker'); f.session.dispose();
 });

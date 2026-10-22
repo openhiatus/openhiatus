@@ -1,4 +1,5 @@
 import type { OpenhiatusApi, AudioClip, Snapshot, SpeechCue } from '../../../shared/contracts';
+import { physicalAudioDevices, resolveAudioDevice } from '../../../shared/audio-devices';
 import { SpeechCueQueue } from '../../speech-queue';
 
 export type Earcon = 'listen' | 'heard' | 'sent' | 'done' | 'error';
@@ -44,7 +45,7 @@ export interface VoiceEvents {
   connectionsRequired(): void;
 }
 
-interface Playback { player: VoicePlayer; url: string; settle(): void; }
+interface Playback { player: VoicePlayer; url: string; deviceId: string; settle(): void; }
 
 /** Owns one microphone/playback lifetime, including queued speech and all late completions. */
 export class VoiceSession {
@@ -54,6 +55,8 @@ export class VoiceSession {
   private started = false;
   private epoch = 0;
   private deviceRevision = 0;
+  private devicesKnown = false;
+  private recordingDeviceId?: string;
   private recorder?: VoiceRecorder;
   private playback?: Playback;
   private stopClock?: () => void;
@@ -98,7 +101,9 @@ export class VoiceSession {
 
   cue = (name: Earcon): void => {
     if (this.disposed || this.snapshot?.preferences.earcons === false) return;
-    void this.environment.earcons.play(name, this.snapshot?.preferences.outputDeviceId).catch(() => {});
+    const output = this.snapshot && resolveAudioDevice(this.snapshot.preferences, 'audiooutput', this.state.devices);
+    if (output && this.devicesKnown && !output.connected) return;
+    void this.environment.earcons.play(name, output?.deviceId).catch(() => {});
   };
   stopEarcons = (): void => { this.environment.earcons.stop(); };
 
@@ -107,6 +112,7 @@ export class VoiceSession {
     this.epoch++;
     this.activeSpeech = undefined;
     this.recorder?.cancel(); this.recorder = undefined;
+    this.recordingDeviceId = undefined;
     this.stopRecordingClock();
     this.releasePlayback();
     this.change({ phase: 'idle', level: 0 });
@@ -137,7 +143,8 @@ export class VoiceSession {
     this.events.inputStarted(); this.change({ phase: 'opening' });
     const capture = this.environment.createRecorder(); this.recorder = capture;
     try {
-      await capture.start(current.preferences.inputDeviceId ?? 'default', level => {
+      this.recordingDeviceId = resolveAudioDevice(current.preferences, 'audioinput', this.state.devices).deviceId;
+      await capture.start(this.recordingDeviceId, level => {
         if (this.current(epoch) && this.recorder === capture) this.change({ level });
       }, () => {
         if (this.current(epoch) && this.recorder === capture) void this.finishRecording(test);
@@ -152,7 +159,7 @@ export class VoiceSession {
       void this.refreshDevices();
     } catch (error) {
       capture.cancel();
-      if (this.current(epoch)) { this.recorder = undefined; this.change({ phase: 'idle' }); this.events.error(error); }
+      if (this.current(epoch)) { this.recorder = undefined; this.recordingDeviceId = undefined; this.change({ phase: 'idle' }); this.events.error(error); }
     }
   };
 
@@ -161,6 +168,7 @@ export class VoiceSession {
     this.cancelAudio(); const epoch = this.epoch;
     this.events.inputStarted(); this.change({ phase: 'synthesizing' });
     try {
+      this.outputDevice();
       const clip = await this.environment.api.testSpeech();
       if (!this.current(epoch)) return;
       await this.play(clip, epoch);
@@ -189,7 +197,20 @@ export class VoiceSession {
     const revision = ++this.deviceRevision;
     try {
       const devices = await this.environment.enumerateDevices();
-      if (!this.disposed && revision === this.deviceRevision) this.change({ devices });
+      if (!this.disposed && revision === this.deviceRevision) {
+        this.devicesKnown = true;
+        this.change({ devices });
+        if (this.snapshot && !resolveAudioDevice(this.snapshot.preferences, 'audiooutput', devices).connected) this.stopEarcons();
+        const inputGone = this.recordingDeviceId && this.recordingDeviceId !== 'default'
+          && (this.phase === 'recording' || this.phase === 'mic-test')
+          && !physicalAudioDevices(devices, 'audioinput').some(device => device.deviceId === this.recordingDeviceId);
+        const outputGone = this.playback && this.playback.deviceId !== 'default'
+          && !physicalAudioDevices(devices, 'audiooutput').some(device => device.deviceId === this.playback?.deviceId);
+        if (inputGone || outputGone) {
+          this.stopEarcons(); this.cancelAudio();
+          this.events.notice('Das gewählte Audiogerät wurde getrennt. Die Auswahl bleibt gespeichert und wird beim Wiederverbinden erneut verwendet.');
+        }
+      }
     } catch { /* Device labels are optional; capture reports actionable microphone errors. */ }
   }
   private fail(epoch: number, error: unknown): void {
@@ -199,12 +220,14 @@ export class VoiceSession {
   private async synthesize(text: string, epoch: number): Promise<void> {
     this.change({ phase: 'synthesizing' });
     try {
+      this.outputDevice();
       const clip = await this.environment.api.synthesize(text);
       if (this.current(epoch)) await this.play(clip, epoch);
     } catch (error) { this.fail(epoch, error); }
   }
   private async finishRecording(test: boolean): Promise<void> {
     const capture = this.recorder; this.recorder = undefined;
+    this.recordingDeviceId = undefined;
     if (!capture || this.disposed) return;
     const epoch = this.epoch; this.stopRecordingClock(); this.change({ level: 0 });
     try {
@@ -233,6 +256,7 @@ export class VoiceSession {
   }
   private async play(clip: AudioClip, epoch: number): Promise<void> {
     if (!this.current(epoch)) return;
+    const output = this.outputDevice();
     this.releasePlayback();
     const url = this.environment.createAudioUrl(clip);
     let player: VoicePlayer;
@@ -243,7 +267,7 @@ export class VoiceSession {
     const ended = new Promise<void>((resolve, fail) => { finish = resolve; reject = fail; });
     // A player can fail while play()/setSinkId() is pending; attach a handler immediately.
     void ended.catch(() => {});
-    const playback = { player, url, settle: finish }; this.playback = playback;
+    const playback = { player, url, deviceId: output, settle: finish }; this.playback = playback;
     const active = () => this.current(epoch) && this.playback === playback;
     player.onended = () => { if (active()) { this.releasePlayback(); this.change({ phase: 'idle' }); } };
     player.onerror = () => {
@@ -252,7 +276,6 @@ export class VoiceSession {
       this.releasePlayback();
     };
     try {
-      const output = this.snapshot?.preferences.outputDeviceId;
       if (output && output !== 'default') {
         if (!player.setSinkId) throw new Error('Die gewählte Audioausgabe wird auf diesem System nicht unterstützt. Wähle das Standardgerät.');
         await player.setSinkId(output);
@@ -263,6 +286,16 @@ export class VoiceSession {
       this.environment.outputMeter.attach(player); this.change({ phase: 'playing' });
       await ended;
     } catch (error) { if (this.playback === playback) this.releasePlayback(); throw error; }
+  }
+  private outputDevice(): string {
+    if (!this.snapshot) return 'default';
+    const choice = resolveAudioDevice(this.snapshot.preferences, 'audiooutput', this.state.devices);
+    if (this.devicesKnown && !choice.connected) {
+      throw new Error(choice.ambiguous
+        ? 'Der gespeicherte Lautsprecher ist nicht eindeutig erkennbar. Wähle ihn unter Sprache & Geräte erneut aus.'
+        : 'Der gewählte Lautsprecher ist nicht angeschlossen. Die Auswahl bleibt gespeichert; verbinde das Gerät erneut.');
+    }
+    return choice.deviceId;
   }
   private scheduleSpeech(): void {
     if (this.pumpScheduled || this.disposed) return;

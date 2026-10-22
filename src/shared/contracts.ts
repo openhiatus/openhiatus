@@ -6,7 +6,11 @@ export type TaskStatus = 'idle' | 'running' | 'stopping' | 'completed' | 'interr
 export interface Message { id: string; role: 'user' | 'assistant'; text: string; at: string; source?: 'agent'; jobId?: string; }
 export interface Activity { id: string; at: string; kind: 'system' | 'command' | 'file' | 'error'; title: string; detail?: string; }
 export interface Task { id: string; status: TaskStatus; threadId?: string; turnId?: string; error?: string; }
-export interface Preferences { inputDeviceId: string; outputDeviceId: string; speakReplies: boolean; voiceId: string; model: string; memoryAutoSummarize?: boolean; voiceConversation?: boolean; earcons?: boolean; skillFavorites?: SkillFavorites; dialogModel: string; memoryModel: string; fullAccessAcknowledged?: boolean; chatgptBackgroundUsage?: boolean; }
+export interface Preferences {
+  inputDeviceId: string; outputDeviceId: string;
+  inputDeviceLabel?: string; inputDeviceGroupId?: string; outputDeviceLabel?: string; outputDeviceGroupId?: string;
+  speakReplies: boolean; voiceId: string; model: string; memoryAutoSummarize?: boolean; voiceConversation?: boolean; earcons?: boolean; skillFavorites?: SkillFavorites; dialogModel: string; memoryModel: string; fullAccessAcknowledged?: boolean; chatgptBackgroundUsage?: boolean;
+}
 export type PreferencesPatch = Partial<Omit<Preferences, 'fullAccessAcknowledged'>>;
 export interface BackgroundJob {
   id: string; requestId: string; title: string; prompt: string;

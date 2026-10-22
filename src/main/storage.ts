@@ -70,6 +70,10 @@ function validateState(value: unknown): SavedState {
   if (p.chatgptBackgroundUsage !== undefined && typeof p.chatgptBackgroundUsage !== 'boolean') throw new Error('Ungültige Einstellung für automatische ChatGPT-Nutzung.');
   const preferences: Preferences = {
     inputDeviceId: string(p.inputDeviceId, 1000), outputDeviceId: string(p.outputDeviceId, 1000),
+    ...(p.inputDeviceLabel !== undefined ? { inputDeviceLabel: string(p.inputDeviceLabel, 1000) } : {}),
+    ...(p.inputDeviceGroupId !== undefined ? { inputDeviceGroupId: string(p.inputDeviceGroupId, 1000) } : {}),
+    ...(p.outputDeviceLabel !== undefined ? { outputDeviceLabel: string(p.outputDeviceLabel, 1000) } : {}),
+    ...(p.outputDeviceGroupId !== undefined ? { outputDeviceGroupId: string(p.outputDeviceGroupId, 1000) } : {}),
     speakReplies: p.speakReplies, voiceId: string(p.voiceId, 200), model: string(p.model, 300), dialogModel: string(p.dialogModel ?? '', 300), memoryModel: string(p.memoryModel ?? '', 300), memoryAutoSummarize, voiceConversation,
     fullAccessAcknowledged: p.fullAccessAcknowledged === true, chatgptBackgroundUsage: p.chatgptBackgroundUsage === true,
     ...(typeof p.earcons === 'boolean' ? { earcons: p.earcons } : {}),

@@ -5,14 +5,18 @@ import type { IpcPorts } from './ports';
 
 const booleanPreferences = ['speakReplies', 'voiceConversation', 'earcons', 'memoryAutoSummarize', 'chatgptBackgroundUsage'] as const;
 const textPreferences = ['inputDeviceId', 'outputDeviceId', 'voiceId', 'model', 'dialogModel', 'memoryModel'] as const;
+const deviceMetadata = ['inputDeviceLabel', 'inputDeviceGroupId', 'outputDeviceLabel', 'outputDeviceGroupId'] as const;
 function preferences(value: unknown): PreferencesPatch {
-  const input = inputObject(value, [...booleanPreferences, ...textPreferences, 'skillFavorites'], 'Ungültige Einstellungen.');
+  const input = inputObject(value, [...booleanPreferences, ...textPreferences, ...deviceMetadata, 'skillFavorites'], 'Ungültige Einstellungen.');
   const patch: PreferencesPatch = {};
   for (const key of booleanPreferences) if (Object.hasOwn(input, key)) {
     const item = input[key]; if (typeof item !== 'boolean') throw new Error('Ungültige Einstellung.'); patch[key] = item;
   }
   for (const key of textPreferences) if (Object.hasOwn(input, key)) {
     const item = input[key]; if (typeof item !== 'string' || item.length > 300) throw new Error('Ungültige Einstellung.'); patch[key] = item;
+  }
+  for (const key of deviceMetadata) if (Object.hasOwn(input, key)) {
+    const item = input[key]; if (typeof item !== 'string' || item.length > 1000) throw new Error('Ungültige Geräteeinstellung.'); patch[key] = item;
   }
   if (Object.hasOwn(input, 'skillFavorites')) patch.skillFavorites = parseSkillFavorites(input.skillFavorites);
   return patch;

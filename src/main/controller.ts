@@ -569,6 +569,12 @@ export class AppController {
   async savePreferences(patch: Partial<Preferences>): Promise<void> {
     if (patch.chatgptBackgroundUsage !== undefined && typeof patch.chatgptBackgroundUsage !== 'boolean') throw new Error('Ungültige Einstellung für automatische ChatGPT-Nutzung.');
     if ('fullAccessAcknowledged' in patch) throw new Error('Den Vollzugriff bitte ausdrücklich in Verbindungen bestätigen.');
+    if (patch.inputDeviceId !== undefined && patch.inputDeviceId !== this.state.preferences.inputDeviceId) {
+      patch = { ...patch, inputDeviceLabel: patch.inputDeviceLabel ?? '', inputDeviceGroupId: patch.inputDeviceGroupId ?? '' };
+    }
+    if (patch.outputDeviceId !== undefined && patch.outputDeviceId !== this.state.preferences.outputDeviceId) {
+      patch = { ...patch, outputDeviceLabel: patch.outputDeviceLabel ?? '', outputDeviceGroupId: patch.outputDeviceGroupId ?? '' };
+    }
     this.modelManagement.validateSelections(patch);
     const dialogChanged = patch.dialogModel !== undefined && patch.dialogModel !== this.state.preferences.dialogModel;
     const workChanged = !this.deps.dialogAgent && patch.model !== undefined && patch.model !== this.state.preferences.model;

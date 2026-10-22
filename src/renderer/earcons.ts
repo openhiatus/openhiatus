@@ -23,9 +23,11 @@ export class EarconPlayer {
     if (this.disposed || typeof AudioContext === 'undefined') return;
     const generation = this.generation;
     const context = this.context ??= new AudioContext({ latencyHint: 'interactive' });
-    if (outputDeviceId !== this.sink && 'setSinkId' in context) {
+    // Reassert pinned sinks after reconnection; never play through another device on failure.
+    if (outputDeviceId !== 'default' || outputDeviceId !== this.sink) {
+      if (!('setSinkId' in context)) return;
       try { await (context as AudioContext & { setSinkId(id: string): Promise<void> }).setSinkId(outputDeviceId === 'default' ? '' : outputDeviceId); this.sink = outputDeviceId; }
-      catch { /* an unavailable device falls back to the current output */ }
+      catch { return; }
     }
     if (this.disposed || generation !== this.generation) return;
     if (context.state === 'suspended') await context.resume().catch(() => {});

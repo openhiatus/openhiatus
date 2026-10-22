@@ -5,6 +5,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { SettingsView, type SettingsViewProps } from '../src/renderer/features/settings';
 import { defaultState } from '../src/main/storage';
 import type { Snapshot } from '../src/shared/contracts';
+import { AudioDeviceSelect } from '../src/renderer/features/settings/audio-device-select';
 
 function fixture() {
   const invoked: string[] = [];
@@ -44,4 +45,20 @@ test('settings renders real device choices and keeps the current audio phase vis
   assert.ok(!html.includes('Duplicate system microphone')); assert.ok(!html.includes('Duplicate communications speaker'));
   assert.match(html, /Mikrofontest · 3s/); assert.match(html, /Test beenden · 3s/); assert.match(html, /Audio beenden/);
   assert.deepEqual(f.invoked, []);
+});
+
+test('a disconnected pinned device stays selected instead of showing the Windows default', () => {
+  const f = fixture();
+  Object.assign(f.props.state!.preferences, { inputDeviceId: 'unplugged', inputDeviceLabel: 'USB Studio Microphone' });
+  const html = f.render();
+  assert.match(html, /value="unplugged" selected=""[^>]*>USB Studio Microphone – nicht angeschlossen/);
+  assert.ok(!html.includes('value="default" selected="">Windows-Standardgerät</option><option value="unplugged"'));
+  assert.deepEqual(f.invoked, []);
+});
+
+test('a reconnected device with a new ID is selected by its remembered identity without saving over preferences', () => {
+  const preferences = { ...defaultState().preferences, outputDeviceId: 'old-id', outputDeviceLabel: 'USB Studio Headphones', outputDeviceGroupId: 'old-group' };
+  const devices = [{ deviceId: 'new-id', label: 'USB Studio Headphones', groupId: 'new-group', kind: 'audiooutput' }] as MediaDeviceInfo[];
+  const html = renderToStaticMarkup(createElement(AudioDeviceSelect, { id: 'test-speakers', kind: 'audiooutput', preferences, devices, disabled: false, onChange: () => assert.fail('Rendering must not save preferences') }));
+  assert.match(html, /value="new-id" selected=""/); assert.equal(preferences.outputDeviceId, 'old-id');
 });

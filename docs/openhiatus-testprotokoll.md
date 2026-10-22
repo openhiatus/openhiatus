@@ -1,5 +1,21 @@
 # openHiatus – Testprotokoll
 
+## 0.1.6: Feste Mikrofon- und Lautsprecherauswahl – 22. Oktober 2026
+
+Konkrete Audiogeräte bleiben auch im getrennten Zustand ausgewählt. Die Einstellungen zeigen das gespeicherte Gerät mit dem Zusatz „nicht angeschlossen“ an. Name und Gruppenkennung werden zusammen mit der Geräte-ID gespeichert. Eine gleiche ID hat Vorrang; bei geänderter ID kann das Gerät anhand eindeutiger Gruppen-/Namenszuordnung wiedererkannt werden. Mehrdeutige Zuordnungen erfordern eine erneute Auswahl. Windows-Standardgerät bleibt eine ausdrücklich wählbare Alternative.
+
+Ein getrenntes fest gewähltes Ausgabegerät wird nicht still durch die aktuelle Standardausgabe ersetzt; das gilt auch für Signaltöne. Eine laufende Aufnahme oder Wiedergabe wird beim erkannten Verlust ihres Geräts beendet. Aus der unterbrochenen Aufnahme wird kein Transkript automatisch gesendet. Wiederverbinden startet keine neue Aufnahme.
+
+| Prüfung | Ergebnis |
+| --- | --- |
+| Architektur, Typen und Tests | Bestanden: 506 Tests, keine Fehler oder Auslassungen. Enthalten sind neue Prüfungen für Geräteidentität, Mehrdeutigkeit, Speicher-/IPC-Rundlauf, Auswahlansicht und Audioabbruch. |
+| Produktionsbuild | Bestanden: Windows-Helfer, Hauptprozess und Renderer. |
+| Electron-Geräteprüfung | Bestanden: Auswahl über die Oberfläche, Trennen, Neustart mit fehlenden Geräten, Wiederverbinden mit anderen IDs/Gruppen und ausdrückliche Rückkehr zum Windows-Standard. |
+| Betroffene Regressionen | Oberflächen-, IPC- und asynchrone Speicherprüfung bestanden. |
+| Windows-Paket | Paket 0.1.6 besteht Dateiworkflow, Gespräch/Kontext/Neustart sowie die neue Geräteprüfung mit frischen Profilen ohne globales Node oder Codex im PATH. |
+
+Gerätelisten und Wechselereignisse sind in diesen Prüfungen synthetisch. Sie benötigen keine echten Mikrofonaufnahmen, Zugangsdaten oder Cloudanfragen. Ein physischer USB-Aus-/Einstecktest ist damit noch nicht nachgewiesen. Der lokale Gerätenachweis liegt unter `artifacts/openhiatus-audio-geraete-ui.json`; die Paketabnahme unter `artifacts/openhiatus-paketpruefung.json`.
+
 ## Aktueller Skill-Umfang – 22. Oktober 2026
 
 Der öffentliche Quellstand und die daraus gebauten Pakete enthalten keine Skill-Sammlung. Neue Profile starten ohne vorinstallierte Skills; eigene lokale Skills liegen unter `%APPDATA%/openhiatus/pi/skills`. Build und Appstart benötigen keinen Skill-Ordner im Repository. Automatische Skill-Installation und Legacy-Migration entfallen; bestehende lokale Profil-Skills werden nicht verändert.

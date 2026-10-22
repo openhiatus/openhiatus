@@ -97,7 +97,7 @@ export function audioObjectUrl(clip: AudioClip): string {
 export function friendlyAudioError(error: unknown): string {
   if (error instanceof DOMException) {
     if (error.name === 'NotAllowedError') return 'Der Mikrofonzugriff wurde nicht erlaubt. Prüfe die Windows-Datenschutzeinstellungen. Du kannst weiterhin schreiben.';
-    if (error.name === 'NotFoundError' || error.name === 'OverconstrainedError') return 'Das gewählte Mikrofon ist nicht verfügbar. Wähle unter Verbindungen ein anderes Gerät.';
+    if (error.name === 'NotFoundError' || error.name === 'OverconstrainedError') return 'Das gewählte Mikrofon ist nicht verfügbar. Die Auswahl bleibt gespeichert. Verbinde es erneut oder wähle unter Sprache & Geräte ein anderes Gerät.';
     if (error.name === 'NotReadableError') return 'Das Mikrofon ist gerade nicht erreichbar. Möglicherweise verwendet es eine andere Anwendung.';
   }
   return error instanceof Error ? error.message : 'Der Sprachweg konnte nicht abgeschlossen werden. Schreiben ist weiterhin möglich.';

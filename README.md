@@ -5,7 +5,7 @@
 openHiatus is a desktop app that combines your choice of AI models, speech services, and a personal memory. You keep the conversation going while up to two tasks run in the background, and each task returns a result you can trace.
 
 ![Status: alpha](https://img.shields.io/badge/status-alpha-orange)
-![Version 0.1.5](https://img.shields.io/badge/version-0.1.5-blue)
+![Version 0.1.6](https://img.shields.io/badge/version-0.1.5-blue)
 ![Platform: Windows x64](https://img.shields.io/badge/platform-Windows%20x64-0078D6)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green)
 
@@ -52,6 +52,8 @@ The app interface is currently in German. English meanings are shown in parenthe
 Model and speech providers are used with your own accounts. Their availability, usage limits, and costs depend on the service you choose.
 
 ### Keyboard shortcuts
+
+Choose a specific microphone and speaker to keep using those devices. A disconnected choice remains selected and is marked as unavailable; reconnecting the device restores its use when it can be identified. If several identical devices cannot be distinguished, select the intended device again. Choose **Windows-Standardgerät** (Windows default device) only when you want to follow the current Windows selection.
 
 | Key | Action |
 | --- | --- |
@@ -107,6 +109,7 @@ For more background, see the [vision](docs/vision.md), the [roadmap](docs/roadma
 ```powershell
 npm run build
 npm run test:ui
+npm run test:audio-devices-ui
 npm run test:chatgpt-ui
 npm run test:conversation
 npm run test:workflow
