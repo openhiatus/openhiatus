@@ -1,6 +1,6 @@
 import type { AgentEvent, ChatGPTConnection, Connections, ModelOption, ProviderInput, ProviderView } from '../../../shared/contracts';
 
-export interface ModelSelections { model: string; dialogModel: string; memoryModel: string; }
+export interface ModelSelections { model: string; dialogModel: string; memoryModel: string; computerModel?: string; }
 export interface ModelManagementState {
   selections: ModelSelections;
   models: ModelOption[];
@@ -32,6 +32,7 @@ export class ModelManagementCoordinator {
   private authEpoch = 0;
   private closed = false;
   private readonly knownSecrets = new Set<string>();
+  private computerSelectionInitialized = false;
   constructor(initial: ModelSelections, private readonly ports: ModelManagementPorts) {
     this.state = { selections: { ...initial }, providers: [], models: [], agent: 'offline', account: '' };
   }
@@ -46,6 +47,15 @@ export class ModelManagementCoordinator {
   private normalizeSelections(): void {
     for (const key of ['model', 'dialogModel', 'memoryModel'] as const) {
       if (!this.state.models.some(model => model.id === this.state.selections[key])) this.state.selections[key] = this.state.models[0]?.id ?? '';
+    }
+    // Computer delegation is optional. Never replace a missing role with an
+    // unrelated first model; only offer Luna once for a new, empty selection.
+    if (this.state.selections.computerModel !== undefined) {
+      const selected = this.state.selections.computerModel;
+      if (!this.computerSelectionInitialized && !selected && this.state.models.length) {
+        this.state.selections.computerModel = this.state.models.find(model => /(?:^|\/)gpt-6-luna$/.test(model.id))?.id ?? '';
+      } else if (selected && (this.state.models.length || this.computerSelectionInitialized) && !this.state.models.some(model => model.id === selected)) this.state.selections.computerModel = '';
+      if (this.state.models.length) this.computerSelectionInitialized = true;
     }
   }
   private refreshProviders(): void {
@@ -78,10 +88,12 @@ export class ModelManagementCoordinator {
   offline(): void { this.state.agent = 'offline'; this.project(); }
   validateSelections(patch: Partial<ModelSelections>): void {
     for (const key of ['model', 'dialogModel', 'memoryModel'] as const) if (patch[key] !== undefined && !this.state.models.some(model => model.id === patch[key])) throw new Error('Dieses Modell ist nicht verfügbar.');
+    if (patch.computerModel !== undefined && patch.computerModel !== '' && !this.state.models.some(model => model.id === patch.computerModel)) throw new Error('Dieses Computer-Modell ist nicht verfügbar.');
   }
   select(patch: Partial<ModelSelections>): void {
     this.validateSelections(patch);
     for (const key of ['model', 'dialogModel', 'memoryModel'] as const) if (patch[key] !== undefined) this.state.selections[key] = patch[key];
+    if (patch.computerModel !== undefined) { this.state.selections.computerModel = patch.computerModel; this.computerSelectionInitialized = true; }
     this.project();
   }
   private assertIdle(): void { this.assertUnlocked(); this.ports.lifecycle.assertIdle(); }

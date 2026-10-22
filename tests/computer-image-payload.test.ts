@@ -35,6 +35,12 @@ test('supported OpenAI Responses image detail changes only marked computer image
   assert.equal(request.input[0].output[1].detail, 'original'); assert.equal(request.input[0].output[2].detail, 'auto');
   assert.equal(request.stream, true); assert.equal(request.service_tier, 'priority'); assert.deepEqual(request.reasoning, { effort: 'medium' });
 });
+test('Luna computer requests preserve marked overview and native detail dimensions', () => {
+  for (const id of ['gpt-6-luna', 'gpt-6-luna-2026-10-01']) {
+    const request = payload(); applyComputerImageDetail(request, [message()], { ...requestModel, id });
+    assert.equal(request.input[0].output[1].detail, 'original'); assert.equal(request.input[0].output[2].detail, 'auto');
+  }
+});
 test('unmarked legacy images and unrelated tools/providers/models keep their existing detail behavior', () => {
   const unmarked = { ...message(), details: { success: true } };
   for (const [messages, model] of [

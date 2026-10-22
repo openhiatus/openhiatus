@@ -16,6 +16,9 @@ export interface PiAdapterOptions {
   executable: string; processHost: string; hostEntry: string; home: string; workspace: string; providers: ProviderStore;
   getIdentityInstructions?: () => string;
   role?: ToolRole;
+  /** Separate restricted runtime; SDK filesystem and shell tools are never installed. */
+  computerOnly?: boolean;
+  instructions?: string;
   tools?: ToolsetPort;
   onEvent(event: AgentEvent): void;
 }
@@ -36,6 +39,7 @@ export class PiAdapter implements AgentAdapter {
   private readonly tools: ToolsetPort;
   private readonly options: PiAdapterOptions;
   constructor(options: PiAdapterOptions, private readonly dependencies: PiAdapterDependencies = {}) {
+    if (options.computerOnly && options.role === 'dialog') throw new Error('Computerbedienung benötigt einen eigenen Arbeitsadapter.');
     this.options = { ...options, home: resolve(options.home), workspace: resolve(options.workspace) };
     this.tools = options.tools ?? createToolRegistry([]);
   }
@@ -67,7 +71,7 @@ export class PiAdapter implements AgentAdapter {
           this.emit({ type: 'connection', status: 'offline' });
         },
       };
-      const hostOptions = { allowHandoff: this.options.role !== 'dialog' };
+      const hostOptions = { allowHandoff: this.options.role !== 'dialog' && !this.options.computerOnly };
       transport = this.dependencies.connect?.(callbacks, hostOptions) ?? new ProcessTransport(this.options.executable, this.options.hostEntry,
         this.options.processHost, this.options.workspace, this.options.home, callbacks, hostOptions);
       this.transport = transport;
@@ -83,6 +87,7 @@ export class PiAdapter implements AgentAdapter {
     if (this.active || this.stopping) throw new Error('Ein Auftrag läuft bereits oder wird gestoppt.');
     if (!text.trim() || text.length > MAX_PROMPT_CHARS) throw new Error('Der Auftrag ist leer oder zu groß.');
     if (/^\s*\/goal(?:\s|$)/i.test(text)) throw new Error(`/goal wird in ${APP_DISPLAY_NAME} nicht unterstützt. Bitte einen normalen Arbeitsauftrag formulieren.`);
+    if (options?.serviceTier && !this.options.computerOnly) throw new Error('Eine eigene Fast-Stufe ist nur für die getrennte Computerbedienung vorgesehen.');
     const active: Active = { id: randomUUID(), abort: new AbortController(), threadId, stopping: false, pending: new Set(), credentialsPending: new Set(), modelSelection: model };
     this.active = active;
     try {
@@ -99,7 +104,8 @@ export class PiAdapter implements AgentAdapter {
       // A ChatGPT host receives fresh access tokens only for the currently bound request.
       // Refresh credentials remain exclusively in the protected main-process store.
       const input: HostRun = { runId: active.id, text, model: resolved.authType === 'chatgpt' ? { ...resolved, apiKey: '' } : resolved, threadId, home: this.options.home, workspace: this.options.workspace,
-        dialog, tools: [...active.tools.definitions], instructions: `${dialog ? DIALOG_INSTRUCTIONS : AGENT_INSTRUCTIONS}\n\n${this.options.getIdentityInstructions?.() ?? ''}`,
+        dialog, ...(this.options.computerOnly ? { computerOnly: true } : {}), ...(options?.serviceTier ? { serviceTier: options.serviceTier } : {}),
+        tools: [...active.tools.definitions], instructions: `${this.options.instructions ?? (dialog ? DIALOG_INSTRUCTIONS : this.options.computerOnly ? 'Complete only the assigned bounded UI task using the supplied computer tools. Report observed results and uncertainties.' : AGENT_INSTRUCTIONS)}\n\n${this.options.getIdentityInstructions?.() ?? ''}`,
         freshThreadContext: options?.freshThreadContext };
       await transport.request('run', input, 60_000);
     } catch (error) {

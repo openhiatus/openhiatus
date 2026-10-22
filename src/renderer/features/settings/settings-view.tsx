@@ -55,6 +55,10 @@ export function SettingsView({ state, workBusy, summaryInProgress, voice, onPref
   const recording = voice.phase === 'recording' || voice.phase === 'mic-test';
   const ready = state !== undefined;
   const overviewFactor = state?.preferences.computerOverviewScaleDivisor ?? 1;
+  const computerModel = state?.preferences.computerModel ?? '';
+  const computerModels = state?.models ?? [];
+  const computerConfigured = computerModels.some(model => model.id === computerModel);
+  const computerSettingsBusy = !ready || workBusy || summaryInProgress;
 
   function preference(value: PreferencesPatch): void {
     try { void Promise.resolve(onPreference(value)).catch(onError); } catch (error) { onError(error); }
@@ -148,7 +152,19 @@ export function SettingsView({ state, workBusy, summaryInProgress, voice, onPref
             {COMPUTER_OVERVIEW_FACTORS.map(factor => <option key={factor} value={factor}>{factor === 1 ? 'Vollbild (1:1)' : `Übersicht 1:${factor}`}</option>)}
             {!COMPUTER_OVERVIEW_FACTORS.some(factor => factor === overviewFactor) && <option value={overviewFactor}>Übersicht 1:{overviewFactor} (aktuell)</option>}
           </select><ChevronDown size={15} aria-hidden="true" /></div>
-          <p className="billing-note" id={`${id}-computer-overview-description`}>Das Arbeitsmodell erhält die Übersicht und bei verkleinerter Übersicht höchstens einen Detailausschnitt in Originalauflösung. Die Ausschnittgröße passt sich automatisch an die Bildschirmauflösung an. Eine kleinere Übersicht garantiert keine schnellere Bearbeitung.</p>
+          <p className="billing-note" id={`${id}-computer-overview-description`}>Das bedienende Modell erhält die Übersicht und bei verkleinerter Übersicht höchstens einen Detailausschnitt in Originalauflösung. Die Ausschnittgröße passt sich automatisch an die Bildschirmauflösung an. Eine kleinere Übersicht garantiert keine schnellere Bearbeitung.</p>
+          <label className="settings-toggle"><span><strong>Eigenes Computer-Modell verwenden</strong><small>Das Arbeitsmodell plant und prüft. Das Computer-Modell bekommt begrenzte Bedienaufträge und die Bildschirmbilder.</small></span><input type="checkbox" checked={state?.preferences.computerDelegationEnabled === true}
+            disabled={computerSettingsBusy || !computerConfigured} aria-describedby={`${id}-computer-model-description`} onChange={event => preference({ computerDelegationEnabled: event.target.checked })} /></label>
+          <label className="field-label" htmlFor={`${id}-computer-model`}>Computer-Modell</label>
+          <div className="select-wrap"><select id={`${id}-computer-model`} value={computerModel} disabled={computerSettingsBusy || !computerModels.length}
+            aria-describedby={`${id}-computer-model-description`} onChange={event => preference({ computerModel: event.target.value, ...(event.target.value === '' ? { computerDelegationEnabled: false } : {}) })}>
+            <option value="">{computerModels.length ? 'Computer-Modell auswählen' : 'Zuerst einen Anbieter einrichten'}</option>
+            {computerModel && !computerConfigured && <option value={computerModel}>{computerModel} – nicht verfügbar</option>}
+            {computerModels.map(model => <option key={model.id} value={model.id}>{model.label}</option>)}
+          </select><ChevronDown size={15} aria-hidden="true" /></div>
+          <label className="settings-toggle"><span><strong>Fast für das Computer-Modell</strong><small>Fordert die schnelle Verarbeitung beim Modellanbieter an.</small></span><input type="checkbox" checked={state?.preferences.computerFast !== false}
+            disabled={computerSettingsBusy || !computerConfigured} onChange={event => preference({ computerFast: event.target.checked })} /></label>
+          <p className="billing-note" id={`${id}-computer-model-description`}>Die getrennte Bedienung ist freiwillig und gilt ab dem nächsten Auftrag. Ohne Aktivierung bedient das Arbeitsmodell den Computer. Wähle ein Modell, das Bilder und Werkzeuge unterstützt. Fast wird separat angefordert; bei API-Zugängen können dafür höhere Kosten entstehen. Fast ist derzeit für ChatGPT- und OpenAI-Responses-Verbindungen umgesetzt.</p>
         </section>
         <section className="settings-card settings-shortcuts"><div className="settings-card-head"><span className="service-icon"><Keyboard size={22} aria-hidden="true" /></span><div><h2>Tastenkürzel</h2><p>Die wichtigsten Wege für Aufnahme, Versand und Stopp</p></div></div>
           <dl><div><dt><kbd>F8</kbd></dt><dd>Aufnahme starten oder beenden</dd></div><div><dt><kbd>F9</kbd></dt><dd>Den vorbereiteten Text senden</dd></div><div><dt><kbd>Strg</kbd><span> + </span><kbd>Enter</kbd></dt><dd>Text im Gespräch senden</dd></div><div><dt><kbd>Esc</kbd></dt><dd>Aufträge und Audio in openHiatus stoppen</dd></div><div><dt><kbd>Strg</kbd><span> + </span><kbd>Alt</kbd><span> + </span><kbd>F12</kbd></dt><dd>Globalen Stopp auslösen</dd></div></dl>

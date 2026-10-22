@@ -88,6 +88,51 @@ test('task admission preserves the complete original and owns all returned and w
   await f.tasks.dispose();
 });
 
+test('desktop model, Fast and image scale are captured before asynchronous admission and never borrowed from later settings', async () => {
+  const f = fixture();
+  const settings = { model: 'sol', progressSpeech: false, computerDelegationEnabled: true,
+    computerModel: 'chatgpt/gpt-6-luna', computerFast: true, computerOverviewScaleDivisor: 16 };
+  f.ports.settings = () => settings;
+  const pending = f.tasks.accept(f.admission('computer'));
+  settings.computerModel = 'different'; settings.computerFast = false; settings.computerOverviewScaleDivisor = 4;
+  const accepted = await pending; await tick();
+  const expected = { delegationEnabled: true, model: 'chatgpt/gpt-6-luna', fast: true, overviewScaleDivisor: 16 };
+  assert.deepEqual(accepted.job.computer, expected);
+  assert.deepEqual(f.workers[0].createdJob.computer, expected);
+  accepted.job.computer!.model = 'changed externally';
+  assert.deepEqual(f.tasks.get(accepted.job.id).computer, expected);
+  await f.tasks.dispose();
+});
+
+test('planner and cumulative computer usage combine once across subtasks and resumed turns; request tiers stay separate', async () => {
+  const f = fixture(); const accepted = await f.tasks.accept(f.admission('metrics')); await tick();
+  const worker = f.workers[0], count = (inputTokens: number) => ({ inputTokens, outputTokens: 1, cacheReadTokens: 2, cacheWriteTokens: 0 });
+  worker.emit({ type: 'usage', usage: count(100) });
+  worker.emit({ type: 'computer-usage', usage: count(10) });
+  worker.emit({ type: 'usage', usage: count(150) });
+  worker.emit({ type: 'computer-usage', usage: count(30) });
+  assert.equal(f.tasks.get(accepted.job.id).usage!.inputTokens, 180);
+  const request = { role: 'computer' as const, model: 'chatgpt/gpt-6-luna', requestedServiceTier: 'fast' as const,
+    elapsedMs: 1200, status: 'completed' as const, usage: count(10) };
+  worker.emit({ type: 'model-request', request: { ...request, actualServiceTier: 'fast' } });
+  worker.emit({ type: 'model-request', request: { ...request, actualServiceTier: 'default', status: 'failed' } });
+  worker.emit({ type: 'model-request', request });
+  worker.emit({ type: 'model-request', request: { ...request, actualServiceTier: 'fast' } });
+  let actual = f.tasks.get(accepted.job.id);
+  assert.equal(actual.usage!.inputTokens, 180, 'request diagnostics never count usage twice');
+  assert.deepEqual(actual.modelRequests!.map(row => [row.actualServiceTier, row.requests, row.completed, row.failed, row.elapsedMs, row.usage!.inputTokens]),
+    [['fast', 2, 2, 0, 2400, 20], ['default', 1, 0, 1, 1200, 10], [undefined, 1, 1, 0, 1200, 10]]);
+  worker.emit({ type: 'started', threadId: actual.threadId!, turnId: 'resumed-turn' });
+  worker.emit({ type: 'usage', usage: count(20) });
+  worker.emit({ type: 'computer-usage', usage: count(5) });
+  actual = f.tasks.get(accepted.job.id);
+  assert.equal(actual.usage!.inputTokens, 205);
+  worker.finish();
+  worker.emit({ type: 'computer-usage', usage: count(9999) });
+  assert.equal(f.tasks.get(accepted.job.id).usage!.inputTokens, 205);
+  await f.tasks.dispose();
+});
+
 test('failed admission and queued steering restore both owned state and the published job projection', async () => {
   const f = fixture(); f.failSave(true);
   await assert.rejects(f.tasks.accept(f.admission('retry')), /Datenträger/);

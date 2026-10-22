@@ -11,11 +11,29 @@ import { decodeParentMessage, decodeHostResult, decodeToolResponse, isWireRecord
   type CommandResponseArgs, type HostToParent, type HostRun, type HostEvent, type CredentialResult } from './agent-wire.js';
 import { piModel, redactError } from './providers.js';
 import { applyComputerImageDetail } from './computer-image-payload.js';
+import { applyRequestedServiceTier, assertFastModel, ModelRequestDiagnostics } from './model-request-diagnostics.js';
 export type { HostRun } from './agent-wire.js';
-interface SessionReference { file: string; dialog: boolean; workspace: string; }
+interface SessionReference { file: string; dialog: boolean; workspace: string; computerOnly?: boolean; }
+const BUILTIN_TOOLS = ['read', 'write', 'edit', 'powershell', 'grep', 'find', 'ls'];
 const identifier = (value: unknown): value is string => typeof value === 'string' && /^[a-f0-9-]{36}$/i.test(value);
 
-/** Explicit discovery switches are a security boundary for the dialog agent. */
+export function hostToolNames(input: Pick<HostRun, 'dialog' | 'computerOnly' | 'tools'>): string[] {
+  if (input.dialog && input.computerOnly) throw new Error('Ungültige Agent-Rolle.');
+  const registered = input.tools.map(tool => tool.name);
+  if (input.computerOnly && registered.some(name => BUILTIN_TOOLS.includes(name))) throw new Error('SDK-Arbeitswerkzeuge sind im Computeradapter gesperrt.');
+  return input.dialog || input.computerOnly ? registered : [...BUILTIN_TOOLS, ...registered];
+}
+
+/** Legacy references are ordinary workers; they can never be resumed by a restricted computer worker. */
+export function matchingSessionReference(value: unknown, input: Pick<HostRun, 'dialog' | 'computerOnly' | 'workspace'>, sessionsDirectory: string): SessionReference | undefined {
+  if (!isWireRecord(value) || typeof value.file !== 'string' || typeof value.dialog !== 'boolean' || typeof value.workspace !== 'string'
+    || (value.computerOnly !== undefined && typeof value.computerOnly !== 'boolean')) return;
+  if (value.dialog !== input.dialog || Boolean(value.computerOnly) !== Boolean(input.computerOnly) || resolve(value.workspace) !== resolve(input.workspace)
+    || !resolve(value.file).startsWith(resolve(sessionsDirectory) + '\\')) return;
+  return { file: value.file, dialog: value.dialog, workspace: value.workspace, ...(value.computerOnly ? { computerOnly: true } : {}) };
+}
+
+/** Explicit discovery switches are a security boundary for dialog and computer agents. */
 export function resourceOptions(input: Pick<HostRun, 'workspace' | 'home' | 'instructions'>, settingsManager?: SettingsManager): ConstructorParameters<typeof DefaultResourceLoader>[0] {
   return { cwd: input.workspace, agentDir: input.home, settingsManager,
     noExtensions: true, noSkills: true, noContextFiles: true, noPromptTemplates: true, noThemes: true,
@@ -44,7 +62,7 @@ export function imageContent(response: DynamicToolResponse, toolName?: string): 
 
 export class AgentHost {
   private session?: AgentSession;
-  private active?: { input: HostRun; aborted: boolean; abort: AbortController };
+  private active?: { input: HostRun; aborted: boolean; abort: AbortController; diagnostics: Set<ModelRequestDiagnostics> };
   private readonly pending = new Map<string, { resolve(value: unknown): void; reject(error: Error): void; cleanup(): void }>();
   private keys: string[] = [];
   constructor(private readonly send: (packet: HostToParent) => void) {}
@@ -115,8 +133,9 @@ export class AgentHost {
   private async run(input: HostRun): Promise<void> {
     if (this.active) throw new Error('Ein Auftrag läuft bereits.');
     this.keys = input.model.apiKey ? [input.model.apiKey] : [];
-    const active = { input, aborted: false, abort: new AbortController() }; this.active = active;
+    const active: NonNullable<AgentHost['active']> = { input, aborted: false, abort: new AbortController(), diagnostics: new Set() }; this.active = active;
     try {
+      const tools = hostToolNames(input);
       this.session?.dispose(); this.session = undefined;
       const pi = await import('@earendil-works/pi-coding-agent');
       const ai = await import('@earendil-works/pi-ai');
@@ -130,16 +149,19 @@ export class AgentHost {
         let saved: SessionReference | undefined;
         try {
           const value: unknown = JSON.parse(await readFile(join(referenceDirectory, `${input.threadId}.json`), 'utf8'));
-          if (isWireRecord(value) && typeof value.file === 'string' && typeof value.dialog === 'boolean' && typeof value.workspace === 'string') saved = { file: value.file, dialog: value.dialog, workspace: value.workspace };
+          saved = matchingSessionReference(value, input, sessionsDirectory);
         } catch { /* unknown session */ }
-        if (!saved || saved.dialog !== input.dialog || resolve(saved.workspace) !== resolve(input.workspace) || !resolve(saved.file).startsWith(resolve(sessionsDirectory) + '\\')) throw new Error(`Diese Sitzung gehört nicht zu diesem ${APP_DISPLAY_NAME}-Auftrag.`);
+        if (!saved) throw new Error(`Diese Sitzung gehört nicht zu diesem ${APP_DISPLAY_NAME}-Auftrag.`);
         sessionManager = pi.SessionManager.open(saved.file, sessionsDirectory, input.workspace);
       } else sessionManager = pi.SessionManager.create(input.workspace, sessionsDirectory);
       const model: Model<Api> = await piModel(input.model);
+      if (input.serviceTier) assertFastModel(model);
       const usage = { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 };
       let totalCost = 0;
       const subscription = input.model.authType === 'chatgpt';
-      const knownPrice = !subscription && input.model.provider !== 'local' && Object.values(model.cost ?? {}).some(value => typeof value === 'number' && value > 0);
+      // The SDK's static price table does not account for the returned Fast tier.
+      const knownPrice = !subscription && !input.serviceTier && input.model.provider !== 'local' && Object.values(model.cost ?? {}).some(value => typeof value === 'number' && value > 0);
+      const finite = (value: unknown) => typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : 0;
       const stored = new ai.InMemoryCredentialStore();
       await stored.modify(input.model.provider, async () => ({ type: 'api_key', key: subscription ? 'openhiatus-managed-chatgpt' : input.model.apiKey }));
       const credentials: import('@earendil-works/pi-ai').CredentialStore = subscription ? {
@@ -155,11 +177,10 @@ export class AgentHost {
       const settingsManager = pi.SettingsManager.inMemory({ packages: [], extensions: [], skills: [], prompts: [], themes: [],
         retry: { enabled: false, provider: { maxRetries: 0 } }, cacheWarming: 'off' }, { projectTrusted: false });
       const resourceLoader = new pi.DefaultResourceLoader({ ...resourceOptions(input, settingsManager),
-        skillsOverride: () => input.dialog ? { skills: [], diagnostics: [] } : pi.loadSkillsFromDir({ dir: join(input.home, 'skills'), source: APP_DISPLAY_NAME }),
+        skillsOverride: () => input.dialog || input.computerOnly ? { skills: [], diagnostics: [] } : pi.loadSkillsFromDir({ dir: join(input.home, 'skills'), source: APP_DISPLAY_NAME }),
       });
       await resourceLoader.reload();
       const customTools = input.tools.map(definition => this.tool(input, definition));
-      const tools = input.dialog ? input.tools.map(tool => tool.name) : ['read', 'write', 'edit', 'powershell', 'grep', 'find', 'ls', ...input.tools.map(tool => tool.name)];
       const { session } = await pi.createAgentSession({ cwd: input.workspace, agentDir: input.home, modelRuntime, model,
         settingsManager, sessionManager, resourceLoader, tools, customTools, thinkingLevel: 'medium' });
       this.session = session;
@@ -168,23 +189,46 @@ export class AgentHost {
         const transformed = await onPayload?.(payload, requestModel);
         return applyComputerImageDetail(transformed === undefined ? payload : transformed, session.messages, requestModel);
       };
-      if (subscription) {
-        const stream = session.agent.streamFunction;
-        session.agent.streamFunction = (requestModel, context, options) => stream(requestModel, context, { ...options, cacheRetention: 'none', maxRetries: 0 });
-        const observe = session.agent.onProviderStreamEvent;
-        session.agent.onProviderStreamEvent = async (data, requestModel) => {
-          const event = isWireRecord(data) ? data : undefined;
-          if (event?.type === 'response.incomplete' || (event?.type === 'response.completed' && (!isWireRecord(event.response) || event.response.status !== 'completed'))) {
-            throw new Error('Die ChatGPT-Antwort wurde nicht vollständig abgeschlossen. Bitte erneut versuchen.');
-          }
-          await observe?.(data, requestModel);
+      const stream = session.agent.streamFunction;
+      session.agent.streamFunction = async (requestModel, context, options) => {
+        const diagnostics = new ModelRequestDiagnostics(input.computerOnly ? 'computer' : input.dialog ? 'dialog' : 'worker', input.serviceTier,
+          request => this.emit(input.runId, { type: 'model-request', request }));
+        active.diagnostics.add(diagnostics);
+        diagnostics.start(`${input.model.provider}/${requestModel.id}`);
+        const finish = (status: 'completed' | 'failed' | 'aborted', reported?: import('@earendil-works/pi-ai').Usage) => {
+          diagnostics.finish(status, reported ? { inputTokens: finite(reported.input), outputTokens: finite(reported.output), cacheReadTokens: finite(reported.cacheRead), cacheWriteTokens: finite(reported.cacheWrite),
+            ...(knownPrice ? { costUsd: finite(reported.cost?.total) } : {}) } : undefined);
+          active.diagnostics.delete(diagnostics);
         };
-      }
+        try {
+          // Compaction uses the same stream function without the agent's payload/event hooks.
+          // Install request-scoped hooks here so it also carries Fast and complete diagnostics.
+          const result = await stream(requestModel, context, { ...options, ...(subscription ? { cacheRetention: 'none' } : {}), maxRetries: 0,
+            onPayload: async (payload, actualModel) => {
+              const transformed = await options?.onPayload?.(payload, actualModel);
+              return applyRequestedServiceTier(transformed === undefined ? payload : transformed, actualModel, input.serviceTier);
+            },
+            onProviderStreamEvent: async (data, actualModel) => {
+              diagnostics.observe(data);
+              const event = isWireRecord(data) ? data : undefined;
+              if (subscription && (event?.type === 'response.incomplete' || (event?.type === 'response.completed' && (!isWireRecord(event.response) || event.response.status !== 'completed')))) {
+                throw new Error('Die ChatGPT-Antwort wurde nicht vollständig abgeschlossen. Bitte erneut versuchen.');
+              }
+              await options?.onProviderStreamEvent?.(data, actualModel);
+            },
+          });
+          void result.result().then(message => finish(active.aborted || message.stopReason === 'aborted' ? 'aborted' : message.stopReason === 'error' ? 'failed' : 'completed', message.usage),
+            () => finish(active.aborted ? 'aborted' : 'failed'));
+          return result;
+        } catch (error) {
+          finish(active.abort.signal.aborted ? 'aborted' : 'failed'); throw error;
+        }
+      };
       const names = session.getActiveToolNames();
-      if (input.dialog && names.some(name => !input.tools.some(tool => tool.name === name))) { session.dispose(); throw new Error('Dialog-Werkzeuggrenze konnte nicht bestätigt werden.'); }
+      if ((input.dialog || input.computerOnly) && names.some(name => !input.tools.some(tool => tool.name === name))) { session.dispose(); throw new Error('Agent-Werkzeuggrenze konnte nicht bestätigt werden.'); }
       const threadId = session.sessionId;
       const indexPath = join(referenceDirectory, `${threadId}.json`);
-      const reference: SessionReference = { file: sessionManager.getSessionFile()!, dialog: input.dialog, workspace: input.workspace };
+      const reference: SessionReference = { file: sessionManager.getSessionFile()!, dialog: input.dialog, workspace: input.workspace, ...(input.computerOnly ? { computerOnly: true } : {}) };
       const temporary = `${indexPath}.${input.runId}.tmp`;
       await writeFile(temporary, JSON.stringify(reference), 'utf8'); await rename(temporary, indexPath);
       session.subscribe(event => {
@@ -192,7 +236,6 @@ export class AgentHost {
         if (event.type === 'message_update' && event.assistantMessageEvent.type === 'text_delta') this.emit(input.runId, { type: 'delta', text: event.assistantMessageEvent.delta });
         if (event.type === 'message_end' && event.message.role === 'assistant') {
           const reported = event.message.usage;
-          const finite = (value: unknown) => typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : 0;
           usage.inputTokens += finite(reported.input); usage.outputTokens += finite(reported.output);
           usage.cacheReadTokens += finite(reported.cacheRead); usage.cacheWriteTokens += finite(reported.cacheWrite);
           totalCost += finite(reported.cost?.total);
@@ -213,11 +256,11 @@ export class AgentHost {
         this.emit(input.runId, { type: 'completed', status: 'completed', text: session.getLastAssistantText() ?? '' });
       }).catch(error => {
         if (this.active === active && !active.aborted) this.emit(input.runId, { type: 'completed', status: 'failed', error: redactError(error, this.keys) });
-      }).finally(() => { if (this.active === active) this.active = undefined; });
-    } catch (error) { if (this.active === active) this.active = undefined; throw error; }
+      }).finally(() => { for (const diagnostics of active.diagnostics) diagnostics.finish(active.aborted ? 'aborted' : 'failed'); active.diagnostics.clear(); if (this.active === active) this.active = undefined; });
+    } catch (error) { for (const diagnostics of active.diagnostics) diagnostics.finish(active.aborted ? 'aborted' : 'failed'); active.diagnostics.clear(); if (this.active === active) this.active = undefined; throw error; }
   }
   async abort(): Promise<void> {
-    if (this.active) { this.active.aborted = true; this.active.abort.abort(); }
+    if (this.active) { this.active.aborted = true; this.active.abort.abort(); for (const diagnostics of this.active.diagnostics) diagnostics.finish('aborted'); this.active.diagnostics.clear(); }
     for (const entry of this.pending.values()) { entry.cleanup(); entry.reject(new Error('Auftrag wurde unterbrochen.')); }
     this.pending.clear(); await this.session?.abort();
   }

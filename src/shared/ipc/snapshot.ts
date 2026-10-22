@@ -1,6 +1,8 @@
 import type { ComputerFrame, Snapshot } from '../contracts';
 import { MAX_COMPUTER_DETAIL_PIXELS, type ComputerObservation, type ComputerRect } from '../computer-views';
 import { parseSkillFavorites } from '../skill-favorites';
+import { parseComputerTaskSettings } from '../computer-task-settings';
+import { parseModelRequestSummaries } from '../model-requests';
 import { array, boolean, choice, integer, invalidPayload, number, object, optional, text, type Decoder } from './decode';
 
 const id = text(1024), at = text(100), short = text(4096), body = text();
@@ -21,7 +23,8 @@ export const decodeSnapshot: Decoder<Snapshot> = object({
   preferences: object({ inputDeviceId: short, outputDeviceId: short, speakReplies: boolean, voiceId: short, model: short, dialogModel: short, memoryModel: short,
     inputDeviceLabel: optional(text(1000)), inputDeviceGroupId: optional(text(1000)), outputDeviceLabel: optional(text(1000)), outputDeviceGroupId: optional(text(1000)),
     memoryAutoSummarize: optional(boolean), voiceConversation: optional(boolean), earcons: optional(boolean), skillFavorites: optional(parseSkillFavorites),
-    fullAccessAcknowledged: optional(boolean), chatgptBackgroundUsage: optional(boolean), computerOverviewScaleDivisor: optional(overviewPreference) }),
+    fullAccessAcknowledged: optional(boolean), chatgptBackgroundUsage: optional(boolean), computerOverviewScaleDivisor: optional(overviewPreference),
+    computerDelegationEnabled: optional(boolean), computerModel: optional(text(300)), computerFast: optional(boolean) }),
   connections: object({ agent: choice(['offline', 'missing', 'ready', 'connecting']), account: body, speech: choice(['missing', 'saved', 'verified']) }),
   models,
   providers: optional(array(object({ id, label: short, configured: boolean, verified: boolean, baseUrl: optional(short), models,
@@ -31,7 +34,7 @@ export const decodeSnapshot: Decoder<Snapshot> = object({
   workspace: short, version: short,
   jobs: optional(array(object({ id, requestId: short, title: body, prompt: body, status: choice(['queued', 'running', 'stopping', 'completed', 'interrupted', 'failed']),
     createdAt: at, updatedAt: at, model: short, resources: array(short, 24), threadId: optional(body), turnId: optional(body), result: optional(body), error: optional(body),
-    runtimeRetained: optional(boolean), usage: optional(usage) }), 1000)),
+    runtimeRetained: optional(boolean), usage: optional(usage), computer: optional(parseComputerTaskSettings), modelRequests: optional(parseModelRequestSummaries) }), 1000)),
   speech: optional(array(object({ id, text: body, at, jobId: optional(id), kind: optional(choice(['progress', 'receipt'])) }), 1000)),
   summary: optional(summary), context: optional(object({ threadId: body, usedTokens: number, windowTokens: optional(number), at })), usage: optional(usage),
 });

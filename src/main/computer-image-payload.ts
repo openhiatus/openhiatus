@@ -7,7 +7,7 @@ export function applyComputerImageDetail(payload: unknown, messages: readonly un
   // https://developers.openai.com/api/docs/guides/images-vision
   if (model.api !== 'openai-responses' || model.provider !== 'openai'
     || !/^https:\/\/api\.openai\.com\/v1\/?$/.test(model.baseUrl)
-    || !/^gpt-(?:6\.1-sol|6-astra|5\.6-(?:sol|terra|luna)|5\.5|5\.4(?:-mini|-nano)?)(?:-\d{4}-\d{2}-\d{2})?$/.test(model.id)) return payload;
+    || !/^gpt-(?:6\.1-sol|6-astra|6-luna|5\.6-(?:sol|terra|luna)|5\.5|5\.4(?:-mini|-nano)?)(?:-\d{4}-\d{2}-\d{2})?$/.test(model.id)) return payload;
   if (!isWireRecord(payload) || !Array.isArray(payload.input)) return payload;
   const calls = new Map<string, Set<string>>();
   for (const message of messages) {

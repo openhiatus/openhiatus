@@ -1,4 +1,5 @@
 import type { AgentEvent, DynamicFunctionTool, DynamicToolResponse } from '../shared/contracts.js';
+import { MODEL_SERVICE_TIERS } from '../shared/model-requests.js';
 import type { ResolvedModel } from './providers.js';
 
 export const MAX_PACKET_BYTES = 80 * 1024 * 1024;
@@ -9,6 +10,7 @@ type Empty = Record<string, never>;
 export interface HostRun {
   runId: string; text: string; workspace: string; home: string; model: ResolvedModel; threadId?: string;
   dialog: boolean; tools: DynamicFunctionTool[]; instructions: string; freshThreadContext?: string;
+  computerOnly?: boolean; serviceTier?: 'fast';
 }
 export interface CommandParams {
   hello: Empty; run: HostRun; steer: { runId: string; text: string }; abort: Empty;
@@ -28,7 +30,7 @@ export type HostRequest<M extends HostRequestMethod = HostRequestMethod> = { [K 
 export type HostResponseArgs = { [K in HostRequestMethod]: [request: HostRequest<K>, result: HostResults[K]] }[HostRequestMethod];
 export type CommandResponseArgs = { [K in CommandMethod]: [request: CommandRequest<K>, result: CommandResults[K]] }[CommandMethod];
 /** The host cannot publish main-process connection/model/desktop events. */
-export type HostEvent = Extract<AgentEvent, { type: 'started' | 'delta' | 'commentary' | 'context' | 'usage' | 'activity' | 'completed' }>;
+export type HostEvent = Extract<AgentEvent, { type: 'started' | 'delta' | 'commentary' | 'context' | 'usage' | 'model-request' | 'activity' | 'completed' }>;
 export type HostNotification = { method: 'event'; params: { runId: string; event: HostEvent } };
 export type NativeOwnership = { method: 'openhiatus/host/child'; params: { control: string; pid: number } };
 /** A response has no method on the wire; its result remains unknown until ID lookup supplies that method. */
@@ -68,12 +70,16 @@ function toolDefinition(value: unknown): DynamicFunctionTool {
 export function decodeRun(value: unknown): HostRun {
   const input = record(value);
   if (typeof input.dialog !== 'boolean' || !Array.isArray(input.tools) || input.tools.length > 100) fail();
+  if (input.computerOnly !== undefined && typeof input.computerOnly !== 'boolean') fail();
+  if (input.computerOnly && input.dialog) fail();
+  if (input.serviceTier !== undefined && (input.serviceTier !== 'fast' || !input.computerOnly)) fail();
   const tools = Array.from(input.tools, toolDefinition);
   if (new Set(tools.map(tool => tool.name)).size !== tools.length) fail();
   const threadId = input.threadId === undefined ? undefined : uuid(input.threadId);
   const freshThreadContext = optionalText(input.freshThreadContext, MAX_PACKET_BYTES);
   return { runId: uuid(input.runId), text: text(input.text, MAX_PROMPT_CHARS, true), workspace: text(input.workspace, 32_768, true), home: text(input.home, 32_768, true),
     instructions: text(input.instructions, MAX_PROMPT_CHARS), model: model(input.model), dialog: input.dialog, tools,
+    ...(input.computerOnly === undefined ? {} : { computerOnly: input.computerOnly }), ...(input.serviceTier === undefined ? {} : { serviceTier: input.serviceTier }),
     ...(threadId === undefined ? {} : { threadId }), ...(freshThreadContext === undefined ? {} : { freshThreadContext }) };
 }
 export function decodeToolResponse(value: unknown): DynamicToolResponse {
@@ -118,6 +124,20 @@ function event(value: unknown): HostEvent {
       const usage = record(input.usage);
       return { type: 'usage', usage: { inputTokens: finite(usage.inputTokens), outputTokens: finite(usage.outputTokens), cacheReadTokens: finite(usage.cacheReadTokens), cacheWriteTokens: finite(usage.cacheWriteTokens),
         ...(usage.costUsd === undefined ? {} : { costUsd: finite(usage.costUsd) }) } };
+    }
+    case 'model-request': {
+      const request = record(input.request);
+      if (typeof request.role !== 'string' || !['dialog', 'worker', 'computer'].includes(request.role)
+        || typeof request.status !== 'string' || !['completed', 'failed', 'aborted'].includes(request.status)) fail();
+      if (request.requestedServiceTier !== undefined && request.requestedServiceTier !== 'fast') fail();
+      if (request.actualServiceTier !== undefined && (typeof request.actualServiceTier !== 'string' || !(MODEL_SERVICE_TIERS as readonly string[]).includes(request.actualServiceTier))) fail();
+      const usage = request.usage === undefined ? undefined : record(request.usage);
+      return { type: 'model-request', request: { role: request.role as 'dialog' | 'worker' | 'computer', model: identifier(request.model),
+        status: request.status as 'completed' | 'failed' | 'aborted', elapsedMs: finite(request.elapsedMs),
+        ...(request.requestedServiceTier === undefined ? {} : { requestedServiceTier: 'fast' }),
+        ...(request.actualServiceTier === undefined ? {} : { actualServiceTier: request.actualServiceTier as string }),
+        ...(usage ? { usage: { inputTokens: finite(usage.inputTokens), outputTokens: finite(usage.outputTokens), cacheReadTokens: finite(usage.cacheReadTokens), cacheWriteTokens: finite(usage.cacheWriteTokens),
+          ...(usage.costUsd === undefined ? {} : { costUsd: finite(usage.costUsd) }) } } : {}) } };
     }
     case 'activity': {
       const kind = input.kind;

@@ -43,6 +43,23 @@ test('changing a device ID without identity metadata cannot retain the previous 
   await f.app.dispose();
 });
 
+test('computer delegation requires an available role and safely disables when its model disappears', async () => {
+  const f = fixture();
+  assert.equal(f.app.snapshot().preferences.computerDelegationEnabled, false);
+  assert.equal(f.app.snapshot().preferences.computerFast, true);
+  await assert.rejects(f.app.savePreferences({ computerDelegationEnabled: true }), /Computer-Modell/);
+  await assert.rejects(f.app.savePreferences({ computerModel: 'unavailable', computerDelegationEnabled: true }), /nicht verfügbar/);
+  await assert.rejects(f.app.savePreferences({ computerFast: 'true' } as never), /Fast-Einstellung/);
+  await f.app.savePreferences({ computerModel: 'test-model', computerDelegationEnabled: true, computerFast: false });
+  assert.equal(f.app.snapshot().preferences.computerDelegationEnabled, true);
+  assert.equal(f.app.snapshot().preferences.model, 'test-model');
+  f.app.handle({ type: 'models', models: [{ id: 'replacement', label: 'Other model' }] });
+  assert.equal(f.app.snapshot().preferences.computerModel, '');
+  assert.equal(f.app.snapshot().preferences.computerDelegationEnabled, false);
+  await f.app.savePreferences({ computerModel: '', computerDelegationEnabled: false });
+  await f.app.dispose();
+});
+
 test('computer previews are transient and late frames after Stop are not published', async () => {
   const f = fixture();
   const frame: ComputerFrame = { dataUrl: 'data:image/png;base64,cHJpdmF0ZS1zY3JlZW4=', frameId: 'frame-test', width: 10, height: 10, at: new Date().toISOString() };

@@ -8,6 +8,8 @@ import { PiAdapter } from './pi';
 import { createToolRegistry, defineTool } from './modules/tools';
 import { ServiceBroker } from './modules/services';
 import { createComputerToolContribution } from './platform/tools';
+import { createDelegatedComputerToolContribution } from './platform/tools/computer-delegation';
+import { AGENT_INSTRUCTIONS, COMPUTER_PLANNER_INSTRUCTIONS } from './instructions';
 import { ProviderStore, ModelClient } from './providers';
 import { StateStore, CredentialStore } from './storage';
 import { WorkerStateStore, WorkerMemoryStore } from './platform/persistence';
@@ -76,9 +78,18 @@ async function createApp(): Promise<void> {
       },
     })) }) }]), onEvent: event => controller?.handleDialog(event),
   });
-  const createWorker = (onEvent: (event: AgentEvent) => void, job: BackgroundJob) => new PiAdapter({ ...runtimeOptions, role: 'worker',
-    tools: createToolRegistry([computerTools(), serviceBroker.createReadTools(job.id)]),
-    getIdentityInstructions: () => job.identityInstructions ?? '', onEvent });
+  const createWorker = (onEvent: (event: AgentEvent) => void, job: BackgroundJob) => {
+    // Admission captured these values before asynchronous memory lookup/queueing.
+    const computer = job.computer;
+    const desktop = computer?.delegationEnabled ? createDelegatedComputerToolContribution({ model: computer.model, fast: computer.fast,
+      getOverviewScaleDivisor: () => computer.overviewScaleDivisor,
+      createWorker: (onEvent, tools, instructions) => new PiAdapter({ ...runtimeOptions, role: 'worker', computerOnly: true, instructions, tools, onEvent }),
+    }) : createComputerToolContribution({ getOverviewScaleDivisor: () => computer?.overviewScaleDivisor ?? 1 });
+    return new PiAdapter({ ...runtimeOptions, role: 'worker',
+      ...(computer?.delegationEnabled ? { instructions: `${AGENT_INSTRUCTIONS}\n\n${COMPUTER_PLANNER_INSTRUCTIONS}` } : {}),
+      tools: createToolRegistry([desktop, serviceBroker.createReadTools(job.id)]),
+      getIdentityInstructions: () => job.identityInstructions ?? '', onEvent });
+  };
   const speech = new SpeechService({ getKey: () => credentials.get('inworld'), getVoice: () => controller?.snapshot().preferences.voiceId || 'Dennis', cacheDirectory: path.join(dataDirectory, 'speech-cache') });
   controller = new AppController({ version: app.getVersion(), store, credentials, speech, memory, providers, chatgpt, modelClient: new ModelClient(providers), agent: runtime, dialogAgent: dialogRuntime, createWorker, workspace, profileDirectory: dataDirectory,
     publishComputerFrame: frame => { if (window && !window.isDestroyed()) window.webContents.send('openhiatus:computer-frame', decodeComputerFrame(frame)); },

@@ -2,6 +2,15 @@ import type { SkillFavorites } from './skill-favorites';
 import type { MemorySnapshot, MemorySource, MemorySearchResult, MemoryPeriodRequest, MemoryPeriodPage, SummaryJobState } from './memory';
 
 export interface Usage { inputTokens: number; outputTokens: number; cacheReadTokens: number; cacheWriteTokens: number; costUsd?: number; }
+/** Immutable desktop configuration captured when a task is admitted. */
+export interface ComputerTaskSettings { delegationEnabled: boolean; model: string; fast: boolean; overviewScaleDivisor: number; }
+export interface ModelRequest {
+  role: 'dialog' | 'worker' | 'computer'; model: string;
+  requestedServiceTier?: 'fast'; actualServiceTier?: string;
+  elapsedMs: number; status: 'completed' | 'failed' | 'aborted'; usage?: Usage;
+}
+/** Bounded aggregates, grouped by role, model and requested/returned service tier. */
+export interface ModelRequestSummary extends Omit<ModelRequest, 'status'> { requests: number; completed: number; failed: number; aborted: number; }
 export type TaskStatus = 'idle' | 'running' | 'stopping' | 'completed' | 'interrupted' | 'failed';
 export interface Message { id: string; role: 'user' | 'assistant'; text: string; at: string; source?: 'agent'; jobId?: string; }
 export interface Activity { id: string; at: string; kind: 'system' | 'command' | 'file' | 'error'; title: string; detail?: string; }
@@ -10,6 +19,7 @@ export interface Preferences {
   inputDeviceId: string; outputDeviceId: string;
   inputDeviceLabel?: string; inputDeviceGroupId?: string; outputDeviceLabel?: string; outputDeviceGroupId?: string;
   computerOverviewScaleDivisor?: number;
+  computerDelegationEnabled?: boolean; computerModel?: string; computerFast?: boolean;
   speakReplies: boolean; voiceId: string; model: string; memoryAutoSummarize?: boolean; voiceConversation?: boolean; earcons?: boolean; skillFavorites?: SkillFavorites; dialogModel: string; memoryModel: string; fullAccessAcknowledged?: boolean; chatgptBackgroundUsage?: boolean;
 }
 export type PreferencesPatch = Partial<Omit<Preferences, 'fullAccessAcknowledged'>>;
@@ -17,6 +27,7 @@ export interface BackgroundJob {
   id: string; requestId: string; title: string; prompt: string;
   status: 'queued' | 'running' | 'stopping' | 'completed' | 'interrupted' | 'failed';
   createdAt: string; updatedAt: string; model: string; resources: string[];
+  computer?: ComputerTaskSettings; modelRequests?: ModelRequestSummary[];
   threadId?: string; turnId?: string; result?: string; error?: string; runtimeRetained?: boolean; identityInstructions?: string; usage?: Usage;
 }
 export type BackgroundJobView = Omit<BackgroundJob, 'identityInstructions'>;
@@ -92,6 +103,9 @@ export type AgentEvent =
   | { type: 'commentary'; text: string; itemId?: string }
   | { type: 'context'; threadId: string; usedTokens: number; windowTokens?: number }
   | { type: 'usage'; usage: Usage }
+  /** Cumulative computer usage within the current parent turn; separate from planner usage. */
+  | { type: 'computer-usage'; usage: Usage }
+  | { type: 'model-request'; request: ModelRequest }
   | { type: 'activity'; kind: Activity['kind']; title: string; detail?: string }
   | { type: 'completed'; status: 'completed' | 'interrupted' | 'failed'; text?: string; error?: string }
 ;
@@ -107,6 +121,7 @@ export interface AgentAdapter {
 
 export interface AgentRunOptions {
   purpose?: 'dialog';
+  serviceTier?: 'fast';
   /** Prepended only for a new session; a resumed session already holds this context. */
   freshThreadContext?: string;
 }

@@ -3,29 +3,29 @@ import assert from 'node:assert/strict';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { basename, dirname, join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
-import { PiAdapter } from '../src/main/pi';
+import { PiAdapter, type PiAdapterOptions } from '../src/main/pi';
 import { ProviderStore } from '../src/main/providers';
 import { createToolRegistry, defineTool, type RegisteredTool, type ToolsetPort } from '../src/main/modules/tools';
 import type { AgentEvent, DynamicToolResponse } from '../src/shared/contracts';
-import type { AgentTransport, TransportCallbacks } from '../src/main/agent-protocol';
+import type { AgentTransport, TransportCallbacks, HostRun } from '../src/main/agent-protocol';
 import { fakeCommandRequest, fakeHostPacket } from './support/agent-transport';
 
 const response = (text = 'done'): DynamicToolResponse => ({ success: true, contentItems: [{ type: 'inputText', text }] });
 const definition = (name: string) => ({ type: 'function' as const, name, description: 'Synthetic tool', inputSchema: { type: 'object' } });
 const tick = () => new Promise<void>(done => setImmediate(done));
-async function fixture(t: { after(action: () => Promise<void>): void }, tools?: ToolsetPort, role?: 'worker' | 'dialog') {
+async function fixture(t: { after(action: () => Promise<void>): void }, tools?: ToolsetPort, role?: 'worker' | 'dialog', extra: Pick<PiAdapterOptions, 'computerOnly' | 'instructions'> = {}) {
   const directory = await mkdtemp(join(tmpdir(), 'openhiatus-pi-tools-'));
   const providers = new ProviderStore(directory, { get: () => undefined, set: () => {}, remove: () => {} });
   await providers.save({ id: 'local', models: ['test'] });
-  let callbacks!: TransportCallbacks, input: { runId: string; tools: { name: string }[]; dialog: boolean } | undefined, terminated = 0;
+  let callbacks!: TransportCallbacks, input: HostRun | undefined, terminated = 0;
   const events: AgentEvent[] = [], replies: { id: string; result: any }[] = [];
   const transport: AgentTransport = {
     request: fakeCommandRequest(request => { if (request.method === 'run') input = request.params; return request.method === 'hello' ? { protocol: 1 } : { accepted: true }; }),
     notify: () => {}, respond: (request, result) => { replies.push({ id: request.id, result }); }, managedProcessCount: async () => 0,
     terminate: async () => { terminated++; callbacks.closed(true); },
   };
-  const adapter = new PiAdapter({ executable: 'unused', processHost: 'unused', hostEntry: 'unused', workspace: directory, home: directory, providers, tools, role, onEvent: event => { events.push(event); } },
-    { connect: (value, options) => { assert.equal(options.allowHandoff, role !== 'dialog'); callbacks = value; return transport; } });
+  const adapter = new PiAdapter({ executable: 'unused', processHost: 'unused', hostEntry: 'unused', workspace: directory, home: directory, providers, tools, role, ...extra, onEvent: event => { events.push(event); } },
+    { connect: (value, options) => { assert.equal(options.allowHandoff, role !== 'dialog' && !extra.computerOnly); callbacks = value; return transport; } });
   t.after(async () => {
     await adapter.dispose();
     assert.equal(dirname(resolve(directory)).toLowerCase(), resolve(tmpdir()).toLowerCase());
@@ -65,6 +65,17 @@ test('Pi has no ambient host tools and dialog role rejects accidentally attached
   const dialog = await fixture(t, tools, 'dialog'); await dialog.adapter.run('Hello', 'local/test', undefined, { purpose: 'dialog' });
   assert.equal(dialog.input.dialog, true); assert.deepEqual(dialog.input.tools.map(tool => tool.name), ['status_task']);
   dialog.packet({ id: 'worker', method: 'tool', params: { toolCallId: 'worker', name: 'service_read', args: {} } }); assert.equal(dialog.replies.at(-1)?.result.success, false);
+});
+test('restricted computer adapter forwards explicit Fast and instructions without enabling process handoff', async t => {
+  const f = await fixture(t, undefined, 'worker', { computerOnly: true, instructions: 'Only perform the bounded UI request.' });
+  await f.adapter.run('Observe', 'local/test', undefined, { serviceTier: 'fast' });
+  assert.equal(f.input.computerOnly, true); assert.equal(f.input.dialog, false); assert.equal(f.input.serviceTier, 'fast');
+  assert.equal(f.input.instructions.trim(), 'Only perform the bounded UI request.');
+  f.packet({ method: 'event', params: { event: { type: 'model-request', request: { role: 'computer', model: 'openai/gpt-6-luna', requestedServiceTier: 'fast', actualServiceTier: 'default', elapsedMs: 10, status: 'completed' } } } });
+  assert.ok(f.events.some(event => event.type === 'model-request' && event.request.actualServiceTier === 'default'));
+  const worker = await fixture(t);
+  await assert.rejects(worker.adapter.run('Not a computer adapter', 'local/test', undefined, { serviceTier: 'fast' }), /getrennte Computerbedienung/);
+  assert.equal(Boolean(worker.input), false);
 });
 
 test('turn completion aborts admitted tool handlers and drops their late response in a later run', async t => {

@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import type { Activity, AgentAdapter, AgentEvent, BackgroundJob, ComputerFrame, Message, SpeechCue } from '../../../shared/contracts';
+import type { Activity, AgentAdapter, AgentEvent, BackgroundJob, ComputerFrame, ComputerTaskSettings, Message, SpeechCue } from '../../../shared/contracts';
+import { parseComputerTaskSettings } from '../../../shared/computer-task-settings';
 import type { CoreProposal, CoreProposalInput, MemoryDocument, MemoryPeriodPage, MemoryPeriodRequest } from '../../../shared/memory';
 import { toSpokenText } from '../../../shared/spoken-text';
 import { JobManager, type JobRequest } from './manager';
@@ -16,7 +17,7 @@ export interface ParsedTaskReply { text: string; proposals: CoreProposalInput[];
 export interface BackgroundTaskPorts {
   createWorker(onEvent: (event: AgentEvent) => void, job: BackgroundJob): AgentAdapter;
   access: { assertFullAccess(): void; blocked(): boolean; };
-  settings(): { model: string; progressSpeech: boolean };
+  settings(): { model: string; progressSpeech: boolean; computerDelegationEnabled?: boolean; computerModel?: string; computerFast?: boolean; computerOverviewScaleDivisor?: number };
   context: {
     skills(query: string, maxBytes: number): string;
     capabilities(): string;
@@ -55,6 +56,7 @@ interface JobContext {
 interface AdmissionContext {
   documents: readonly Pick<MemoryDocument, 'id' | 'version' | 'content'>[];
   model: string;
+  computer: ComputerTaskSettings;
   capabilities: string;
   favorites: string;
 }
@@ -128,7 +130,10 @@ export class BackgroundTaskCoordinator {
       if (this.blocked()) throw new Error('Aufgaben werden gerade beendet.');
       const waiting = [...this.admissions.keys()].filter(id => !this.jobs.some(job => job.requestId === id)).length;
       if (!this.jobs.some(job => job.requestId === input.requestId) && this.jobs.filter(job => ['queued', 'running', 'stopping'].includes(job.status)).length + waiting >= 50) throw new Error('Es warten bereits 50 Aufgaben. Bitte zuerst einige abschließen oder stoppen.');
-      const frozen: AdmissionContext = { documents: structuredClone(this.ports.memory?.documents() ?? []), model: this.ports.settings().model,
+      const settings = this.ports.settings();
+      const computer = parseComputerTaskSettings({ delegationEnabled: settings.computerDelegationEnabled === true, model: settings.computerModel ?? '',
+        fast: settings.computerFast !== false, overviewScaleDivisor: settings.computerOverviewScaleDivisor ?? 1 });
+      const frozen: AdmissionContext = { documents: structuredClone(this.ports.memory?.documents() ?? []), model: settings.model, computer,
         capabilities: this.clean(this.ports.context.capabilities()), favorites: this.ports.context.favorites() };
       const generation = this.generation, request = structuredClone(input);
       const accepted = this.admissionTail.then(() => this.admit(request, frozen, generation, onAdmitted));
@@ -186,7 +191,7 @@ export class BackgroundTaskCoordinator {
     const prompt = additional ? `${additional}\n\n${fullRequest}` : fullRequest;
     const { history: _history, sourceMessageId, ...request } = input;
     const instructions = [identity, frozen.capabilities, frozen.favorites].filter(Boolean).join('\n\n');
-    const accepted = await this.enqueue({ ...request, prompt, identityInstructions: instructions, model: frozen.model }, job => {
+    const accepted = await this.enqueue({ ...request, prompt, identityInstructions: instructions, model: frozen.model, computer: frozen.computer }, job => {
       if (generation !== this.generation || this.blocked()) throw new Error('Aufgaben werden gerade beendet.');
       this.jobMemory.set(job.id, { versions, sourceIds: [sourceMessageId], reads: 0, readKeys: new Set() });
       this.activity('system', 'Aufgabe angenommen', `${request.title} · ${job.id}`);

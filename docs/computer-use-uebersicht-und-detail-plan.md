@@ -276,4 +276,6 @@ Für die Auswahlentscheidung gilt als zu prüfende Rechnung: gesparte Übertragu
 
 ## Abgrenzung der ersten Version
 
+Der zusätzliche Versuch mit getrenntem Arbeits- und Computermodell ist in [Computer-Use mit Computermodell](computer-use-computermodell.md) beschrieben. Er verwendet denselben Bild- und Koordinatenvertrag. Seine Modellübergaben, Fast-Stufe und gesonderten Verbräuche müssen bei Vergleichen zusätzlich erfasst werden.
+
 Die erste Versuchsphase umfasst die mit variablen Faktoren verkleinerte Übersicht, einen Originalausschnitt, lokale Änderungserkennung, vergleichbare Auswahlstrategien, eindeutige Ansichten, sichere Koordinatenumrechnung und eine passende Vorschau. Bereichsauswahl und Skalierungsprofile werden vor der produktiven Festlegung über mehrere Auflösungen gemessen. Automatische OCR, zusätzliche lokale VLMs, neue UIA-/Fensteranbindungen und eine Bereinigung älterer Bilder im Modellkontext sind mögliche Folgeversuche mit eigenen Kosten. Anwendungsregeln für bestimmte Programme oder gerätespezifische Nutzereinstellungen sind keine Voraussetzung.

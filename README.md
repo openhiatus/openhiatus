@@ -70,6 +70,12 @@ Under **Einstellungen → Bedienung → Bildschirmübersicht** (Settings → Con
 
 **Full screen (1:1) remains the default.** The experiment has synthetic geometry, image, lifecycle and preview checks; real-task speed and accuracy comparisons are still pending. Smaller images can require more inspection steps. Only the primary display is supported. The [computer-use plan](docs/computer-use-uebersicht-und-detail-plan.md) documents the contract and comparison criteria.
 
+### Experimental separate computer model
+
+Under **Einstellungen → Bedienung → Bildschirmübersicht**, optionally enable **Eigenes Computer-Modell verwenden** (Use a separate computer model), select a model such as `gpt-6-luna`, and enable **Fast** for its requests. The work model keeps planning and checking the task. It delegates bounded UI subtasks through `computer_task`; the computer model receives screenshots and performs several observed actions before returning a text report. The work model can explicitly request screenshots for its own verification. The mode is off by default and changes apply to newly admitted tasks.
+
+The computer runtime has only the desktop tool: no shell, file, skill, service or delegation tools. One host executor retains the existing frame, coordinate and Stop checks. Subtasks are limited to 40 desktop calls and four minutes; reaching a limit returns control to the planner. Task details show usage and request timing by model, and distinguish requested Fast from the service tier actually returned by the provider. Fast currently requires an OpenAI Responses model. Availability and charges depend on your connection. End-to-end speed, cost and task accuracy need a fresh comparison; a cheaper model alone does not establish an improvement. See the [computer-model experiment](docs/computer-use-computermodell.md).
+
 ## Privacy and safety
 
 > [!IMPORTANT]
@@ -125,6 +131,7 @@ npm run test:memory-storage-ui
 npm run test:memory-ui
 npm run test:computer-images
 npm run test:computer-preview
+npm run test:computer-model-ui
 ```
 
 </details>

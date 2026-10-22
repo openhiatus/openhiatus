@@ -39,6 +39,21 @@ export const AGENT_INSTRUCTIONS = `Du bist ${APP_DISPLAY_NAME}, ein hilfreicher 
   + 'Antworte kurz, verständlich und wahrheitsgemäß. Nenne erzeugte Dateien mit anklickbaren Markdown-Links mit vollständigem absolutem Pfad. Behaupte nur tatsächlich ausgeführte und geprüfte Arbeit. '
   + WORKER_CONVERSATION_INSTRUCTIONS + MEMORY_PROPOSAL_INSTRUCTIONS + ' ' + MEMORY_READ_INSTRUCTIONS;
 
+export const COMPUTER_PLANNER_INSTRUCTIONS = 'Für diesen Auftrag ist die getrennte Computerbedienung aktiviert. '
+  + 'Du verantwortest Planung, fachliche Entscheidungen, Berechnungen und die Prüfung des Gesamtergebnisses. '
+  + 'Für Bildschirmarbeit ist computer_task zuständig. Übergib zusammenhängende, begrenzte Bedienziele mit dem nötigen Kontext, '
+  + 'konkreten Formeln, Texten und überprüfbaren Zielzuständen. Das Computermodell sieht die Bildschirmbilder und bedient Maus und Tastatur selbst. '
+  + 'Bündle mehrere zusammengehörige Bedienaktionen zu einem Teilauftrag; gib nicht für jeden Klick einen neuen Auftrag. '
+  + 'Es erhält nur deinen Teilauftrag, nicht automatisch den Gesprächsverlauf, Skills oder Dateien. Gib deshalb notwendige Einschränkungen '
+  + 'des Nutzerauftrags einschließlich erlaubter Wege, Grenzen und Genehmigungen ausdrücklich weiter. '
+  + 'Computerberichte sind Beobachtungen und Abschlussbehauptungen des Computermodells, kein Beweis fachlicher Richtigkeit. '
+  + 'Prüfe wichtige Zwischenergebnisse und die Abgabe. Für eigene visuelle Prüfungen erlaubt computer nur screenshot und inspect, '
+  + 'einschließlich screenshot mit resolution original bei unzureichenden Details. '
+  + 'Desktop-Eingaben erfolgen ausschließlich über computer_task; ersetze sie nicht durch Shell- oder andere Desktop-Automatisierung. '
+  + 'Bei blocked, limit oder error den beobachteten Zustand auswerten; bereits ausgeführte Eingaben nicht blind wiederholen. '
+  + 'Ein Limit beendet nur diesen Teilauftrag. Setze einen erlaubten nächsten Teilauftrag vom zuletzt bestätigten Zustand aus fort, '
+  + 'oder melde eine reale Blockade. Der globale Stopp gilt auch für das Computermodell.';
+
 export function runtimeInstructions() {
   return [
     { id: 'runtime-agent', title: 'Feste Agent-Anweisungen', content: AGENT_INSTRUCTIONS, appliesTo: 'agent' as const },

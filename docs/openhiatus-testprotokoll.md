@@ -1,5 +1,23 @@
 # openHiatus – Testprotokoll
 
+## Getrenntes Computermodell – 23. Oktober 2026
+
+Der optionale Modus trennt das Arbeitsmodell von einer eingeschränkten Computerlaufzeit. Das Arbeitsmodell übergibt begrenzte Bedienziele; das Computermodell erhält Bildschirmbilder und führt mehrere beobachtete Desktopaktionen aus. Der Rückweg ist normalerweise ein Textbericht mit ausdrücklich ungeprüfter Abschlussbehauptung. Eigene Aufnahmen zur Prüfung kann das Arbeitsmodell gesondert anfordern. Der Standard bleibt die bisherige Bedienung durch das Arbeitsmodell.
+
+| Prüfung | Ergebnis |
+| --- | --- |
+| `npm run check` | Architektur, Typprüfung und 621 Tests ohne Fehler oder Auslassungen. |
+| `npm run build` | Windows-Helfer, Main, Agent-Host und Renderer gebaut; bekannte lucide-react-Warnungen ohne Buildfehler. |
+| Echter Pi-Transport, lokale Modellnachbildung | Arbeitsmodell delegiert; Computerlaufzeit erhält Bilder und erledigt mehrere synthetische Eingaben; Textbericht enthält keine Bilder im Arbeitsmodell-Kontext; ausdrückliche Originalbildprüfung funktioniert. Beide Rollen verwenden echte Pi-Adapter und Agent-Hosts mit lokalem Responses-SSE-Server. |
+| Rechte und Lebensdauer | Computerlaufzeit ohne SDK-Datei-/Shellwerkzeuge, Skills, Erweiterungen oder Prozessübergabe. Sitzungsfortsetzung zwischen gewöhnlicher und eingeschränkter Rolle wird abgelehnt. Host-Limits, konkurrierende Aufrufe, verzögerter Start, Freigabefehler und wiederholter Stopp geprüft. |
+| Verschachtelter Stopp | Stopp des Arbeitsmodells beendet auch den Computerauftrag und bestätigt die Freigabe erst nach Abschluss einer bereits begonnenen synthetischen Eingabe. Keine Folgeaktion oder späte Bildausgabe. |
+| Fast und Verbrauch | `service_tier: fast` in jedem geprüften Computerrequest; tatsächlich zurückgegebene Stufen `fast` und `default` getrennt gespeichert. Messung auch am Kompaktierungs-Stream angeschlossen. Kumulative Computer- und Arbeitsverbräuche über mehrere Teilaufträge und fortgesetzte Turns ohne Überschreiben oder doppelte Zählung. Keine statische Standardpreis-Schätzung als Fast-Abrechnung. |
+| Einstellungen und Speicherung | Opt-in aus, Fast an; unabhängige Modellwahl, sichere Auswahl bei fehlendem Modell, unveränderliche Konfiguration ab Auftragsannahme, Storage-/IPC-Rundlauf und begrenzte Messgruppen geprüft. |
+| `npm run test:computer-model-ui` | Versteckte Electron-Ansicht: Faktor 16, Aktivierung, unabhängige Modellwahl, Sperre während Arbeit, deaktivierte Delegation nach Leeren der Auswahl und unterscheidbare tatsächliche/fehlende Service-Stufe geprüft. |
+| Bild- und Vorschau-Regression | `test:computer-images` und `test:computer-preview` bestanden; 64 Übersichten und 36 Originalausschnitte, korrekte Fehlerbilder und Vollbildrückfall. |
+
+Die neue Einstellungsansicht wurde visuell geprüft. Für diese technischen Prüfungen gab es keine Cloud-Modellaufrufe, nativen Bildschirmaufnahmen oder Desktop-Eingaben. Der neue Geschwindigkeits-/Kosten-/Qualitätsvergleich mit echtem Computermodell bleibt ein gesonderter manuell gestarteter Versuch. Die [Versuchsbeschreibung](computer-use-computermodell.md) erläutert Ablauf und Messgrenzen.
+
 ## Treiberfehler und Kontrollbilder – 22. Oktober 2026
 
 `isError` und eine ausdrücklich gemeldete Ablehnung sind getrennte Fälle. Die Windows-Implementierung des installierten cua-driver 0.22.0 prüft das Vordergrundfenster auch **nach** dem gesendeten Klick. Ein Fensterwechsel kann deshalb eine Fehlermeldung auslösen, obwohl die Eingabe bereits gesendet wurde. Ein solcher Fehler beweist weder eine ausgebliebene Eingabe noch den fachlichen Erfolg. Grundlage: [Windows-Klickpfad des installierten Tags](https://github.com/trycua/cua/blob/cua-driver-rs-v0.22.0/libs/cua-driver/rust/crates/platform-windows/src/input/mouse.rs#L630-L710).

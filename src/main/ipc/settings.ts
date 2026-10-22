@@ -4,8 +4,8 @@ import { computerOverviewDivisor } from '../../shared/computer-views';
 import { command, inputObject, inputText, noArgs, type HandlerMap } from './command';
 import type { IpcPorts } from './ports';
 
-const booleanPreferences = ['speakReplies', 'voiceConversation', 'earcons', 'memoryAutoSummarize', 'chatgptBackgroundUsage'] as const;
-const textPreferences = ['inputDeviceId', 'outputDeviceId', 'voiceId', 'model', 'dialogModel', 'memoryModel'] as const;
+const booleanPreferences = ['speakReplies', 'voiceConversation', 'earcons', 'memoryAutoSummarize', 'chatgptBackgroundUsage', 'computerDelegationEnabled', 'computerFast'] as const;
+const textPreferences = ['inputDeviceId', 'outputDeviceId', 'voiceId', 'model', 'dialogModel', 'memoryModel', 'computerModel'] as const;
 const deviceMetadata = ['inputDeviceLabel', 'inputDeviceGroupId', 'outputDeviceLabel', 'outputDeviceGroupId'] as const;
 function preferences(value: unknown): PreferencesPatch {
   const input = inputObject(value, [...booleanPreferences, ...textPreferences, ...deviceMetadata, 'skillFavorites', 'computerOverviewScaleDivisor'], 'Ungültige Einstellungen.');
