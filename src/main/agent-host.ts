@@ -10,6 +10,7 @@ import { MAX_PACKET_BYTES, MAX_PROMPT_CHARS, PacketReader } from './agent-protoc
 import { decodeParentMessage, decodeHostResult, decodeToolResponse, isWireRecord, ProtocolError,
   type CommandResponseArgs, type HostToParent, type HostRun, type HostEvent, type CredentialResult } from './agent-wire.js';
 import { piModel, redactError } from './providers.js';
+import { applyComputerImageDetail } from './computer-image-payload.js';
 export type { HostRun } from './agent-wire.js';
 interface SessionReference { file: string; dialog: boolean; workspace: string; }
 const identifier = (value: unknown): value is string => typeof value === 'string' && /^[a-f0-9-]{36}$/i.test(value);
@@ -24,7 +25,7 @@ export function resourceOptions(input: Pick<HostRun, 'workspace' | 'home' | 'ins
     systemPrompt: input.instructions,
   };
 }
-export function imageContent(response: DynamicToolResponse): AgentToolResult<{ success: boolean }> & { isError?: boolean } {
+export function imageContent(response: DynamicToolResponse, toolName?: string): AgentToolResult<{ success: boolean; computerViews?: number[] }> & { isError?: boolean } {
   const verified = decodeToolResponse(response);
   const content: AgentToolResult<{ success: boolean }>['content'] = verified.contentItems.map(item => {
     if (item.type === 'inputText') {
@@ -37,7 +38,8 @@ export function imageContent(response: DynamicToolResponse): AgentToolResult<{ s
     if (bytes.toString('base64') !== match[2] || (match[1] === 'png' && !bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])))) throw new Error('Ungültiges Werkzeugbild.');
     return { type: 'image', mimeType: `image/${match[1]}`, data: match[2] };
   });
-  return { content, details: { success: response.success }, ...(response.success ? {} : { isError: true }) };
+  const computerViews = toolName === 'computer' ? verified.contentItems.flatMap((item, index) => item.type === 'inputImage' && item.computerView ? [index] : []) : [];
+  return { content, details: { success: response.success, ...(computerViews.length ? { computerViews } : {}) }, ...(response.success ? {} : { isError: true }) };
 }
 
 export class AgentHost {
@@ -106,7 +108,7 @@ export class AgentHost {
           this.pending.set(id, { resolve: value => resolveResult(decodeHostResult('tool', value)), reject, cleanup }); signal?.addEventListener('abort', cancel, { once: true });
           this.send({ id, method: 'tool', params: { runId: input.runId, toolCallId, name: definition.name, args } });
         });
-        return imageContent(response);
+        return imageContent(response, definition.name);
       },
     };
   }
@@ -161,6 +163,11 @@ export class AgentHost {
       const { session } = await pi.createAgentSession({ cwd: input.workspace, agentDir: input.home, modelRuntime, model,
         settingsManager, sessionManager, resourceLoader, tools, customTools, thinkingLevel: 'medium' });
       this.session = session;
+      const onPayload = session.agent.onPayload;
+      session.agent.onPayload = async (payload, requestModel) => {
+        const transformed = await onPayload?.(payload, requestModel);
+        return applyComputerImageDetail(transformed === undefined ? payload : transformed, session.messages, requestModel);
+      };
       if (subscription) {
         const stream = session.agent.streamFunction;
         session.agent.streamFunction = (requestModel, context, options) => stream(requestModel, context, { ...options, cacheRetention: 'none', maxRetries: 0 });

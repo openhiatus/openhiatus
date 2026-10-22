@@ -65,7 +65,8 @@ async function createApp(): Promise<void> {
   const runtimeOptions = { executable: process.execPath, hostEntry: path.join(__dirname, 'agent-host.mjs'), processHost, home, workspace, providers };
   services = new ServiceBroker();
   const serviceBroker = services;
-  const runtime = new PiAdapter({ ...runtimeOptions, role: 'worker', tools: createToolRegistry([createComputerToolContribution()]),
+  const computerTools = () => createComputerToolContribution({ getOverviewScaleDivisor: () => controller?.snapshot().preferences.computerOverviewScaleDivisor ?? 1 });
+  const runtime = new PiAdapter({ ...runtimeOptions, role: 'worker', tools: createToolRegistry([computerTools()]),
     getIdentityInstructions: () => controller?.identityInstructions() ?? '', onEvent: event => controller?.handle(event) });
   const dialogRuntime = new PiAdapter({ ...runtimeOptions, role: 'dialog', getIdentityInstructions: () => controller?.identityInstructions() ?? '',
     tools: createToolRegistry([{ bind: () => ({ tools: (controller?.dialogTools() ?? []).map(definition => defineTool({
@@ -76,7 +77,7 @@ async function createApp(): Promise<void> {
     })) }) }]), onEvent: event => controller?.handleDialog(event),
   });
   const createWorker = (onEvent: (event: AgentEvent) => void, job: BackgroundJob) => new PiAdapter({ ...runtimeOptions, role: 'worker',
-    tools: createToolRegistry([createComputerToolContribution(), serviceBroker.createReadTools(job.id)]),
+    tools: createToolRegistry([computerTools(), serviceBroker.createReadTools(job.id)]),
     getIdentityInstructions: () => job.identityInstructions ?? '', onEvent });
   const speech = new SpeechService({ getKey: () => credentials.get('inworld'), getVoice: () => controller?.snapshot().preferences.voiceId || 'Dennis', cacheDirectory: path.join(dataDirectory, 'speech-cache') });
   controller = new AppController({ version: app.getVersion(), store, credentials, speech, memory, providers, chatgpt, modelClient: new ModelClient(providers), agent: runtime, dialogAgent: dialogRuntime, createWorker, workspace, profileDirectory: dataDirectory,

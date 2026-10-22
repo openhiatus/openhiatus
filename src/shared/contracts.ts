@@ -9,6 +9,7 @@ export interface Task { id: string; status: TaskStatus; threadId?: string; turnI
 export interface Preferences {
   inputDeviceId: string; outputDeviceId: string;
   inputDeviceLabel?: string; inputDeviceGroupId?: string; outputDeviceLabel?: string; outputDeviceGroupId?: string;
+  computerOverviewScaleDivisor?: number;
   speakReplies: boolean; voiceId: string; model: string; memoryAutoSummarize?: boolean; voiceConversation?: boolean; earcons?: boolean; skillFavorites?: SkillFavorites; dialogModel: string; memoryModel: string; fullAccessAcknowledged?: boolean; chatgptBackgroundUsage?: boolean;
 }
 export type PreferencesPatch = Partial<Omit<Preferences, 'fullAccessAcknowledged'>>;
@@ -32,7 +33,7 @@ export interface Snapshot { messages: Message[]; activity: Activity[]; task: Tas
 /** Fill of the conversation thread's model context, as last reported by the agent. */
 export interface ContextUsage { threadId: string; usedTokens: number; windowTokens?: number; at: string; }
 export interface AudioClip { base64: string; mimeType: string; }
-export interface ComputerFrame { dataUrl: string; frameId: string; width: number; height: number; at: string; }
+export interface ComputerFrame { dataUrl: string; frameId: string; width: number; height: number; at: string; observation?: import('./computer-views').ComputerObservation; }
 export interface VoiceOverlayState {
   phase: 'idle' | 'opening' | 'recording' | 'transcribing' | 'ready' | 'sending' | 'sent' | 'error';
   text: string;
@@ -112,4 +113,4 @@ export interface AgentRunOptions {
 
 /** Provider-neutral openHiatus tool boundary. Image data must remain image content. */
 export interface DynamicFunctionTool { type: 'function'; name: string; description: string; inputSchema: unknown; deferLoading?: boolean; }
-export interface DynamicToolResponse { success: boolean; contentItems: ({ type: 'inputText'; text: string } | { type: 'inputImage'; imageUrl: string })[]; }
+export interface DynamicToolResponse { success: boolean; contentItems: ({ type: 'inputText'; text: string } | { type: 'inputImage'; imageUrl: string; computerView?: 'overview' | 'detail' })[]; }

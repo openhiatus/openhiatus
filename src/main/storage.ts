@@ -7,6 +7,7 @@ import { randomUUID } from 'node:crypto';
 import type { Activity, BackgroundJob, Message, Preferences, Task, TaskStatus, Usage } from '../shared/contracts';
 import { redact } from './redact';
 import { parseSkillFavorites } from '../shared/skill-favorites';
+import { computerOverviewDivisor } from '../shared/computer-views';
 
 export interface SavedState { messages: Message[]; activity: Activity[]; task: Task; preferences: Preferences; jobs?: BackgroundJob[]; usage?: Usage; }
 export const MAX_STATE_BYTES = 32 * 1024 * 1024;
@@ -15,7 +16,7 @@ const taskStatuses = new Set<TaskStatus>(['idle', 'running', 'stopping', 'comple
 export function defaultState(): SavedState {
   return {
     messages: [], activity: [], task: { id: '', status: 'idle' },
-    preferences: { inputDeviceId: 'default', outputDeviceId: 'default', speakReplies: true, voiceId: 'Dennis', model: '', dialogModel: '', memoryModel: '', memoryAutoSummarize: true, voiceConversation: true, fullAccessAcknowledged: false, chatgptBackgroundUsage: false },
+    preferences: { inputDeviceId: 'default', outputDeviceId: 'default', speakReplies: true, voiceId: 'Dennis', model: '', dialogModel: '', memoryModel: '', memoryAutoSummarize: true, voiceConversation: true, fullAccessAcknowledged: false, chatgptBackgroundUsage: false, computerOverviewScaleDivisor: 1 },
   };
 }
 
@@ -69,6 +70,7 @@ function validateState(value: unknown): SavedState {
   if (typeof voiceConversation !== 'boolean') throw new Error('Ungültige Einstellung für den Sprachdialog.');
   if (p.chatgptBackgroundUsage !== undefined && typeof p.chatgptBackgroundUsage !== 'boolean') throw new Error('Ungültige Einstellung für automatische ChatGPT-Nutzung.');
   const preferences: Preferences = {
+    computerOverviewScaleDivisor: p.computerOverviewScaleDivisor === undefined ? 1 : computerOverviewDivisor(p.computerOverviewScaleDivisor),
     inputDeviceId: string(p.inputDeviceId, 1000), outputDeviceId: string(p.outputDeviceId, 1000),
     ...(p.inputDeviceLabel !== undefined ? { inputDeviceLabel: string(p.inputDeviceLabel, 1000) } : {}),
     ...(p.inputDeviceGroupId !== undefined ? { inputDeviceGroupId: string(p.inputDeviceGroupId, 1000) } : {}),

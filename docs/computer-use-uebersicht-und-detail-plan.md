@@ -1,6 +1,17 @@
 # Computer Use: variable Übersichtsskalierung und Detail 1:1
 
-Stand: 21. Oktober 2026. Plan auf Basis von openHiatus, Version 0.1.4. Die nachfolgenden Änderungen sind noch nicht implementiert.
+Stand: 22. Oktober 2026. Die erste experimentelle Umsetzung liegt auf Basis von openHiatus 0.1.6 vor. Der Vollbildweg bleibt Standard. Die folgenden Forschungs- und Abnahmeziele sind damit noch nicht vollständig erledigt.
+
+## Umgesetzter Stand und offene Abnahme
+
+- Die Einstellung `computerOverviewScaleDivisor` bietet 1:1, 1:4, 1:8, 1:16 und 1:32. Endliche Faktoren von 1 bis 64 sind im Datenvertrag zulässig. Die Auswahl wird beim nächsten Erwerb der Desktopsteuerung übernommen und bleibt während dieser Arbeitsphase unverändert.
+- `computer-views.ts` rechnet Punkte und Rechtecke anhand der tatsächlichen Bildgrößen um. `computer-images.ts` erzeugt Übersicht und Originalausschnitt mit Electrons `nativeImage`, explizit bei Bildskalierung 1. `computer-regions.ts` wählt einen Bereich aus Originalpixel-Differenzen, bisherigem Ausschnitt, Aktionspunkt und optionalem Modellhinweis.
+- `computer-observations.ts` hält die aktuelle Originalaufnahme und ihre Ansichten. `computer-input.ts` definiert den Werkzeugvertrag. `computer.ts` prüft Lebensdauer und Treibergeometrie, übersetzt eine Aktion und behält die bestehende Darstellungswartezeit sowie Stop-Logik bei.
+- Metadaten V2, `inspect`, `nextDetail`, Drag zwischen Ansichten, Originalauflösung des lokalen Details und eine Vorschau derselben Modellbilder sind angeschlossen. Faktor 1 verwendet weiterhin den Vollbildvertrag V1 ohne Bildaufbereitung. Ein Detail darf höchstens 1.048.576 Originalpixel umfassen; übergroße Anforderungen werden abgelehnt.
+- Der OpenAI-Responses-Hook setzt `detail: original` nur für markierte Bilder der zugehörigen Computer-Werkzeugantwort und ausdrücklich unterstützte Modelle. Fremde Bilder, andere Anbieter und unbekannte Modelle behalten ihr bisheriges Verhalten. Anbietergrenzen können dennoch zu einer internen Verkleinerung führen. [OpenAI: Computer-use integration](https://developers.openai.com/api/docs/guides/tools-computer-use-integration)
+- Geometrie, Auswahl, Lebensdauer, Transport und Vorschau sind synthetisch geprüft. Echte Windows-Zielklicks bei verschiedenen DPI, allgemeine Programmaufgaben, Paketabnahme und wiederholte Vergleiche aus Gesamtdauer, Tokenverbrauch und Erfolgsquote bleiben offen. Die Skalierungsflags der Bildtests simulieren unterschiedliche Electron-Skalierungen; sie ersetzen keine Windows-DPI-Abnahme.
+
+Die Bildaufbereitung und der begrenzte Pixelvergleich laufen in dieser ersten Version synchron im Main-Prozess. Ihre getrennten lokalen Zeiten stehen in den Metadaten. Eine Auslagerung hinter dem Bild-Port bleibt möglich, falls Messungen relevante UI-Blockaden zeigen. Es gibt noch keine gemessene Beschleunigungszusage und keinen neuen Auslieferungsstandard.
 
 ## Ziel und Grundentscheidung
 
@@ -28,7 +39,7 @@ Die bisher diskutierte Normierung aller Auflösungen auf dieselbe längere Bilds
 
 ### Vorzusehende Variablen
 
-Die folgenden Namen beschreiben geplante Parameter, keine bereits vorhandene Laufzeitkonfiguration:
+Die folgenden Namen beschreiben die Versuchsachsen. Implementiert ist die Übersichtsskalierung als gespeicherte Einstellung `computerOverviewScaleDivisor`; Detail- und Analyseauflösung bleiben fest bei 1, das Encoding bei PNG. Diese drei Werte sind noch keine frei änderbaren Laufzeitparameter:
 
 ```json
 {
@@ -131,7 +142,7 @@ Erst der anschließende Vergleich vollständiger Aufgaben entscheidet über die 
 
 ## Bild- und Koordinatenvertrag
 
-Eine Aufnahme besitzt `frameId`, `capturedAt`, Bildschirmkennung, Originalbreite, Originalhöhe und die bereits vom Treiber gelieferte Windows-Skalierung. Jede ausgegebene Ansicht besitzt eine eigene `viewId`, die tatsächlichen Bildabmessungen und ihr Quellrechteck im Original.
+Eine Aufnahme besitzt `frameId`, die Aufnahmezeit `at`, Bildschirmkennung, Originalbreite, Originalhöhe und die bereits vom Treiber gelieferte Windows-Skalierung. Jede ausgegebene Ansicht besitzt eine eigene `viewId`, die tatsächlichen Bildabmessungen und ihr Quellrechteck im Original.
 
 | Ansicht | Ausgegebenes Bild | Quellrechteck im Original |
 | --- | --- | --- |
@@ -171,7 +182,10 @@ Beispiel für eine Detailanforderung aus der Übersicht:
   "action": "inspect",
   "frameId": "aufnahme-42",
   "viewId": "overview-42",
-  "rect": { "x": 200, "y": 88, "width": 112, "height": 75 }
+  "x": 200,
+  "y": 88,
+  "width": 112,
+  "height": 75
 }
 ```
 
@@ -200,10 +214,10 @@ Die Komponenten erhalten getrennte Aufgaben:
 | Neuer Geometriebaustein `computer-views.ts` | Ansichten, Rechtecke, Skalierung, Rundung und Punktumrechnung; ohne Kenntnis bestimmter Programme oder Modellanbieter |
 | Neuer Bildbaustein `computer-images.ts` | PNG decodieren, Übersicht erzeugen, Originalausschnitt ausgeben und tatsächliche Abmessungen prüfen |
 | Neuer Auswahlbaustein `computer-regions.ts` | Räumliche Bilddifferenz und austauschbare Auswahlstrategien; Auswahlgrund und Laufzeit erfassen, ohne selbst Eingaben auszuführen |
-| `computer.ts` | Aktuelle Originalaufnahme und Ansichtenzuordnung halten, `inspect` verarbeiten, Eingaben übersetzen und anschließend an den bestehenden Treiber übergeben |
-| `pi.ts` | Beschriftete Übersicht und Detail als echte Bildinhalte mit den zugehörigen Metadaten übertragen |
+| `computer-observations.ts`, `computer-input.ts`, `computer.ts` | Originalaufnahme und Ansichten halten, Werkzeugparameter prüfen, `inspect` verarbeiten, Eingaben übersetzen und an den bestehenden Treiber übergeben |
+| `platform/tools/computer-tools.ts` und Pi-Transport | Beschriftete Übersicht und Detail als echte Bildinhalte mit den zugehörigen Metadaten übertragen |
 | `agent-host.ts` | Bildreihenfolge erhalten und die unterstützte Bilddetail-Einstellung im jeweiligen Anbieteradapter setzen |
-| `contracts.ts`, Vorschau und Desktop-Skill | Ansichten eindeutig darstellen und dem Modell die Verwendung von `frameId` und `viewId` erklären |
+| Gemeinsame Verträge, Vorschau und Werkzeugbeschreibung | Ansichten eindeutig darstellen und dem Modell die Verwendung von `frameId` und `viewId` erklären; eigene lokale Skills können darauf verweisen |
 
 Für die Bildaufbereitung ist zunächst Electrons bereits vorhandenes `nativeImage` vorgesehen. Es unterstützt das Lesen eines PNG aus einem Buffer sowie Zuschneiden und Verkleinern. Die Verarbeitung wird ausdrücklich auf eine Bildrepräsentation mit Skalierung 1 festgelegt; Abmessungen und native Bildintegration werden im tatsächlichen Electron geprüft. Eine neue Bildbibliothek ist zunächst nicht nötig. [Electron-Dokumentation](https://www.electronjs.org/docs/latest/api/native-image)
 

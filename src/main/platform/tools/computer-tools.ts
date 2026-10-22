@@ -2,7 +2,7 @@ import { COMPUTER_TOOL, NativeComputer, computerReplyMetadata, parseComputerInpu
 import { defineTool, type ToolContribution } from '../../modules/tools';
 
 /** Concrete desktop contribution. Every adapter owns its lazy computer and confirms turn release. */
-export function createComputerToolContribution(options: { computer?: ComputerAdapter; createComputer?: () => ComputerAdapter } = {}): ToolContribution {
+export function createComputerToolContribution(options: { computer?: ComputerAdapter; createComputer?: () => ComputerAdapter; getOverviewScaleDivisor?: () => number } = {}): ToolContribution {
   let computer = options.computer;
   return {
     bind(context) {
@@ -12,11 +12,21 @@ export function createComputerToolContribution(options: { computer?: ComputerAda
           definition: { type: 'function', name: COMPUTER_TOOL.name, description: COMPUTER_TOOL.description, inputSchema: COMPUTER_TOOL.inputSchema },
           audience: 'worker', validate: parseComputerInput,
           async execute(args, context) {
-            computer ??= options.createComputer?.() ?? new NativeComputer();
+            computer ??= options.createComputer?.() ?? new NativeComputer({ getOverviewScaleDivisor: options.getOverviewScaleDivisor });
             const result = await computer.execute(args, context.signal);
             if (context.signal.aborted) throw new Error('Bildschirmauftrag wurde unterbrochen.');
             const imageUrl = `data:image/png;base64,${result.image.base64}`;
-            context.emit({ type: 'computer-frame', frame: { dataUrl: imageUrl, frameId: result.frameId, width: result.width, height: result.height, at: new Date().toISOString() } });
+            const observation = result.observation;
+            context.emit({ type: 'computer-frame', frame: { dataUrl: imageUrl, frameId: result.frameId,
+              width: observation?.views[0].imageWidth ?? result.width, height: observation?.views[0].imageHeight ?? result.height,
+              at: observation?.at ?? new Date().toISOString(), ...(observation ? { observation } : {}) } });
+            if (observation) return { success: true, contentItems: [
+              { type: 'inputText', text: computerReplyMetadata(result, result.text) },
+              ...observation.views.flatMap(view => [
+                { type: 'inputText' as const, text: `${view.kind} viewId=${view.viewId}; image ${view.imageWidth} x ${view.imageHeight}; local origin (0,0).` },
+                { type: 'inputImage' as const, imageUrl: view.dataUrl, computerView: view.kind },
+              ]),
+            ] };
             return { success: true, contentItems: [{ type: 'inputText', text: computerReplyMetadata(result, result.text) }, { type: 'inputImage', imageUrl }] };
           },
         })],

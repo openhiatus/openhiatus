@@ -1,7 +1,8 @@
 import { AudioDeviceSelect } from './audio-device-select';
 import { useId, useRef, useState, type KeyboardEvent } from 'react';
-import { AudioLines, Headphones, KeyRound, Keyboard, LoaderCircle, Mic, SlidersHorizontal, Square, Volume2 } from 'lucide-react';
+import { AudioLines, ChevronDown, Headphones, KeyRound, Keyboard, LoaderCircle, Mic, Monitor, SlidersHorizontal, Square, Volume2 } from 'lucide-react';
 import type { PreferencesPatch, Snapshot } from '../../../shared/contracts';
+import { COMPUTER_OVERVIEW_FACTORS } from '../../../shared/computer-views';
 import { ProvidersView } from '../../ProvidersView';
 import type { AudioPhase } from '../voice';
 
@@ -53,6 +54,7 @@ export function SettingsView({ state, workBusy, summaryInProgress, voice, onPref
   const id = useId();
   const recording = voice.phase === 'recording' || voice.phase === 'mic-test';
   const ready = state !== undefined;
+  const overviewFactor = state?.preferences.computerOverviewScaleDivisor ?? 1;
 
   function preference(value: PreferencesPatch): void {
     try { void Promise.resolve(onPreference(value)).catch(onError); } catch (error) { onError(error); }
@@ -137,6 +139,16 @@ export function SettingsView({ state, workBusy, summaryInProgress, voice, onPref
             if (!event.target.checked) voice.stopEarcons(); preference({ earcons: event.target.checked });
           }} /></label>
           <label className="settings-toggle"><span><strong>Sprachgespräch</strong><small>Nach Ende der Aufnahme wird das erkannte Gesagte automatisch gesendet. Ausgeschaltet kannst du das Transkript vor dem Senden prüfen.</small></span><input type="checkbox" checked={state?.preferences.voiceConversation !== false} disabled={!ready} onChange={event => preference({ voiceConversation: event.target.checked })} /></label>
+        </section>
+        <section className="settings-card settings-computer">
+          <div className="settings-card-head"><span className="service-icon"><Monitor size={22} aria-hidden="true" /></span><div><h2>Bildschirmübersicht</h2><p>Experimentell · gilt ab dem nächsten Desktop-Auftrag.</p></div></div>
+          <label className="field-label" htmlFor={`${id}-computer-overview`}>Auflösung der Übersicht</label>
+          <div className="select-wrap"><select id={`${id}-computer-overview`} value={overviewFactor} disabled={!ready}
+            aria-describedby={`${id}-computer-overview-description`} onChange={event => preference({ computerOverviewScaleDivisor: Number(event.target.value) })}>
+            {COMPUTER_OVERVIEW_FACTORS.map(factor => <option key={factor} value={factor}>{factor === 1 ? 'Vollbild (1:1)' : `Übersicht 1:${factor}`}</option>)}
+            {!COMPUTER_OVERVIEW_FACTORS.some(factor => factor === overviewFactor) && <option value={overviewFactor}>Übersicht 1:{overviewFactor} (aktuell)</option>}
+          </select><ChevronDown size={15} aria-hidden="true" /></div>
+          <p className="billing-note" id={`${id}-computer-overview-description`}>Das Arbeitsmodell erhält die Übersicht und bei verkleinerter Übersicht höchstens einen Detailausschnitt in Originalauflösung. Die Ausschnittgröße passt sich automatisch an die Bildschirmauflösung an. Eine kleinere Übersicht garantiert keine schnellere Bearbeitung.</p>
         </section>
         <section className="settings-card settings-shortcuts"><div className="settings-card-head"><span className="service-icon"><Keyboard size={22} aria-hidden="true" /></span><div><h2>Tastenkürzel</h2><p>Die wichtigsten Wege für Aufnahme, Versand und Stopp</p></div></div>
           <dl><div><dt><kbd>F8</kbd></dt><dd>Aufnahme starten oder beenden</dd></div><div><dt><kbd>F9</kbd></dt><dd>Den vorbereiteten Text senden</dd></div><div><dt><kbd>Strg</kbd><span> + </span><kbd>Enter</kbd></dt><dd>Text im Gespräch senden</dd></div><div><dt><kbd>Esc</kbd></dt><dd>Aufträge und Audio in openHiatus stoppen</dd></div><div><dt><kbd>Strg</kbd><span> + </span><kbd>Alt</kbd><span> + </span><kbd>F12</kbd></dt><dd>Globalen Stopp auslösen</dd></div></dl>

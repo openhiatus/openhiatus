@@ -64,6 +64,12 @@ Choose a specific microphone and speaker to keep using those devices. A disconne
 
 You can also stop individual tasks in the task view. If another program already uses a global hotkey, the app shows a notice, and the buttons in the window keep working.
 
+### Experimental desktop views (source builds)
+
+Under **Einstellungen → Bedienung → Bildschirmübersicht** (Settings → Controls → Screen overview), choose a true scaling factor of 1:4, 1:8, 1:16 or 1:32. The next desktop task receives a small overview and at most one detail crop at the screen's original resolution. A local pixel comparison selects changed regions; the model can request another crop with `inspect` or predict the next region with an action. No additional model is used for selection. The app detects the primary display's resolution automatically.
+
+**Full screen (1:1) remains the default.** The experiment has synthetic geometry, image, lifecycle and preview checks; real-task speed and accuracy comparisons are still pending. Smaller images can require more inspection steps. Only the primary display is supported. The [computer-use plan](docs/computer-use-uebersicht-und-detail-plan.md) documents the contract and comparison criteria.
+
 ## Privacy and safety
 
 > [!IMPORTANT]
@@ -117,6 +123,8 @@ npm run test:ipc
 npm run test:storage-ui
 npm run test:memory-storage-ui
 npm run test:memory-ui
+npm run test:computer-images
+npm run test:computer-preview
 ```
 
 </details>

@@ -86,7 +86,8 @@ export function decodeToolResponse(value: unknown): DynamicToolResponse {
     const imageUrl = text(item.imageUrl, MAX_IMAGE_BASE64 + 32);
     const match = /^data:image\/(png|jpeg);base64,([A-Za-z0-9+/]*={0,2})$/.exec(imageUrl);
     if (!match || match[2].length > MAX_IMAGE_BASE64 || match[2].length % 4 !== 0) return fail();
-    return { type: 'inputImage', imageUrl };
+    if (item.computerView !== undefined && item.computerView !== 'overview' && item.computerView !== 'detail') fail();
+    return { type: 'inputImage', imageUrl, ...(item.computerView === undefined ? {} : { computerView: item.computerView }) };
   });
   return { success: input.success, contentItems };
 }
