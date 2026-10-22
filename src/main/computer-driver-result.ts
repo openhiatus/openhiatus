@@ -88,7 +88,13 @@ export function computerDriverFailureSummary(diagnostic: ComputerDriverDiagnosti
     : diagnostic.errorCode === 'foreground_unavailable'
     ? 'Der Desktop-Treiber konnte das erwartete Vordergrundfenster nicht bestätigen.'
     : diagnostic.effect === 'refused' ? 'Der Desktop-Treiber meldet eine Ablehnung.' : 'Der Desktop-Treiber meldet einen Fehler.';
-  return `${reason} Eine bereits begonnene Eingabe kann trotzdem gewirkt haben. Nicht automatisch wiederholen. `
+  const delivery = diagnostic.failureStage === 'before-input'
+    ? 'In diesem bekannten Treiberpfad wurde die Eingabe vor dem Senden verweigert. '
+      + (diagnostic.failureReason === 'foreground-not-activated'
+        ? 'Nach Bildprüfung einen zulässigen sichtbaren Bedienweg wählen, etwa Tastaturnavigation in einem geöffneten Menü. '
+        : 'Aktuelles Ziel und zulässigen Zugriff anhand des Bilds prüfen; Schutzmechanismen nicht umgehen. ')
+    : 'Eine bereits begonnene Eingabe kann trotzdem gewirkt haben. Nicht automatisch wiederholen. ';
+  return `${reason} ${delivery}`
     + (hasImage ? 'Das mitgelieferte aktuelle Kontrollbild prüfen; wenn der gewünschte Zustand erreicht ist, von dort weiterarbeiten.'
       : 'Es liegt kein aktuelles Kontrollbild vor. Vor weiteren Eingaben screenshot aufrufen und den Zustand prüfen.');
 }

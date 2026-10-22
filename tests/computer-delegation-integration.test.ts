@@ -121,12 +121,12 @@ test('real Sol and Luna Pi hosts delegate several Fast computer turns, isolate i
       return { text: 'Verified the supplied text in the synthetic field.' };
     }
     assert.equal(model, 'gpt-6-luna'); assert.equal(request.service_tier, 'priority');
-    assert.deepEqual(request.tools.map((tool: any) => tool.name), ['computer']);
+    assert.deepEqual(request.tools.map((tool: any) => tool.name), ['computer', 'report_computer_task']);
     if (number === 1) return { tool: 'computer', args: { action: 'screenshot' } };
     assert.ok(JSON.stringify(request).includes(png), 'subsequent Luna turns receive the synthetic screen image');
     if (number === 2) return { tool: 'computer', args: { action: 'key', frameId: 'fake-1', key: 'tab' } };
     if (number === 3) return { tool: 'computer', args: { action: 'type', frameId: 'fake-2', text: 'Exact supplied value' } };
-    assert.equal(number, 4); return { text: '{"status":"reported","summary":"The exact supplied value is visible","observations":["Field contains the supplied text"]}' };
+    assert.equal(number, 4); return { tool: 'report_computer_task', args: { status: 'reported', summary: 'The exact supplied value is visible', observations: ['Field contains the supplied text'] } };
   }, computer);
   await f.parent.run('Fill the synthetic field, then verify the result.', 'openai/gpt-6.1-sol');
   await until(() => f.events.some(event => event.type === 'completed'), () => ({ events: f.events, failures: f.failures }));
@@ -143,6 +143,34 @@ test('real Sol and Luna Pi hosts delegate several Fast computer turns, isolate i
   const plannerUsage = f.events.filter((event): event is Extract<AgentEvent, { type: 'usage' }> => event.type === 'usage');
   assert.equal(plannerUsage.at(-1)?.usage.inputTokens, 39, 'computer usage never overwrites or double-counts planner cumulative usage');
   assert.equal(f.children.length, 1); assert.equal(await f.children[0].hasManagedWork(), false); assert.equal(await f.parent.hasManagedWork(), false);
+  await delay(20); assert.equal(f.requests.filter(request => request.model === 'gpt-6-luna').length, 4, 'accepted terminal report causes no final prose request or model follow-up');
+});
+
+test('a real host returns invalid report validation to Luna, accepts rich corrected data, and ends the worker without another model request', { timeout: 30000 }, async t => {
+  const rows = Array.from({ length: 21 }, (_, index) => ({ id: `row-${index + 1}`, amount: index * 7 }));
+  let nativeCalls = 0;
+  const f = await fixture(t, (model, number, request) => {
+    if (model === 'gpt-6.1-sol') {
+      if (number === 1) return { tool: 'computer_task', args: { objective: 'Inspect visible rows', instructions: 'Read the observed data and hand off using the offered report tool' } };
+      assert.equal(number, 2); assert.ok(!JSON.stringify(request).includes(png));
+      const output = JSON.parse(request.input.find((item: any) => item.type === 'function_call_output').output);
+      assert.equal(output.verified, false); assert.equal(output.actionCount, 1);
+      const observed = JSON.parse(output.result); assert.deepEqual(observed.observations.rows, rows); assert.deepEqual(observed.unverified, { dateType: false });
+      return { text: 'Received 21 unverified observed rows.' };
+    }
+    assert.equal(model, 'gpt-6-luna'); assert.equal(request.service_tier, 'priority');
+    if (number === 1) return { tool: 'computer', args: { action: 'screenshot' } };
+    if (number === 2) return { tool: 'report_computer_task', args: { status: 'reported', summary: '' } };
+    assert.equal(number, 3);
+    const invalidOutput = request.input.filter((item: any) => item.type === 'function_call_output').at(-1)?.output;
+    assert.equal(typeof invalidOutput, 'string'); assert.match(invalidOutput, /summary|minLength|Computer report/i, 'invalid handoff returns validation without terminal acceptance');
+    return { tool: 'report_computer_task', args: { status: 'reported', summary: 'Observed all visible rows', observations: { rows }, unverified: { dateType: false } } };
+  }, { execute: async () => { nativeCalls++; return { text: 'Synthetic rows', frameId: 'rows', width: 1, height: 1, image: { base64: png, mimeType: 'image/png' } }; }, stop: async () => {}, dispose: async () => {} });
+  await f.parent.run('Read and report the observed synthetic rows.', 'openai/gpt-6.1-sol');
+  await until(() => f.events.some(event => event.type === 'completed'), () => ({ events: f.events, failures: f.failures }));
+  assert.deepEqual(f.failures, []); assert.equal(nativeCalls, 1);
+  assert.deepEqual(f.events.filter(event => event.type === 'completed').map(event => event.status), ['completed']);
+  await delay(20); assert.equal(f.requests.length, 5); assert.equal(await f.children[0].hasManagedWork(), false);
 });
 
 test('parent Pi Stop aborts nested Luna and waits for a pending fake native input before confirming release', { timeout: 30000 }, async t => {

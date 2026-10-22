@@ -46,6 +46,7 @@ export const COMPUTER_PLANNER_INSTRUCTIONS = 'Für diesen Auftrag ist die getren
   + 'Bündle mehrere zusammengehörige Bedienaktionen zu einem Teilauftrag; gib nicht für jeden Klick einen neuen Auftrag. '
   + 'Es erhält nur deinen Teilauftrag, nicht automatisch den Gesprächsverlauf, Skills oder Dateien. Gib deshalb notwendige Einschränkungen '
   + 'des Nutzerauftrags einschließlich erlaubter Wege, Grenzen und Genehmigungen ausdrücklich weiter. '
+  + 'Das Berichtsformat wird von der Computerlaufzeit vorgegeben. Verlange kein anderes Format, kein freies Textende und keinen Verzicht auf das Berichtswerkzeug. '
   + 'Computerberichte sind Beobachtungen und Abschlussbehauptungen des Computermodells, kein Beweis fachlicher Richtigkeit. '
   + 'Prüfe wichtige Zwischenergebnisse und die Abgabe. Für eigene visuelle Prüfungen erlaubt computer nur screenshot und inspect, '
   + 'einschließlich screenshot mit resolution original bei unzureichenden Details. '

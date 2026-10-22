@@ -1,5 +1,15 @@
 # openHiatus – Testprotokoll
 
+## Berichte und Beobachtungskennungen – 23. Oktober 2026
+
+Die Computerlaufzeit erhält einen ausdrücklichen terminalen Berichtsrückweg. Begrenzte verschachtelte Beobachtungen und Tabellen mit mehr als 20 Zeilen werden als Daten transportiert; ein nützlicher Bericht wird nicht wegen einer undokumentierten kleinen Stringlisten-Grenze verworfen. Die fachliche Prüfung bleibt beim Arbeitsmodell. Der Berichtsabschluss beendet den Teilauftrag und wartet auf die bestehende Freigabe; er startet keine weitere Modellrunde. JSON-Textabschlüsse bleiben ein kompatibler Rückweg.
+
+Kurze pro Prozess eindeutige Aufnahme-/Ansichtskennungen ersetzen lange UUIDs im Computerwerkzeug. Alte, falsch übernommene oder fremde Handles werden weiterhin exakt abgewiesen. Die Regression prüft fehlende Eingabe bei Einzeichenfehlern, verbrauchte Aufnahmen und neue Kennungen nach Stopp. Sitzungs- und Prozesskontrollkennungen sind davon nicht betroffen.
+
+Bei einem sicher erkannten Treiberfehler vor dem Senden wird das nun ausdrücklich erklärt. Nach Kontrolle eines sichtbaren Menüs kann das Modell einen zulässigen Tastaturweg wählen. Bei unklarer oder bereits erfolgter Zustellung gelten weiterhin Bildprüfung und das Verbot blinder Wiederholung. Eine Integritätsblockade erhält keinen Umgehungshinweis. Die native Vordergrundprüfung wird nicht deaktiviert; eine universelle Behebung von Popup-Klickfehlern wird damit nicht behauptet.
+
+Architekturprüfung, Typprüfung und **629 Tests** bestehen ohne Fehler oder Auslassungen. Der anschließende Build und die versteckte Computer-Vorschau bestehen. Die echten Pi-/lokalen Responses-Prüfungen bestätigen den terminalen Bericht ohne Folgerunde, vollständige strukturierte Zeilenlisten und die Freigabe einer begonnenen synthetischen Eingabe vor Rückgabe. Es wurden keine Cloudanfragen, nativen Desktopaufnahmen oder Eingaben für diese Abnahme ausgeführt; reale Aufgabenqualität bleibt gesondert zu vergleichen.
+
 ## Kompatibler Fast-Parameter – 23. Oktober 2026
 
 Die Fast-Auswahl wird jetzt als `service_tier: "priority"` übertragen. `priority` und `fast` bezeichnen laut OpenAI dieselbe Verarbeitung; die Verwendung des kompatiblen Namens behebt die Ablehnung `Unsupported service_tier: fast` vor dem ersten Werkzeugaufruf. Dies schaltet weder Fast aus noch versucht es nach einem Fehler automatisch erneut mit Standardverarbeitung.

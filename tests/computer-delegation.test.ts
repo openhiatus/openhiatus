@@ -64,7 +64,7 @@ test('delegation is lazy, worker-only and validates tasks and parent observation
 
 test('a fresh Luna Fast child performs several observed inputs with only computer tools and returns an unverified text report', async () => {
   const fixture = setup([async (tools, emit) => {
-    assert.deepEqual(tools.definitions.map(tool => tool.name), ['computer']);
+    assert.deepEqual(tools.definitions.map(tool => tool.name), ['computer', 'report_computer_task']);
     await assert.rejects(tools.call('read', { path: 'private' }), /abgelehnt/);
     await assert.rejects(tools.call('computer', { action: 'click', frameId: 'guessed', x: 1, y: 2 }), /fresh screenshot/);
     const first = await tools.call('computer', { action: 'screenshot' });
@@ -217,8 +217,7 @@ test('child cumulative usage accumulates across subtasks without replacing plann
 });
 
 test('empty, malformed or incomplete reports cannot become a reported completion claim', async () => {
-  const malformed = ['', 'All done', '{"status":"reported"}', '{"status":"reported","summary":""}',
-    '{"status":"reported","summary":"Visible","observations":[42]}', '{"status":"verified","summary":"Visible"}'];
+  const malformed = ['', 'All done', '{"status":"reported"}', '{"status":"reported","summary":""}', '{"status":"verified","summary":"Visible"}'];
   const fixture = setup(malformed.map(text => async () => text).concat(async () => '```json\n{"status":"reported","summary":"Visible supplied text","observations":["Field contains supplied text"]}\n```'));
   const parent = fixture.bind();
   for (const _text of malformed) {
@@ -227,6 +226,80 @@ test('empty, malformed or incomplete reports cannot become a reported completion
   }
   const response = await parent.call('computer_task', { objective: 'Inspect an observed field' });
   assert.equal(report(response).status, 'reported'); assert.equal(report(response).verified, false);
+  await fixture.registry.dispose();
+});
+
+test('rich legacy reports and terminal handoffs preserve object observations, complete row arrays and additional data fields', async () => {
+  const rows = Array.from({ length: 21 }, (_, index) => `Synthetic row ${index + 1}: ${index * 7}`);
+  const examples = [
+    { status: 'reported', summary: 'Observed sources', observations: [{ file: 'source.csv', visible_columns: ['ID', 'Amount'], visible_data: rows, row_count: 21 }], unverified: { dateType: true } },
+    { status: 'blocked', summary: 'Destination must be supplied', observations: { source: { columns: ['ID'], rows } }, unverified: ['Destination missing'] },
+    { status: 'reported', summary: 'All visible rows', observations: rows, visible_observations: ['Selected table is visible'], other_data: { count: 21 } },
+    { status: 'reported', summary: 'Long but bounded observations', observations: ['a'.repeat(12000), 'b'.repeat(12000)], unverified: null },
+  ];
+  const scripts: Script[] = examples.flatMap(example => [async () => JSON.stringify(example), async tools => {
+    await assert.rejects(tools.call('report_computer_task', example), /unterbrochen/);
+    return 'The terminal handoff must not need this final prose.';
+  }]);
+  const fixture = setup(scripts), parent = fixture.bind();
+  for (const example of examples) for (const _mode of ['legacy', 'tool']) {
+    const response = await parent.call('computer_task', { objective: 'Read exact visible data and report every relevant row' });
+    const result = report(response); assert.equal(result.status, example.status); assert.equal(result.verified, false);
+    assert.deepEqual(JSON.parse(result.result), example, 'all bounded observed data must survive the handoff unchanged');
+    assert.equal(result.actionCount, 0, 'handoff is not a native operation');
+  }
+  assert.equal(fixture.inputs.length, 0); assert.ok(fixture.captures.every(capture => capture.disposed === 1));
+  await fixture.registry.dispose();
+});
+
+test('terminal report bounds reject invalid data without desktop input and allow a corrected bounded handoff', async () => {
+  let deep: unknown = null; for (let i = 0; i < 9; i++) deep = { nested: deep };
+  const cyclic: Record<string, unknown> = {}; cyclic.self = cyclic;
+  const invalid = [
+    { status: 'reported', summary: ' ', observations: [] },
+    { status: 'verified', summary: 'Wrong status' },
+    { status: 'reported', summary: 'Too deep', observations: deep },
+    { status: 'reported', summary: 'Too many array entries', observations: Array(257).fill(null) },
+    { status: 'reported', summary: 'Too many object fields', observations: Object.fromEntries(Array.from({ length: 129 }, (_, index) => [`key${index}`, null])) },
+    { status: 'reported', summary: 'Key too long', observations: { ['k'.repeat(201)]: true } },
+    { status: 'reported', summary: 'String too long', observations: 'x'.repeat(16001) },
+    { status: 'reported', summary: 'Too many nodes', observations: Array.from({ length: 32 }, () => Array(128).fill(null)) },
+    { status: 'reported', summary: 'Serialized payload too large', observations: Array(6).fill('x'.repeat(12000)) },
+    { status: 'reported', summary: 'Embedded data URL', observations: 'data:image/png;base64,YQ==' },
+    { status: 'reported', summary: 'Embedded text data URL', observations: 'data:text/plain,a' },
+    { status: 'reported', summary: 'Non JSON number', observations: Number.NaN },
+    { status: 'reported', summary: 'Cyclic data', observations: cyclic },
+  ];
+  const accepted = { status: 'blocked', summary: 'Exact target was not supplied', observations: { found: 21 }, unverified: { target: null } };
+  const fixture = setup([async tools => {
+    for (const value of invalid) await assert.rejects(tools.call('report_computer_task', value), /Computer report/);
+    await assert.rejects(tools.call('report_computer_task', accepted), /unterbrochen/); return 'Not used';
+  }]);
+  const response = await fixture.bind().call('computer_task', { objective: 'Inspect a destination if one is supplied' });
+  assert.equal(report(response).status, 'blocked'); assert.deepEqual(JSON.parse(report(response).result), accepted); assert.equal(fixture.inputs.length, 0);
+  await fixture.registry.dispose();
+});
+
+test('accepted terminal handoff blocks follow-up actions and waits for pending native input settlement', async () => {
+  const entered = deferred<void>(), release = deferred<void>(); let inputSettled = false, signal: AbortSignal | undefined;
+  const actions: string[] = [], computer: ComputerAdapter = { async execute(input, abort) {
+    const action = (input as { action: string }).action; actions.push(action);
+    if (action === 'key') { signal = abort; entered.resolve(); await release.promise; inputSettled = true; }
+    return frame('latest');
+  }, stop: async () => { if (signal) await release.promise; }, dispose: async () => {} };
+  const attempted = deferred<void>();
+  const fixture = setup([async tools => {
+    await tools.call('computer', { action: 'screenshot' });
+    const input = assert.rejects(tools.call('computer', { action: 'key', frameId: 'latest', key: 'tab' }), /unterbrochen/);
+    await entered.promise;
+    const handoff = assert.rejects(tools.call('report_computer_task', { status: 'reported', summary: 'Input was requested; final state remains unverified', unverified: ['Pending input'] }), /unterbrochen/);
+    await assert.rejects(tools.call('computer', { action: 'screenshot' })); attempted.resolve();
+    await Promise.all([input, handoff]); return 'Not used';
+  }], { computer });
+  let returned = false; const call = fixture.bind().call('computer_task', { objective: 'Navigate one visible field' }).then(value => { returned = true; return value; });
+  await attempted.promise; await delay(5); assert.equal(signal?.aborted, true); assert.equal(returned, false); assert.equal(inputSettled, false);
+  release.resolve(); const result = report(await call); assert.equal(result.status, 'reported'); assert.equal(result.verified, false);
+  assert.equal(inputSettled, true); assert.deepEqual(actions, ['screenshot', 'key']); assert.equal(fixture.events.filter(event => event.type === 'computer-frame').length, 1);
   await fixture.registry.dispose();
 });
 

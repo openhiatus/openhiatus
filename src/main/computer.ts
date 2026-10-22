@@ -6,6 +6,7 @@ import { sharedDesktopCoordinator, type DesktopCoordinator, type DesktopLease } 
 import type { CuaDriverSessionLike, PressKeyInput, ToolResult } from '@trycua/cua-driver';
 import type { ComputerObservation } from '../shared/computer-views';
 import { ComputerObservations } from './computer-observations';
+import { computerHandle } from './computer-handles';
 import type { ComputerImageProcessor } from './computer-images';
 import { COMPUTER_DIAGNOSTICS_PREFIX, computerDriverDiagnostic, computerDriverFailed, computerDriverFailureSummary,
   type ComputerDriverDiagnostic, type ComputerDriverOperation } from './computer-driver-result';
@@ -118,7 +119,7 @@ function imageResult(result: ToolResult): CapturedImage {
     bytes.toString('ascii', 12, 16) !== 'IHDR' || bytes.readUInt32BE(16) !== width || bytes.readUInt32BE(20) !== height) {
     throw new ComputerError('Die PNG-Abmessungen stimmen nicht mit den Bildschirmdaten überein.');
   }
-  return { frameId: randomUUID(), width, height, scale: data.scale_factor,
+  return { frameId: computerHandle('frame'), width, height, scale: data.scale_factor,
     fingerprint: createHash('sha256').update(bytes).digest('hex'), image: { base64: image.dataBase64, mimeType: 'image/png' } };
 }
 

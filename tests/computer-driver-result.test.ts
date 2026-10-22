@@ -1,9 +1,22 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { ToolResult } from '@trycua/cua-driver';
-import { computerDriverDiagnostic, computerDriverFailed } from '../src/main/computer-driver-result';
+import { computerDriverDiagnostic, computerDriverFailed, computerDriverFailureSummary } from '../src/main/computer-driver-result';
 
 const result = (values: Partial<ToolResult>): ToolResult => ({ text: '', images: [], isError: false, degraded: false, rawJson: '{}', ...values });
+
+test('known before-input refusals and ambiguous delivery give different continuation guidance without claiming UI success', () => {
+  const before = computerDriverDiagnostic(result({ isError: true, text: 'foreground_unavailable: Windows did not activate exact target HWND 123' }), 'click');
+  const after = computerDriverDiagnostic(result({ isError: true, text: 'foreground_unavailable: exact target HWND 123 or a verified same-process post-action window was not foreground after the click (private)' }), 'click');
+  const refused = computerDriverFailureSummary(before, true), delivered = computerDriverFailureSummary(after, true);
+  assert.match(refused, /vor dem Senden verweigert/); assert.match(refused, /Tastaturnavigation/); assert.match(refused, /Kontrollbild/);
+  assert.doesNotMatch(refused, /kann trotzdem gewirkt/);
+  assert.match(delivered, /Klick wurde gesendet/); assert.match(delivered, /Nicht automatisch wiederholen/);
+  const unknown = computerDriverFailureSummary({ ...before, failureStage: undefined }, false);
+  assert.match(unknown, /kann trotzdem gewirkt/); assert.match(unknown, /screenshot/);
+  const protectedTarget = computerDriverFailureSummary({ ...before, failureReason: 'integrity-block' }, true);
+  assert.match(protectedTarget, /Schutzmechanismen nicht umgehen/); assert.doesNotMatch(protectedTarget, /Tastaturnavigation/);
+});
 
 test('Windows click diagnostics distinguish before, partial and after input without exporting HWNDs or native text', () => {
   const cases = [

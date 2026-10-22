@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { computerHandle } from './computer-handles';
 import type { ComputerObservation, ComputerPoint, ComputerRect, ComputerRegionSelection, ComputerViewImage } from '../shared/computer-views';
 import type { ComputerAction, ComputerInput } from './computer-input';
 import { ComputerError } from './computer-input';
@@ -63,7 +63,7 @@ export class ComputerObservations {
     // A requested full image is the complete original, never another detail crop.
     // Keep the configured divisor unchanged for subsequent ordinary observations.
     const overview = this.processor.overview(source, divisor);
-    const views: ComputerViewImage[] = [{ ...createViewDescriptor('overview', randomUUID(),
+    const views: ComputerViewImage[] = [{ ...createViewDescriptor('overview', computerHandle('view'),
       { x: 0, y: 0, width: image.width, height: image.height }, overview), dataUrl: `data:image/png;base64,${overview.base64}` }];
     if (selection.rect) views.push(this.detail(source, selection.rect));
     check(signal);
@@ -92,6 +92,6 @@ export class ComputerObservations {
 
   private detail(source: DecodedComputerImage, rect: ComputerRect): ComputerViewImage {
     const image = this.processor!.crop(source, rect);
-    return { ...createViewDescriptor('detail', randomUUID(), rect, image), dataUrl: `data:image/png;base64,${image.base64}` };
+    return { ...createViewDescriptor('detail', computerHandle('view'), rect, image), dataUrl: `data:image/png;base64,${image.base64}` };
   }
 }

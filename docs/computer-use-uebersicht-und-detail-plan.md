@@ -196,6 +196,8 @@ Diese zweite Anforderung wählt im 4K-Original einen Bereich ab (1600, 704) mit 
 
 ## Auswahl, Lebensdauer und Grenzen des Details
 
+Aufnahme- und Ansichtskennungen sind kurze, exakt zu übernehmende Handles. Ein Prozessnamensraum und eine fortlaufende Sequenz vermeiden Wiederverwendung. Es gibt keine unscharfe Zuordnung oder automatische Korrektur falsch übernommener Kennungen. Das Format der Kennung verändert weder die Gültigkeitsdauer noch die Koordinatenprüfung.
+
 - Es gibt pro Antwort eine Übersicht und höchstens einen aktiven Detailbereich. Ein neuer Bereich ersetzt den vorherigen. Der Detailbereich darf abhängig von der Aufgabe unterschiedlich groß sein; es gibt keine feste Excel- oder Fenstergröße.
 - Eine ausdrückliche Modellwahl verwendet sichtbare Bildkoordinaten. openHiatus kennt deren Ursprung und rechnet sie in Originalkoordinaten um. Ein lokaler Selektor liefert dagegen bereits ein Rechteck im aktuellen Original; beide Wege erzeugen denselben geprüften Ansichtsvertrag. Der Bereich kann innerhalb des Details weiter eingegrenzt oder über die Übersicht neu gewählt werden.
 - Alle ausgegebenen Ansichten einer Antwort stammen aus derselben Originalaufnahme. Ein gespeicherter Ausschnitt wird niemals mit einer neueren Übersicht gemischt.

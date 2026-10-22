@@ -63,6 +63,30 @@ test('overview is true divisor, retains native screen geometry and initially con
   await f.computer.dispose();
 });
 
+test('short observation handles keep exact frame/view rejection, consumed images and ownership boundaries', async () => {
+  const f = fixture(); const first = await f.computer.execute({ action: 'screenshot' });
+  const view = overview(first);
+  assert.ok(first.frameId.length <= 24 && view.viewId.length <= 24);
+  assert.notEqual(first.frameId, view.viewId);
+  const typo = (value: string) => value.slice(0, -1) + (value.endsWith('a') ? 'b' : 'a');
+  await assert.rejects(f.computer.execute({ action: 'click', frameId: typo(first.frameId), viewId: view.viewId, x: 1, y: 1 }), /veraltet/);
+  assert.equal(f.inputs.length, 0, 'misspelled frame never reaches the driver');
+  const next = await f.computer.execute({ action: 'screenshot' });
+  await assert.rejects(f.computer.execute({ action: 'click', frameId: next.frameId, viewId: typo(overview(next).viewId), x: 1, y: 1 }), /Unknown or replaced/);
+  assert.equal(f.inputs.length, 0, 'misspelled view never reaches the driver');
+  const current = await f.computer.execute({ action: 'screenshot' });
+  const after = await f.computer.execute({ action: 'click', frameId: current.frameId, viewId: overview(current).viewId, x: 1, y: 1 });
+  assert.equal(f.inputs.length, 1); assert.notEqual(after.frameId, current.frameId);
+  await assert.rejects(f.computer.execute({ action: 'key', frameId: current.frameId, key: 'enter' }), /veraltet/);
+  assert.equal(f.inputs.length, 1);
+  await f.computer.stop();
+  const resumed = await f.computer.execute({ action: 'screenshot' });
+  assert.notEqual(resumed.frameId, after.frameId);
+  await assert.rejects(f.computer.execute({ action: 'key', frameId: after.frameId, key: 'enter' }), /veraltet/);
+  assert.equal(f.inputs.length, 1);
+  await f.computer.dispose();
+});
+
 test('a refused detail action keeps a fresh configured overview/control view without reusing or replaying old coordinates', async () => {
   const f = fixture(); f.setDivisor(16); const first = await inspect(f), detail = first.observation!.views[1];
   f.setActionResult(toolResult({ isError: true, action: { effect: 4, route: 2, delivery: { mode: 1, deliveredCount: 0 } } }));
