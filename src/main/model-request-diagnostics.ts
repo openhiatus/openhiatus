@@ -22,7 +22,10 @@ export function applyRequestedServiceTier(payload: unknown, model: RequestModel,
   if (!tier) return payload;
   assertFastModel(model);
   if (!isWireRecord(payload)) throw new Error('Die Fast-Anforderung konnte nicht gesetzt werden.');
-  payload.service_tier = tier;
+  // Fast and priority are equivalent in the public API. Some ChatGPT direct routes
+  // reject the fast spelling; keep logical diagnostics as fast.
+  // https://developers.openai.com/api/docs/guides/fast-mode
+  payload.service_tier = 'priority';
   return payload;
 }
 

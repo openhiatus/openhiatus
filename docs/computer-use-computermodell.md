@@ -29,7 +29,9 @@ Stopp beendet auch den Computerprozess und wartet auf die Freigabe gestarteter D
 
 ## Fast und Messwerte
 
-Fast wird ausdrücklich im OpenAI-Responses-Payload angefordert. Nicht unterstützte Anbieter/Adapter werden mit dieser Einstellung abgelehnt. Die vom Anbieter tatsächlich gemeldete Service-Stufe wird getrennt erfasst: `default` ist kein bestätigtes Fast, und eine fehlende Stufe bleibt unbekannt. Die App schreibt keine Zugangs- oder Antwortinhalte in diese Messwerte.
+Fast wird ausdrücklich im OpenAI-Responses-Payload angefordert, mit dem kompatiblen Drahtwert `service_tier: "priority"`. OpenAI dokumentiert `priority` und `fast` als gleichwertige Namen; der ältere Name vermeidet die Ablehnung des neueren Werts auf Zugangspfaden, die diesen noch nicht annehmen. Die logische Einstellung und Diagnose bleiben „Fast angefordert“. Es gibt keinen Wiederholungsversuch mit Standardverarbeitung. [OpenAI Docs zu Fast](https://developers.openai.com/api/docs/guides/fast-mode)
+
+Nicht unterstützte Anbieter/Adapter werden mit dieser Einstellung abgelehnt. Die vom Anbieter tatsächlich gemeldete Service-Stufe wird getrennt erfasst: Eine akzeptierte Anfrage allein bestätigt kein Fast. `default` ist kein bestätigtes Fast, und eine fehlende Stufe bleibt unbekannt. Die App schreibt keine Zugangs- oder Antwortinhalte in diese Messwerte.
 
 Auftragsdetails und gespeicherte Aufträge enthalten je Rolle, Modell und angefragter/gemeldeter Stufe:
 

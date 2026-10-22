@@ -120,7 +120,7 @@ test('real Sol and Luna Pi hosts delegate several Fast computer turns, isolate i
       assert.equal(number, 3); assert.ok(JSON.stringify(request).includes(png), 'planner sees the explicit original screenshot it requested');
       return { text: 'Verified the supplied text in the synthetic field.' };
     }
-    assert.equal(model, 'gpt-6-luna'); assert.equal(request.service_tier, 'fast');
+    assert.equal(model, 'gpt-6-luna'); assert.equal(request.service_tier, 'priority');
     assert.deepEqual(request.tools.map((tool: any) => tool.name), ['computer']);
     if (number === 1) return { tool: 'computer', args: { action: 'screenshot' } };
     assert.ok(JSON.stringify(request).includes(png), 'subsequent Luna turns receive the synthetic screen image');

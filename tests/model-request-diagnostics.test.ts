@@ -11,10 +11,10 @@ const model = { provider: 'openai', api: 'openai-responses' };
 const usage = { inputTokens: 11, outputTokens: 3, cacheReadTokens: 7, cacheWriteTokens: 2 };
 const tool = (name: string) => ({ type: 'function' as const, name, description: 'Synthetic tool', inputSchema: { type: 'object' } });
 
-test('Fast is set on the supported outgoing Responses payload and unsupported requests fail visibly', () => {
+test('logical Fast uses compatible priority on the Responses wire and unsupported requests fail visibly', () => {
   const payload = { model: 'gpt-6-luna', stream: true, service_tier: 'auto', reasoning: { effort: 'medium' } };
   assert.equal(applyRequestedServiceTier(payload, model, 'fast'), payload);
-  assert.equal(payload.service_tier, 'fast'); assert.deepEqual(payload.reasoning, { effort: 'medium' });
+  assert.equal(payload.service_tier, 'priority'); assert.deepEqual(payload.reasoning, { effort: 'medium' });
   const ordinary = { service_tier: 'auto' };
   applyRequestedServiceTier(ordinary, model); assert.equal(ordinary.service_tier, 'auto');
   assert.throws(() => applyRequestedServiceTier({}, { ...model, provider: 'local' }, 'fast'), /OpenAI Responses/);

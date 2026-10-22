@@ -1,5 +1,13 @@
 # openHiatus – Testprotokoll
 
+## Kompatibler Fast-Parameter – 23. Oktober 2026
+
+Die Fast-Auswahl wird jetzt als `service_tier: "priority"` übertragen. `priority` und `fast` bezeichnen laut OpenAI dieselbe Verarbeitung; die Verwendung des kompatiblen Namens behebt die Ablehnung `Unsupported service_tier: fast` vor dem ersten Werkzeugaufruf. Dies schaltet weder Fast aus noch versucht es nach einem Fehler automatisch erneut mit Standardverarbeitung.
+
+Die neue Regression verwendet den echten Pi-Host, den ChatGPT-Zugangsabruf und synthetische pro Anfrage wechselnde Token. Der abgefangene HTTP-Transport lehnt den neueren Wert mit der konkreten 400-Antwort ab und akzeptiert ausschließlich `priority`. Zwei reguläre Modellturns behalten die tatsächlichen Antwortstufen `priority` beziehungsweise `default` getrennt bei. Eine erfolgreiche Anfrage wird nicht mit bestätigtem Fast gleichgesetzt. Die Prüfung verwendet keine echten Zugangsdaten, Cloudanfragen oder Desktopoperationen.
+
+`npm run check` besteht mit Architekturprüfung, Typprüfung und **622 Tests** ohne Fehler oder Auslassungen. Der anschließend separat ausgeführte Build besteht; bekannte lucide-react-Warnungen bleiben unverändert.
+
 ## Getrenntes Computermodell – 23. Oktober 2026
 
 Der optionale Modus trennt das Arbeitsmodell von einer eingeschränkten Computerlaufzeit. Das Arbeitsmodell übergibt begrenzte Bedienziele; das Computermodell erhält Bildschirmbilder und führt mehrere beobachtete Desktopaktionen aus. Der Rückweg ist normalerweise ein Textbericht mit ausdrücklich ungeprüfter Abschlussbehauptung. Eigene Aufnahmen zur Prüfung kann das Arbeitsmodell gesondert anfordern. Der Standard bleibt die bisherige Bedienung durch das Arbeitsmodell.
