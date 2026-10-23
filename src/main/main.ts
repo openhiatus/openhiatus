@@ -67,8 +67,12 @@ async function createApp(): Promise<void> {
   const runtimeOptions = { executable: process.execPath, hostEntry: path.join(__dirname, 'agent-host.mjs'), processHost, home, workspace, providers };
   services = new ServiceBroker();
   const serviceBroker = services;
-  const computerTools = () => createComputerToolContribution({ getOverviewScaleDivisor: () => controller?.snapshot().preferences.computerOverviewScaleDivisor ?? 1 });
+  const computerTools = () => createComputerToolContribution({
+    getOverviewScaleDivisor: () => controller?.snapshot().preferences.computerOverviewScaleDivisor ?? 1,
+    getDetailScaleDivisor: () => controller?.snapshot().preferences.computerDetailScaleDivisor ?? 1,
+  });
   const runtime = new PiAdapter({ ...runtimeOptions, role: 'worker', tools: createToolRegistry([computerTools()]),
+    getComputerImageRetentionCalls: () => controller?.snapshot().preferences.computerImageRetentionCalls ?? 0,
     getIdentityInstructions: () => controller?.identityInstructions() ?? '', onEvent: event => controller?.handle(event) });
   const dialogRuntime = new PiAdapter({ ...runtimeOptions, role: 'dialog', getIdentityInstructions: () => controller?.identityInstructions() ?? '',
     tools: createToolRegistry([{ bind: () => ({ tools: (controller?.dialogTools() ?? []).map(definition => defineTool({
@@ -83,9 +87,13 @@ async function createApp(): Promise<void> {
     const computer = job.computer;
     const desktop = computer?.delegationEnabled ? createDelegatedComputerToolContribution({ model: computer.model, fast: computer.fast,
       getOverviewScaleDivisor: () => computer.overviewScaleDivisor,
-      createWorker: (onEvent, tools, instructions) => new PiAdapter({ ...runtimeOptions, role: 'worker', computerOnly: true, instructions, tools, onEvent }),
-    }) : createComputerToolContribution({ getOverviewScaleDivisor: () => computer?.overviewScaleDivisor ?? 1 });
+      getDetailScaleDivisor: () => computer.detailScaleDivisor ?? 1,
+      createWorker: (onEvent, tools, instructions) => new PiAdapter({ ...runtimeOptions, role: 'worker', computerOnly: true, instructions, tools,
+        computerImageRetentionCalls: computer.imageRetentionCalls ?? 0, onEvent }),
+    }) : createComputerToolContribution({ getOverviewScaleDivisor: () => computer?.overviewScaleDivisor ?? 1,
+      getDetailScaleDivisor: () => computer?.detailScaleDivisor ?? 1 });
     return new PiAdapter({ ...runtimeOptions, role: 'worker',
+      computerImageRetentionCalls: computer?.imageRetentionCalls ?? 0,
       ...(computer?.delegationEnabled ? { instructions: `${AGENT_INSTRUCTIONS}\n\n${COMPUTER_PLANNER_INSTRUCTIONS}` } : {}),
       tools: createToolRegistry([desktop, serviceBroker.createReadTools(job.id)]),
       getIdentityInstructions: () => job.identityInstructions ?? '', onEvent });

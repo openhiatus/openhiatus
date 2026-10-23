@@ -17,7 +17,8 @@ export interface ParsedTaskReply { text: string; proposals: CoreProposalInput[];
 export interface BackgroundTaskPorts {
   createWorker(onEvent: (event: AgentEvent) => void, job: BackgroundJob): AgentAdapter;
   access: { assertFullAccess(): void; blocked(): boolean; };
-  settings(): { model: string; progressSpeech: boolean; computerDelegationEnabled?: boolean; computerModel?: string; computerFast?: boolean; computerOverviewScaleDivisor?: number };
+  settings(): { model: string; progressSpeech: boolean; computerDelegationEnabled?: boolean; computerModel?: string; computerFast?: boolean; computerOverviewScaleDivisor?: number;
+    computerDetailScaleDivisor?: number; computerImageRetentionCalls?: number };
   context: {
     skills(query: string, maxBytes: number): string;
     capabilities(): string;
@@ -132,7 +133,8 @@ export class BackgroundTaskCoordinator {
       if (!this.jobs.some(job => job.requestId === input.requestId) && this.jobs.filter(job => ['queued', 'running', 'stopping'].includes(job.status)).length + waiting >= 50) throw new Error('Es warten bereits 50 Aufgaben. Bitte zuerst einige abschließen oder stoppen.');
       const settings = this.ports.settings();
       const computer = parseComputerTaskSettings({ delegationEnabled: settings.computerDelegationEnabled === true, model: settings.computerModel ?? '',
-        fast: settings.computerFast !== false, overviewScaleDivisor: settings.computerOverviewScaleDivisor ?? 1 });
+        fast: settings.computerFast !== false, overviewScaleDivisor: settings.computerOverviewScaleDivisor ?? 1,
+        detailScaleDivisor: settings.computerDetailScaleDivisor ?? 1, imageRetentionCalls: settings.computerImageRetentionCalls ?? 0 });
       const frozen: AdmissionContext = { documents: structuredClone(this.ports.memory?.documents() ?? []), model: settings.model, computer,
         capabilities: this.clean(this.ports.context.capabilities()), favorites: this.ports.context.favorites() };
       const generation = this.generation, request = structuredClone(input);

@@ -1,7 +1,7 @@
 import type { ComputerFrame, Snapshot } from '../contracts';
-import { MAX_COMPUTER_DETAIL_PIXELS, type ComputerObservation, type ComputerRect } from '../computer-views';
+import { computerDetailDivisor, MAX_COMPUTER_DETAIL_PIXELS, type ComputerObservation, type ComputerRect } from '../computer-views';
 import { parseSkillFavorites } from '../skill-favorites';
-import { parseComputerTaskSettings } from '../computer-task-settings';
+import { computerImageRetentionCalls, parseComputerTaskSettings } from '../computer-task-settings';
 import { parseModelRequestSummaries } from '../model-requests';
 import { array, boolean, choice, integer, invalidPayload, number, object, optional, text, type Decoder } from './decode';
 
@@ -16,6 +16,9 @@ const overviewPreference: Decoder<number> = value => {
   const divisor = number(value);
   return divisor >= 1 && divisor <= 64 ? divisor : invalidPayload();
 };
+const detailPreference: Decoder<number> = value => {
+  try { return computerDetailDivisor(value); } catch { return invalidPayload(); }
+};
 export const decodeSnapshot: Decoder<Snapshot> = object({
   messages: array(object(messageFields), 10000),
   activity: array(object({ id, at, kind: choice(['system', 'command', 'file', 'error']), title: body, detail: optional(body) }), 20000),
@@ -24,6 +27,7 @@ export const decodeSnapshot: Decoder<Snapshot> = object({
     inputDeviceLabel: optional(text(1000)), inputDeviceGroupId: optional(text(1000)), outputDeviceLabel: optional(text(1000)), outputDeviceGroupId: optional(text(1000)),
     memoryAutoSummarize: optional(boolean), voiceConversation: optional(boolean), earcons: optional(boolean), skillFavorites: optional(parseSkillFavorites),
     fullAccessAcknowledged: optional(boolean), chatgptBackgroundUsage: optional(boolean), computerOverviewScaleDivisor: optional(overviewPreference),
+    computerDetailScaleDivisor: optional(detailPreference), computerImageRetentionCalls: optional(computerImageRetentionCalls),
     computerDelegationEnabled: optional(boolean), computerModel: optional(text(300)), computerFast: optional(boolean) }),
   connections: object({ agent: choice(['offline', 'missing', 'ready', 'connecting']), account: body, speech: choice(['missing', 'saved', 'verified']) }),
   models,
@@ -55,7 +59,7 @@ function withinScreen(value: ComputerRect, width: number, height: number): boole
 const observation: Decoder<ComputerObservation> = value => {
   const result = object({
     version: (version: unknown) => version === 2 ? 2 as const : invalidPayload(), frameId: viewId, at, displayId: choice(['primary']),
-    screenWidth: dimension, screenHeight: dimension, scaleFactor: positive, overviewScaleDivisor: overviewPreference,
+    screenWidth: dimension, screenHeight: dimension, scaleFactor: positive, overviewScaleDivisor: overviewPreference, detailScaleDivisor: optional(detailPreference),
     views: array(object({ viewId, kind: choice(['overview', 'detail']), imageWidth: dimension, imageHeight: dimension, sourceRect: rect, dataUrl: png }), 2),
     selection: object({ rect: optional(rect), reason: choice(['manual', 'model-hint', 'visual-change', 'retained', 'action-point', 'none']),
       changedPixels: optional(integer), changedFraction: optional(fraction), candidates: optional(integer) }),
@@ -68,8 +72,10 @@ const observation: Decoder<ComputerObservation> = value => {
     overview.imageHeight !== Math.max(1, Math.round(result.screenHeight / result.overviewScaleDivisor)) ||
     new Set(result.views.map(view => view.viewId)).size !== result.views.length) return invalidPayload();
   for (const view of result.views) if (!withinScreen(view.sourceRect, result.screenWidth, result.screenHeight)) return invalidPayload();
-  if (detail && (detail.imageWidth !== detail.sourceRect.width || detail.imageHeight !== detail.sourceRect.height ||
-    detail.imageWidth > MAX_COMPUTER_DETAIL_PIXELS / detail.imageHeight)) return invalidPayload();
+  const detailDivisor = result.detailScaleDivisor ?? 1;
+  if (detail && (detail.imageWidth !== Math.max(1, Math.round(detail.sourceRect.width / detailDivisor)) ||
+    detail.imageHeight !== Math.max(1, Math.round(detail.sourceRect.height / detailDivisor)) ||
+    detail.sourceRect.width > MAX_COMPUTER_DETAIL_PIXELS / detail.sourceRect.height)) return invalidPayload();
   if (result.selection.rect && !withinScreen(result.selection.rect, result.screenWidth, result.screenHeight)) return invalidPayload();
   if (result.selection.changedPixels !== undefined && result.selection.changedPixels / result.screenWidth > result.screenHeight) return invalidPayload();
   return result;

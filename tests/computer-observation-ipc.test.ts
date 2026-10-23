@@ -83,6 +83,31 @@ test('computer IPC enforces native detail geometry, screen bounds and the origin
   assert.equal(decodeComputerFrame(boundary).observation!.views[1].imageWidth * boundary.observation.views[1].imageHeight, 1_048_576);
 });
 
+test('computer IPC accepts independently rounded scaled details and keeps the physical crop budget', () => {
+  for (const divisor of [1, 2, 4]) for (const [width, height] of [[1023, 1025], [1, 2]]) {
+    const frame = frameFixture(), observation = frame.observation, detail = observation.views[1];
+    observation.detailScaleDivisor = divisor;
+    detail.sourceRect = { x: 0, y: 0, width, height }; observation.selection.rect = { ...detail.sourceRect };
+    detail.imageWidth = Math.max(1, Math.round(width / divisor));
+    detail.imageHeight = Math.max(1, Math.round(height / divisor));
+    assert.deepEqual(decodeComputerFrame(frame), frame);
+    detail.imageWidth++; assert.throws(() => decodeComputerFrame(frame), /Ungültige/);
+  }
+  const oversized = frameFixture(), detail = oversized.observation.views[1];
+  oversized.observation.detailScaleDivisor = 2;
+  detail.sourceRect = { x: 0, y: 0, width: 1025, height: 1024 };
+  detail.imageWidth = 513; detail.imageHeight = 512;
+  assert.throws(() => decodeComputerFrame(oversized), /Ungültige/, 'the native source area remains bounded even if its image is smaller');
+  const legacy = frameFixture();
+  assert.equal(decodeComputerFrame(legacy).observation!.detailScaleDivisor, undefined);
+  legacy.observation.views[1].imageWidth /= 2;
+  assert.throws(() => decodeComputerFrame(legacy), /Ungültige/, 'missing detail factor means native 1:1');
+  for (const divisor of [0, 3, 2.5, 8, Infinity, NaN, '2', null]) {
+    const frame = frameFixture();
+    assert.throws(() => decodeComputerFrame({ ...frame, observation: { ...frame.observation, detailScaleDivisor: divisor } }), /Ungültige/);
+  }
+});
+
 test('computer IPC rejects malformed limits and metadata throughout observations', () => {
   const original = frameFixture();
   const malformed: unknown[] = [

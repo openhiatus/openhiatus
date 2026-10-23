@@ -12,6 +12,7 @@ import { decodeParentMessage, decodeHostResult, decodeToolResponse, isWireRecord
 import { piModel, redactError } from './providers.js';
 import { applyComputerImageDetail } from './computer-image-payload.js';
 import { applyRequestedServiceTier, assertFastModel, ModelRequestDiagnostics } from './model-request-diagnostics.js';
+import { ComputerImageHistory, computerImageHistoryInstructions } from './computer-image-history.js';
 export type { HostRun } from './agent-wire.js';
 interface SessionReference { file: string; dialog: boolean; workspace: string; computerOnly?: boolean; }
 const BUILTIN_TOOLS = ['read', 'write', 'edit', 'powershell', 'grep', 'find', 'ls'];
@@ -176,7 +177,9 @@ export class AgentHost {
       if (!subscription) await modelRuntime.setRuntimeApiKey(input.model.provider, input.model.apiKey);
       const settingsManager = pi.SettingsManager.inMemory({ packages: [], extensions: [], skills: [], prompts: [], themes: [],
         retry: { enabled: false, provider: { maxRetries: 0 } }, cacheWarming: 'off' }, { projectTrusted: false });
-      const resourceLoader = new pi.DefaultResourceLoader({ ...resourceOptions(input, settingsManager),
+      const imageRetention = input.computerImageRetentionCalls ?? 0;
+      const resourceLoader = new pi.DefaultResourceLoader({ ...resourceOptions({ ...input,
+        instructions: `${input.instructions}${imageRetention ? `\n\n${computerImageHistoryInstructions(imageRetention)}` : ''}` }, settingsManager),
         skillsOverride: () => input.dialog || input.computerOnly ? { skills: [], diagnostics: [] } : pi.loadSkillsFromDir({ dir: join(input.home, 'skills'), source: APP_DISPLAY_NAME }),
       });
       await resourceLoader.reload();
@@ -184,6 +187,10 @@ export class AgentHost {
       const { session } = await pi.createAgentSession({ cwd: input.workspace, agentDir: input.home, modelRuntime, model,
         settingsManager, sessionManager, resourceLoader, tools, customTools, thinkingLevel: 'medium' });
       this.session = session;
+      const threadId = session.sessionId, imageHistoryPath = join(referenceDirectory, `${threadId}.computer-images.json`);
+      let savedImages: unknown;
+      if (imageRetention) { try { savedImages = JSON.parse(await readFile(imageHistoryPath, 'utf8')); } catch { /* old screenshots remain expired on a legacy resume */ } }
+      const imageHistory = imageRetention ? new ComputerImageHistory(imageRetention, savedImages, input.threadId ? session.messages : []) : undefined;
       const onPayload = session.agent.onPayload;
       session.agent.onPayload = async (payload, requestModel) => {
         const transformed = await onPayload?.(payload, requestModel);
@@ -201,9 +208,19 @@ export class AgentHost {
           active.diagnostics.delete(diagnostics);
         };
         try {
+          let requestContext = context;
+          if (imageHistory && !active.aborted && !options?.signal?.aborted) {
+            const messages = imageHistory.nextRequest(context.messages);
+            const source = sessionManager.getBranch().flatMap(pi.sessionEntryToContextMessages);
+            requestContext = { ...context, messages: imageHistory.projectSummary(messages, source,
+              message => pi.serializeConversation(pi.convertToLlm([message as Parameters<typeof pi.convertToLlm>[0][number]]))) };
+            const temporary = `${imageHistoryPath}.${input.runId}.tmp`;
+            await writeFile(temporary, JSON.stringify(imageHistory.snapshot()), 'utf8'); await rename(temporary, imageHistoryPath);
+          }
           // Compaction uses the same stream function without the agent's payload/event hooks.
           // Install request-scoped hooks here so it also carries Fast and complete diagnostics.
-          const result = await stream(requestModel, context, { ...options, ...(subscription ? { cacheRetention: 'none' } : {}), maxRetries: 0,
+          if (active.aborted || active.abort.signal.aborted || options?.signal?.aborted) throw new Error('Auftrag wurde unterbrochen.');
+          const result = await stream(requestModel, requestContext, { ...options, ...(subscription ? { cacheRetention: 'none' } : {}), maxRetries: 0,
             onPayload: async (payload, actualModel) => {
               const transformed = await options?.onPayload?.(payload, actualModel);
               return applyRequestedServiceTier(transformed === undefined ? payload : transformed, actualModel, input.serviceTier);
@@ -226,7 +243,6 @@ export class AgentHost {
       };
       const names = session.getActiveToolNames();
       if ((input.dialog || input.computerOnly) && names.some(name => !input.tools.some(tool => tool.name === name))) { session.dispose(); throw new Error('Agent-Werkzeuggrenze konnte nicht bestätigt werden.'); }
-      const threadId = session.sessionId;
       const indexPath = join(referenceDirectory, `${threadId}.json`);
       const reference: SessionReference = { file: sessionManager.getSessionFile()!, dialog: input.dialog, workspace: input.workspace, ...(input.computerOnly ? { computerOnly: true } : {}) };
       const temporary = `${indexPath}.${input.runId}.tmp`;

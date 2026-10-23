@@ -1,5 +1,7 @@
 # Getrenntes Computermodell
 
+Der nächste Vergleich verwendet das Arbeitsmodell allein, mit [skalierbaren Details und begrenztem Bildgedächtnis](computer-use-image-budget.md). Der weitere Sol/Luna-Umbau zu einzelnen Bedienaktionen ist als [Planungs-Issue #10](https://github.com/openhiatus/openhiatus/issues/10) zurückgestellt. Der folgende Text beschreibt den weiterhin optional vorhandenen Mehrschritt-Versuch.
+
 ## Zweck und Aktivierung
 
 Dieser optionale Versuch trennt fachliche Planung und visuelle Bedienung. Das Arbeitsmodell, beispielsweise gpt-6.1-sol, entscheidet über Rechenwege, Inhalte und die Prüfung der Abgabe. Ein gesondertes Computermodell, beispielsweise gpt-6-luna mit Fast, bedient die Oberfläche. Ein Geschwindigkeits- oder Kostenvorteil des vollständigen Ablaufs ist damit noch nicht nachgewiesen.

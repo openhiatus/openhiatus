@@ -2,7 +2,8 @@ import { AudioDeviceSelect } from './audio-device-select';
 import { useId, useRef, useState, type KeyboardEvent } from 'react';
 import { AudioLines, ChevronDown, Headphones, KeyRound, Keyboard, LoaderCircle, Mic, Monitor, SlidersHorizontal, Square, Volume2 } from 'lucide-react';
 import type { PreferencesPatch, Snapshot } from '../../../shared/contracts';
-import { COMPUTER_OVERVIEW_FACTORS } from '../../../shared/computer-views';
+import { COMPUTER_DETAIL_FACTORS, COMPUTER_OVERVIEW_FACTORS } from '../../../shared/computer-views';
+import { COMPUTER_IMAGE_RETENTION_CALLS } from '../../../shared/computer-task-settings';
 import { ProvidersView } from '../../ProvidersView';
 import type { AudioPhase } from '../voice';
 
@@ -55,6 +56,8 @@ export function SettingsView({ state, workBusy, summaryInProgress, voice, onPref
   const recording = voice.phase === 'recording' || voice.phase === 'mic-test';
   const ready = state !== undefined;
   const overviewFactor = state?.preferences.computerOverviewScaleDivisor ?? 1;
+  const detailFactor = state?.preferences.computerDetailScaleDivisor ?? 1;
+  const imageRetention = state?.preferences.computerImageRetentionCalls ?? 0;
   const computerModel = state?.preferences.computerModel ?? '';
   const computerModels = state?.models ?? [];
   const computerConfigured = computerModels.some(model => model.id === computerModel);
@@ -145,14 +148,27 @@ export function SettingsView({ state, workBusy, summaryInProgress, voice, onPref
           <label className="settings-toggle"><span><strong>Sprachgespräch</strong><small>Nach Ende der Aufnahme wird das erkannte Gesagte automatisch gesendet. Ausgeschaltet kannst du das Transkript vor dem Senden prüfen.</small></span><input type="checkbox" checked={state?.preferences.voiceConversation !== false} disabled={!ready} onChange={event => preference({ voiceConversation: event.target.checked })} /></label>
         </section>
         <section className="settings-card settings-computer">
-          <div className="settings-card-head"><span className="service-icon"><Monitor size={22} aria-hidden="true" /></span><div><h2>Bildschirmübersicht</h2><p>Experimentell · gilt ab dem nächsten Desktop-Auftrag.</p></div></div>
+          <div className="settings-card-head"><span className="service-icon"><Monitor size={22} aria-hidden="true" /></span><div><h2>Bildschirmbilder</h2><p>Experimentell · gilt ab dem nächsten Desktop-Auftrag.</p></div></div>
           <label className="field-label" htmlFor={`${id}-computer-overview`}>Auflösung der Übersicht</label>
           <div className="select-wrap"><select id={`${id}-computer-overview`} value={overviewFactor} disabled={!ready}
             aria-describedby={`${id}-computer-overview-description`} onChange={event => preference({ computerOverviewScaleDivisor: Number(event.target.value) })}>
             {COMPUTER_OVERVIEW_FACTORS.map(factor => <option key={factor} value={factor}>{factor === 1 ? 'Vollbild (1:1)' : `Übersicht 1:${factor}`}</option>)}
             {!COMPUTER_OVERVIEW_FACTORS.some(factor => factor === overviewFactor) && <option value={overviewFactor}>Übersicht 1:{overviewFactor} (aktuell)</option>}
           </select><ChevronDown size={15} aria-hidden="true" /></div>
-          <p className="billing-note" id={`${id}-computer-overview-description`}>Das bedienende Modell erhält die Übersicht und bei verkleinerter Übersicht höchstens einen Detailausschnitt in Originalauflösung. Die Ausschnittgröße passt sich automatisch an die Bildschirmauflösung an. Eine kleinere Übersicht garantiert keine schnellere Bearbeitung.</p>
+          <p className="billing-note" id={`${id}-computer-overview-description`}>Das bedienende Modell erhält die Übersicht und bei Bedarf höchstens einen Detailausschnitt. Die Ausschnittgröße passt sich automatisch an die Bildschirmauflösung an. Eine kleinere Übersicht garantiert keine schnellere Bearbeitung.</p>
+          <label className="field-label" htmlFor={`${id}-computer-detail`}>Auflösung der Details</label>
+          <div className="select-wrap"><select id={`${id}-computer-detail`} value={detailFactor} disabled={!ready}
+            aria-describedby={`${id}-computer-detail-description`} onChange={event => preference({ computerDetailScaleDivisor: Number(event.target.value) })}>
+            {COMPUTER_DETAIL_FACTORS.map(factor => <option key={factor} value={factor}>{factor === 1 ? 'Original (1:1)' : `Details 1:${factor}`}</option>)}
+          </select><ChevronDown size={15} aria-hidden="true" /></div>
+          <p className="billing-note" id={`${id}-computer-detail-description`}>Bei 1:2 sind Breite und Höhe der automatischen Detailansicht halbiert, bei 1:4 geviertelt. Originalausschnitte bleiben auf Abruf verfügbar.</p>
+          <label className="field-label" htmlFor={`${id}-computer-image-retention`}>Bildaufbewahrung im Modellkontext</label>
+          <div className="select-wrap"><select id={`${id}-computer-image-retention`} value={imageRetention} disabled={!ready}
+            aria-describedby={`${id}-computer-image-retention-description`} onChange={event => preference({ computerImageRetentionCalls: Number(event.target.value) })}>
+            {COMPUTER_IMAGE_RETENTION_CALLS.map(calls => <option key={calls} value={calls}>{calls === 0 ? 'Unbegrenzt (bisheriges Verhalten)' : calls === 1 ? 'Letzte Modellanfrage' : `Letzte ${calls} Modellanfragen`}</option>)}
+            {!COMPUTER_IMAGE_RETENTION_CALLS.some(calls => calls === imageRetention) && <option value={imageRetention}>Letzte {imageRetention} Modellanfragen (aktuell)</option>}
+          </select><ChevronDown size={15} aria-hidden="true" /></div>
+          <p className="billing-note" id={`${id}-computer-image-retention-description`}>Zählt Modellanfragen, keine Klicks. Ältere Bilder werden nicht mehr mitgeschickt. Das Modell soll wichtige Beobachtungen kurz im Text festhalten. Die Einstellungen gelten auch ohne eigenes Computer-Modell.</p>
           <label className="settings-toggle"><span><strong>Eigenes Computer-Modell verwenden</strong><small>Das Arbeitsmodell plant und prüft. Das Computer-Modell bekommt begrenzte Bedienaufträge und die Bildschirmbilder.</small></span><input type="checkbox" checked={state?.preferences.computerDelegationEnabled === true}
             disabled={computerSettingsBusy || !computerConfigured} aria-describedby={`${id}-computer-model-description`} onChange={event => preference({ computerDelegationEnabled: event.target.checked })} /></label>
           <label className="field-label" htmlFor={`${id}-computer-model`}>Computer-Modell</label>

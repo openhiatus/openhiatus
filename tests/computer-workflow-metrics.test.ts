@@ -20,7 +20,7 @@ test('desktop configuration and per-model observations persist and cross typed I
   store.save(state);
   const restored = store.load(), projected = decodeSnapshot({ ...snapshotFixture(), jobs: restored.jobs });
   assert.deepEqual(projected.jobs![0].modelRequests, [summary()]);
-  assert.deepEqual(projected.jobs![0].computer, state.jobs[0].computer);
+  assert.deepEqual(projected.jobs![0].computer, { ...state.jobs[0].computer, detailScaleDivisor: 1, imageRetentionCalls: 0 });
   assert.ok(!readFileSync(join(directory, 'state.json'), 'utf8').includes('privateText'));
 });
 

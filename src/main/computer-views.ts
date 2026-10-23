@@ -1,4 +1,4 @@
-import { MAX_COMPUTER_DETAIL_PIXELS, type ComputerPoint, type ComputerRect, type ComputerSize, type ComputerViewDescriptor } from '../shared/computer-views.js';
+import { computerDetailDivisor, MAX_COMPUTER_DETAIL_PIXELS, type ComputerPoint, type ComputerRect, type ComputerSize, type ComputerViewDescriptor } from '../shared/computer-views.js';
 
 function integer(value: number, minimum: number, name: string): void {
   if (!Number.isSafeInteger(value) || value < minimum) throw new Error(`Invalid computer ${name}.`);
@@ -25,6 +25,11 @@ export function overviewSize(size: ComputerSize, divisor: number): ComputerSize 
   return { width: Math.max(1, Math.round(size.width / divisor)), height: Math.max(1, Math.round(size.height / divisor)) };
 }
 
+/** Detail downsampling uses actual rounded dimensions, never Windows DPI. */
+export function detailSize(size: ComputerSize, divisor = 1): ComputerSize {
+  return overviewSize(size, computerDetailDivisor(divisor));
+}
+
 /** Reject a region that cannot be represented exactly; never clip a requested crop. */
 export function validateSourceRect(rect: ComputerRect, size: ComputerSize, maxPixels = MAX_COMPUTER_DETAIL_PIXELS): ComputerRect {
   validateSize(size);
@@ -43,9 +48,6 @@ export function createViewDescriptor(
   validateRect(sourceRect);
   validateSize(imageSize);
   if (imageSize.width > sourceRect.width || imageSize.height > sourceRect.height) throw new Error('Computer views cannot enlarge their source image.');
-  if (kind === 'detail' && (imageSize.width !== sourceRect.width || imageSize.height !== sourceRect.height)) {
-    throw new Error('Computer detail images must retain their source pixels.');
-  }
   return { kind, viewId, sourceRect: { x: sourceRect.x, y: sourceRect.y, width: sourceRect.width, height: sourceRect.height }, imageWidth: imageSize.width, imageHeight: imageSize.height };
 }
 

@@ -1,5 +1,5 @@
 import { computerHandle } from './computer-handles';
-import type { ComputerObservation, ComputerPoint, ComputerRect, ComputerRegionSelection, ComputerViewImage } from '../shared/computer-views';
+import { computerDetailDivisor, type ComputerObservation, type ComputerPoint, type ComputerRect, type ComputerRegionSelection, type ComputerViewImage } from '../shared/computer-views';
 import type { ComputerAction, ComputerInput } from './computer-input';
 import { ComputerError } from './computer-input';
 import { createComputerImageProcessor, type ComputerImageProcessor, type DecodedComputerImage } from './computer-images';
@@ -13,14 +13,16 @@ const check = (signal: AbortSignal): void => { if (signal.aborted) throw new Err
 /** Owns only the last original and its current views, never desktop input or provider APIs. */
 export class ComputerObservations {
   private divisor = 1;
+  private detailDivisor = 1;
   private processor?: ComputerImageProcessor;
   private source?: DecodedComputerImage;
   private observation?: ComputerObservation;
   constructor(private readonly createProcessor = createComputerImageProcessor) {}
 
-  configure(divisor: number): void {
+  configure(divisor: number, detailDivisor = 1): void {
     overviewSize({ width: 1, height: 1 }, divisor);
-    this.reset(); this.divisor = divisor;
+    computerDetailDivisor(detailDivisor);
+    this.reset(); this.divisor = divisor; this.detailDivisor = detailDivisor;
   }
   reset(): void { this.source = undefined; this.observation = undefined; this.processor = undefined; }
 
@@ -28,7 +30,7 @@ export class ComputerObservations {
     const { viewId, nextDetail, ...rest } = input;
     const view = viewId ? this.observation?.views.find(view => view.viewId === viewId) : undefined;
     if (viewId && !view) throw new ComputerError('Unknown or replaced computer view. Request a screenshot.');
-    if (this.divisor > 1 && 'x' in input && !view) throw new ComputerError('Coordinate actions require the current viewId.');
+    if ((this.divisor > 1 || this.detailDivisor > 1) && 'x' in input && !view) throw new ComputerError('Coordinate actions require the current viewId.');
     const modelHint = nextDetail && view ? validateSourceRect(mapViewRect(view, nextDetail), size) : undefined;
     if (nextDetail && !modelHint) throw new ComputerError('A detail prediction requires a current view.');
     if (!('x' in rest)) return { input: rest, ...(modelHint ? { modelHint } : {}) };
@@ -46,7 +48,7 @@ export class ComputerObservations {
   }
 
   async prepare(image: SourceImage, at: string, signal: AbortSignal, context: Context = {}, originalResolution = false): Promise<ComputerObservation | undefined> {
-    if (this.divisor === 1) return undefined;
+    if (this.divisor === 1 && this.detailDivisor === 1) return undefined;
     const divisor = originalResolution ? 1 : this.divisor;
     check(signal);
     this.processor ??= await this.createProcessor();
@@ -65,11 +67,11 @@ export class ComputerObservations {
     const overview = this.processor.overview(source, divisor);
     const views: ComputerViewImage[] = [{ ...createViewDescriptor('overview', computerHandle('view'),
       { x: 0, y: 0, width: image.width, height: image.height }, overview), dataUrl: `data:image/png;base64,${overview.base64}` }];
-    if (selection.rect) views.push(this.detail(source, selection.rect));
+    if (selection.rect) views.push(this.detail(source, selection.rect, this.detailDivisor));
     check(signal);
     const observation: ComputerObservation = { version: 2, frameId: image.frameId, at, displayId: 'primary',
       screenWidth: image.width, screenHeight: image.height, scaleFactor: image.scale,
-      overviewScaleDivisor: divisor, views, selection,
+      overviewScaleDivisor: divisor, detailScaleDivisor: originalResolution ? 1 : this.detailDivisor, views, selection,
       timings: { imageProcessingMs: Math.max(0, performance.now() - began - regionSelectionMs), regionSelectionMs } };
     this.source = source; this.observation = observation;
     return observation;
@@ -85,13 +87,13 @@ export class ComputerObservations {
     const detail = this.detail(source, rect);
     const selection: ComputerRegionSelection = { rect, reason: 'manual' };
     // The overview, frame identifier and capture time remain unchanged. Old detail IDs are retired.
-    this.observation = { ...current, views: [current.views[0], detail], selection,
+    this.observation = { ...current, detailScaleDivisor: 1, views: [current.views[0], detail], selection,
       timings: { imageProcessingMs: performance.now() - began, regionSelectionMs: 0 } };
     return this.observation;
   }
 
-  private detail(source: DecodedComputerImage, rect: ComputerRect): ComputerViewImage {
-    const image = this.processor!.crop(source, rect);
+  private detail(source: DecodedComputerImage, rect: ComputerRect, divisor = 1): ComputerViewImage {
+    const image = this.processor!.crop(source, rect, divisor);
     return { ...createViewDescriptor('detail', computerHandle('view'), rect, image), dataUrl: `data:image/png;base64,${image.base64}` };
   }
 }

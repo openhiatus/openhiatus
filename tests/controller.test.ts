@@ -60,6 +60,23 @@ test('computer delegation requires an available role and safely disables when it
   await f.app.dispose();
 });
 
+test('direct controller image settings reject invalid values without changing state', async () => {
+  const f = fixture();
+  assert.equal(f.app.snapshot().preferences.computerDetailScaleDivisor, 1);
+  assert.equal(f.app.snapshot().preferences.computerImageRetentionCalls, 0);
+  await f.app.savePreferences({ computerDetailScaleDivisor: 2, computerImageRetentionCalls: 3 });
+  const before = f.app.snapshot().preferences;
+  assert.equal(before.computerDelegationEnabled, false);
+  assert.equal(before.computerDetailScaleDivisor, 2); assert.equal(before.computerImageRetentionCalls, 3);
+  for (const patch of [{ computerDetailScaleDivisor: 3 }, { computerDetailScaleDivisor: null },
+    { computerDetailScaleDivisor: undefined }, { computerImageRetentionCalls: -1 }, { computerImageRetentionCalls: 11 },
+    { computerImageRetentionCalls: 1.5 }, { computerImageRetentionCalls: '3' }, { computerImageRetentionCalls: undefined }]) {
+    await assert.rejects(f.app.savePreferences(patch as never));
+    assert.deepEqual(f.app.snapshot().preferences, before);
+  }
+  await f.app.dispose();
+});
+
 test('computer previews are transient and late frames after Stop are not published', async () => {
   const f = fixture();
   const frame: ComputerFrame = { dataUrl: 'data:image/png;base64,cHJpdmF0ZS1zY3JlZW4=', frameId: 'frame-test', width: 10, height: 10, at: new Date().toISOString() };

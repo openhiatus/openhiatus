@@ -43,6 +43,14 @@ try {
   const enabled = page.getByRole('checkbox', { name: /^Eigenes Computer-Modell verwenden/ });
   const fast = page.getByRole('checkbox', { name: /^Fast für das Computer-Modell/ });
   await expect(enabled).not.toBeChecked(); await expect(fast).toBeChecked();
+  const detailScale = page.getByLabel('Auflösung der Details', { exact: true });
+  const imageRetention = page.getByLabel('Bildaufbewahrung im Modellkontext', { exact: true });
+  await expect(detailScale).toHaveValue('1'); await expect(imageRetention).toHaveValue('0');
+  await detailScale.selectOption('2'); await imageRetention.selectOption('3');
+  await expect(enabled).not.toBeChecked();
+  assert.deepEqual(await page.evaluate(() => ({ detail: window.fixture.state.preferences.computerDetailScaleDivisor,
+    retention: window.fixture.state.preferences.computerImageRetentionCalls, model: window.fixture.state.preferences.model })),
+    { detail: 2, retention: 3, model: 'chatgpt/gpt-6.1-sol' });
   await page.getByLabel('Auflösung der Übersicht', { exact: true }).selectOption('16');
   await enabled.check();
   await expect.poll(() => page.evaluate(() => window.fixture.state.preferences.computerDelegationEnabled)).toBe(true);
@@ -52,6 +60,12 @@ try {
   await expect(enabled).toBeDisabled(); await expect(fast).toBeDisabled(); await expect(page.getByLabel('Computer-Modell', { exact: true })).toBeDisabled();
   await page.evaluate(() => window.fixture.setBusy(false));
   await page.getByLabel('Computer-Modell', { exact: true }).selectOption(''); await expect(enabled).not.toBeChecked(); await expect(enabled).toBeDisabled();
+  await expect(detailScale).toBeEnabled(); await expect(imageRetention).toBeEnabled();
+  await expect(detailScale).toHaveValue('2'); await expect(imageRetention).toHaveValue('3');
+  await detailScale.selectOption('4'); await imageRetention.selectOption('5');
+  assert.deepEqual(await page.evaluate(() => ({ detail: window.fixture.state.preferences.computerDetailScaleDivisor,
+    retention: window.fixture.state.preferences.computerImageRetentionCalls, delegated: window.fixture.state.preferences.computerDelegationEnabled })),
+    { detail: 4, retention: 5, delegated: false });
   await page.getByLabel('Computer-Modell', { exact: true }).selectOption('chatgpt/gpt-6-luna'); await enabled.check();
   const details = page.locator('.tasks-model-metrics');
   assert.equal(await details.getAttribute('open'), null); await details.locator('summary').click();
@@ -60,6 +74,6 @@ try {
   assert.deepEqual(errors, []);
   const png = await instance.evaluate(async ({ BrowserWindow }) => (await BrowserWindow.getAllWindows()[0].webContents.capturePage(undefined, { stayHidden: true, stayAwake: true })).toPNG().toString('base64'));
   await writeFile('artifacts/openhiatus-computer-model-ui.png', Buffer.from(png, 'base64'));
-  await writeFile('artifacts/openhiatus-computer-model-ui.json', JSON.stringify({ passed: true, hidden: true, nativeCaptures: 0, nativeInputs: 0, cloudRequests: 0, checks: ['opt-in and Fast', 'independent computer model', '1:16 choice', 'busy locking', 'clear model disables delegation', 'actual default and unknown preserved', 'request time label'] }, null, 2));
+  await writeFile('artifacts/openhiatus-computer-model-ui.json', JSON.stringify({ passed: true, hidden: true, nativeCaptures: 0, nativeInputs: 0, cloudRequests: 0, checks: ['opt-in and Fast', 'independent computer model', '1:16 choice', 'default native detail and unlimited history', 'detail and retention changes without delegation', 'busy locking', 'clear model disables delegation', 'actual default and unknown preserved', 'request time label'] }, null, 2));
   console.log('Computer model UI passed: hidden renderer, zero native inputs/captures and zero model requests.');
 } finally { await instance?.close(); }

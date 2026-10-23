@@ -18,7 +18,7 @@ async function syntheticChecks() {
       [1366, 768], [1920, 1080], [2560, 1440], [3840, 2160],
       [1080, 1920], [3440, 1440], [137, 91], [1, 1], [1, 63], [63, 1],
     ] : [[137, 91], [1, 1]];
-    let overviews = 0, crops = 0;
+    let overviews = 0, crops = 0, scaledCrops = 0;
     for (const [width, height] of screens) {
       const bgra = Buffer.alloc(width * height * 4);
       for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
@@ -54,10 +54,24 @@ async function syntheticChecks() {
           assert.deepEqual(actual.data.subarray(row * rect.width * 4, (row + 1) * rect.width * 4), bgra.subarray(begin, begin + rect.width * 4), 'crop is an exact original-pixel rectangle');
         }
         crops++;
+        for (const divisor of [2, 4]) {
+          const scaled = processor.crop(decoded, rect, divisor), expected = detailSize(rect, divisor);
+          assert.deepEqual({ width: scaled.width, height: scaled.height }, expected);
+          const scaledPixels = processor.decode(scaled.base64, expected);
+          assert.equal(scaledPixels.data.length, expected.width * expected.height * 4);
+          const scaledView = createViewDescriptor('detail', 'scaled-detail', rect, expected);
+          assert.deepEqual(mapViewRect(scaledView, { x: 0, y: 0, ...expected }), rect, 'scaled crop maps to the exact physical source rectangle');
+          assert.deepEqual(mapViewPoint(scaledView, { x: expected.width - 1, y: expected.height - 1 }), {
+            x: rect.x + Math.min(rect.width - 1, Math.round((expected.width - 1) * rect.width / expected.width)),
+            y: rect.y + Math.min(rect.height - 1, Math.round((expected.height - 1) * rect.height / expected.height)),
+          }, 'scaled crop uses real rounded dimensions independently of process DPI');
+          scaledCrops++;
+        }
       }
       assert.throws(() => processor.decode(png, { width: width + 1, height }), /dimensions/);
       assert.throws(() => processor.crop(decoded, { x: width - 1, y: 0, width: 2, height: 1 }), /outside/);
       assert.throws(() => processor.overview(decoded, 0), /divisor/);
+      for (const divisor of [0, 1.5, 3, 8, NaN, Infinity]) assert.throws(() => processor.crop(decoded, regions[0], divisor), /detail divisor/);
       if (width >= 1920 && height >= 1080) assert.throws(() => processor.crop(decoded, { x: 0, y: 0, width: 1025, height: 1024 }), /pixel limit/);
       if (width === 137) {
         const bytes = Buffer.from(png, 'base64');
@@ -82,7 +96,7 @@ async function syntheticChecks() {
       assert.deepEqual(alphaResult.data.subarray(row * 12, (row + 1) * 12), alphaSource.data.subarray(((row + 1) * 7 + 2) * 4, ((row + 1) * 7 + 5) * 4));
     }
     crops++;
-    const report = { scaleFactor: process.argv.at(-1), screens: screens.length, overviews, crops, windows: 0, desktopCaptures: 0, desktopInputs: 0 };
+    const report = { scaleFactor: process.argv.at(-1), screens: screens.length, overviews, crops, scaledCrops, windows: 0, desktopCaptures: 0, desktopInputs: 0 };
     writeFileSync(path.join(__dirname, `result-${process.argv.at(-1)}.json`), JSON.stringify(report));
     app.exit(0);
   } catch (error) { console.error(error); app.exit(1); }
@@ -99,7 +113,7 @@ import path from 'node:path';
 import { writeFileSync } from 'node:fs';
 import { app, nativeImage } from 'electron';
 import { createComputerImageProcessor } from './src/main/computer-images.ts';
-import { createViewDescriptor, mapViewRect, overviewSize } from './src/main/computer-views.ts';
+import { createViewDescriptor, detailSize, mapViewPoint, mapViewRect, overviewSize } from './src/main/computer-views.ts';
 (${syntheticChecks.toString()})();
 `, resolveDir: process.cwd(), sourcefile: 'computer-images-synthetic-main.ts', loader: 'ts' },
   bundle: true, platform: 'node', target: 'node24', format: 'cjs', external: ['electron'], outfile: main,

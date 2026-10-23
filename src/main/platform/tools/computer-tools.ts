@@ -2,7 +2,7 @@ import { COMPUTER_TOOL, ComputerDriverError, NativeComputer, computerReplyMetada
 import { defineTool, type ToolContribution } from '../../modules/tools';
 
 /** Concrete desktop contribution. Every adapter owns its lazy computer and confirms turn release. */
-export function createComputerToolContribution(options: { computer?: ComputerAdapter; createComputer?: () => ComputerAdapter; getOverviewScaleDivisor?: () => number } = {}): ToolContribution {
+export function createComputerToolContribution(options: { computer?: ComputerAdapter; createComputer?: () => ComputerAdapter; getOverviewScaleDivisor?: () => number; getDetailScaleDivisor?: () => number } = {}): ToolContribution {
   let computer = options.computer;
   return {
     bind(context) {
@@ -12,7 +12,7 @@ export function createComputerToolContribution(options: { computer?: ComputerAda
           definition: { type: 'function', name: COMPUTER_TOOL.name, description: COMPUTER_TOOL.description, inputSchema: COMPUTER_TOOL.inputSchema },
           audience: 'worker', validate: parseComputerInput,
           async execute(args, context) {
-            computer ??= options.createComputer?.() ?? new NativeComputer({ getOverviewScaleDivisor: options.getOverviewScaleDivisor });
+            computer ??= options.createComputer?.() ?? new NativeComputer({ getOverviewScaleDivisor: options.getOverviewScaleDivisor, getDetailScaleDivisor: options.getDetailScaleDivisor });
             let result: ComputerResult, failure: ComputerDriverError | undefined;
             try { result = await computer.execute(args, context.signal); }
             catch (error) {

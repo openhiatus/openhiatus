@@ -1,13 +1,13 @@
-# Computer Use: variable Übersichtsskalierung und Detail 1:1
+# Computer Use: variable Übersicht und skalierbare Details
 
-Stand: 22. Oktober 2026. Die erste experimentelle Umsetzung liegt auf Basis von openHiatus 0.1.6 vor. Der Vollbildweg bleibt Standard. Die folgenden Forschungs- und Abnahmeziele sind damit noch nicht vollständig erledigt.
+Stand: 23. Oktober 2026. Die experimentelle Umsetzung liegt auf Basis von openHiatus 0.1.6 vor. Der Vollbildweg bleibt Standard. Skalierbare automatische Details und ein begrenztes Bildgedächtnis sind zusätzlich implementiert; aktueller Vertrag, Einstellungen und Vergleich: [Computer-use image budget](computer-use-image-budget.md). Die folgenden Forschungs- und Abnahmeziele sind damit noch nicht vollständig erledigt.
 
 ## Umgesetzter Stand und offene Abnahme
 
 - Die Einstellung `computerOverviewScaleDivisor` bietet 1:1, 1:4, 1:8, 1:16 und 1:32. Endliche Faktoren von 1 bis 64 sind im Datenvertrag zulässig. Die Auswahl wird beim nächsten Erwerb der Desktopsteuerung übernommen und bleibt während dieser Arbeitsphase unverändert.
 - `computer-views.ts` rechnet Punkte und Rechtecke anhand der tatsächlichen Bildgrößen um. `computer-images.ts` erzeugt Übersicht und Originalausschnitt mit Electrons `nativeImage`, explizit bei Bildskalierung 1. `computer-regions.ts` wählt einen Bereich aus Originalpixel-Differenzen, bisherigem Ausschnitt, Aktionspunkt und optionalem Modellhinweis.
 - `computer-observations.ts` hält die aktuelle Originalaufnahme und ihre Ansichten. `computer-input.ts` definiert den Werkzeugvertrag. `computer.ts` prüft Lebensdauer und Treibergeometrie, übersetzt eine Aktion und behält die bestehende Darstellungswartezeit sowie Stop-Logik bei.
-- Metadaten V2, `inspect`, `nextDetail`, Drag zwischen Ansichten, Originalauflösung des lokalen Details und eine Vorschau derselben Modellbilder sind angeschlossen. Faktor 1 verwendet weiterhin den Vollbildvertrag V1 ohne Bildaufbereitung. Ein Detail darf höchstens 1.048.576 Originalpixel umfassen; übergroße Anforderungen werden abgelehnt.
+- Metadaten V2, `inspect`, `nextDetail`, Drag zwischen Ansichten, skalierbare automatische Details und eine Vorschau derselben Modellbilder sind angeschlossen. Nur Übersicht 1 und Detail 1 zusammen verwenden den bisherigen Vollbildvertrag V1 ohne Bildaufbereitung. Ein Detail darf höchstens 1.048.576 Originalpixel umfassen; übergroße Anforderungen werden abgelehnt.
 - Bei fehlender Orientierung kann das Modell ausdrücklich `{"action":"screenshot","resolution":"original"}` aufrufen. Diese Antwort enthält genau ein frisches, vollständiges Originalbild des Hauptmonitors und neue Bildkennungen. Die nächste gewöhnliche Aufnahme oder Aktionsantwort verwendet wieder den gespeicherten Faktor. Im Übersichtsmodus bleibt auch die volle Ansicht im V2-Koordinatenvertrag mit Faktor 1; im bisherigen Vollbildmodus bleibt V1 erhalten. Die Größenbegrenzung für Details gilt weiter für Ausschnittanforderungen. Auch das ausdrücklich angeforderte Vollbild erhält beim unterstützten OpenAI-Adapter die Original-Bilddetailstufe.
 - Der OpenAI-Responses-Hook setzt `detail: original` nur für markierte Bilder der zugehörigen Computer-Werkzeugantwort und ausdrücklich unterstützte Modelle. Fremde Bilder, andere Anbieter und unbekannte Modelle behalten ihr bisheriges Verhalten. Anbietergrenzen können dennoch zu einer internen Verkleinerung führen. [OpenAI: Computer-use integration](https://developers.openai.com/api/docs/guides/tools-computer-use-integration)
 - Geometrie, Auswahl, Lebensdauer, Transport und Vorschau sind synthetisch geprüft. Echte Windows-Zielklicks bei verschiedenen DPI, allgemeine Programmaufgaben, Paketabnahme und wiederholte Vergleiche aus Gesamtdauer, Tokenverbrauch und Erfolgsquote bleiben offen. Die Skalierungsflags der Bildtests simulieren unterschiedliche Electron-Skalierungen; sie ersetzen keine Windows-DPI-Abnahme.
@@ -40,19 +40,21 @@ Die bisher diskutierte Normierung aller Auflösungen auf dieselbe längere Bilds
 
 ### Vorzusehende Variablen
 
-Die folgenden Namen beschreiben die Versuchsachsen. Implementiert ist die Übersichtsskalierung als gespeicherte Einstellung `computerOverviewScaleDivisor`; Detail- und Analyseauflösung bleiben fest bei 1, das Encoding bei PNG. Diese drei Werte sind noch keine frei änderbaren Laufzeitparameter:
+Die folgenden Namen beschreiben die Versuchsachsen. Übersicht und automatische Details sind als `computerOverviewScaleDivisor` und `computerDetailScaleDivisor` unabhängig einstellbar. Die lokale Analyse bleibt bei nativer Auflösung, das Encoding bei PNG. `computerImageRetentionCalls` begrenzt zusätzlich die Mitgabe historischer Computerbilder; 0 erhält das bisherige unbegrenzte Verhalten:
 
 ```json
 {
   "overviewScaleDivisor": 8,
-  "detailScaleDivisor": 1,
+  "detailScaleDivisor": 2,
+  "imageRetentionCalls": 3,
   "changeAnalysisScaleDivisor": 1,
   "overviewEncoding": "png"
 }
 ```
 
 - `overviewScaleDivisor`: unabhängig wählbarer Versuchsparameter; der Vergleich enthält 4, 8, 16 und 32. Faktor 1 kann als bisheriger Vollbild-Vergleich dienen.
-- `detailScaleDivisor`: bleibt in diesem Vorhaben 1. Eine kleinere Übersicht reduziert nicht die Auflösung des Originalausschnitts.
+- `detailScaleDivisor`: 1, 2 oder 4 für automatische Details, unabhängig von der Übersicht. Originalausschnitte über `inspect` bleiben 1:1 abrufbar; Quellrechteck und tatsächlich übertragene Bildmaße bestimmen die Koordinatenumrechnung.
+- `imageRetentionCalls`: Computerbilder nach einer festgelegten Zahl von Modellanfragen aus dem gesendeten Kontext entfernen. Wichtige Beobachtungen hält das Arbeitsmodell kurz im Text fest; ein zusätzlicher Zusammenfassungsaufruf ist nicht erforderlich. Cache-Effekt und Erfolgsquote müssen mitgemessen werden.
 - `changeAnalysisScaleDivisor`: eigener Parameter für die lokale Änderungserkennung. Eine Übersicht 1:32 darf den lokalen Detektor nicht ebenfalls auf 1:32 zwingen; sonst könnten wichtige kleine Änderungen bereits vor der Bereichsauswahl verschwinden.
 - `overviewEncoding`: zunächst verlustfreies PNG. Dateikompression und Auflösungsreduktion werden getrennt behandelt. Falls weitere Encodings untersucht werden, sind Format und Qualität eigene Parameter; sie werden nicht gleichzeitig unbemerkt mit dem Faktor verändert.
 

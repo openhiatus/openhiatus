@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createViewDescriptor, mapViewPoint, mapViewRect, overviewSize, validateSourceRect } from '../src/main/computer-views.js';
-import { MAX_COMPUTER_DETAIL_PIXELS } from '../src/shared/computer-views.js';
+import { createViewDescriptor, detailSize, mapViewPoint, mapViewRect, overviewSize, validateSourceRect } from '../src/main/computer-views.js';
+import { COMPUTER_DETAIL_FACTORS, computerDetailDivisor, MAX_COMPUTER_DETAIL_PIXELS } from '../src/shared/computer-views.js';
 
 const screens = [
   [1366, 768], [1920, 1080], [2560, 1440], [3840, 2160],
@@ -44,6 +44,24 @@ test('detail coordinates are original pixels with source offsets, independent of
   }
 });
 
+test('detail factors validate 1/2/4 and rounded crop axes preserve actual physical coordinate mapping', () => {
+  assert.deepEqual(COMPUTER_DETAIL_FACTORS, [1, 2, 4]);
+  for (const factor of COMPUTER_DETAIL_FACTORS) {
+    assert.equal(computerDetailDivisor(factor), factor);
+    for (const source of [{ x: 2031, y: 1201, width: 799, height: 611 }, { x: 17, y: 23, width: 1, height: 1 }, { x: 3, y: 5, width: 1, height: 63 }]) {
+      const size = detailSize(source, factor), view = createViewDescriptor('detail', 'scaled', source, size);
+      assert.deepEqual(size, { width: Math.max(1, Math.round(source.width / factor)), height: Math.max(1, Math.round(source.height / factor)) });
+      assert.deepEqual(mapViewRect(view, { x: 0, y: 0, ...size }), source);
+      const point = { x: size.width - 1, y: size.height - 1 };
+      assert.deepEqual(mapViewPoint(view, point), { x: source.x + Math.min(source.width - 1, Math.round(point.x * source.width / size.width)),
+        y: source.y + Math.min(source.height - 1, Math.round(point.y * source.height / size.height)) });
+    }
+  }
+  assert.deepEqual(detailSize({ width: 799, height: 611 }, 2), { width: 400, height: 306 });
+  for (const invalid of [undefined, null, '2', true, [], 0, -1, 1.5, 3, 8, NaN, Infinity]) assert.throws(() => computerDetailDivisor(invalid));
+  assert.deepEqual(detailSize({ width: 799, height: 611 }), { width: 799, height: 611 });
+});
+
 test('source crops are fully contained and enforce the exact pixel limit without clipping', () => {
   const screen = { width: 3840, height: 2160 };
   assert.deepEqual(validateSourceRect({ x: 0, y: 0, width: 1024, height: 1024 }, screen), { x: 0, y: 0, width: 1024, height: 1024 });
@@ -81,7 +99,7 @@ test('view descriptors validate source/image geometry and snapshot the source re
   assert.equal(view.sourceRect.x, 0);
   assert.throws(() => createViewDescriptor('overview', '', source, { width: 1, height: 1 }));
   assert.throws(() => createViewDescriptor('overview', 'screen', source, { width: 1367, height: 768 }));
-  assert.throws(() => createViewDescriptor('detail', 'screen', source, { width: 342, height: 192 }));
+  assert.deepEqual(createViewDescriptor('detail', 'screen', source, { width: 342, height: 192 }).sourceRect, source);
   assert.throws(() => createViewDescriptor('overview', 'screen', { ...source, x: Number.MAX_SAFE_INTEGER }, { width: 1, height: 1 }));
   for (const divisor of [0, -1, NaN, Infinity, 64.01]) assert.throws(() => overviewSize(source, divisor));
   for (const bad of [0, -1, NaN, Infinity, 1.5, Number.MAX_SAFE_INTEGER + 1]) {

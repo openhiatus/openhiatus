@@ -15,10 +15,10 @@ export type ComputerInput = ComputerAction | { action: 'screenshot'; resolution?
 export const COMPUTER_TOOL = {
   name: 'computer',
   description: 'See and control the PRIMARY Windows display. Begin with screenshot. ' +
-    'Responses may contain an overview and one native-resolution detail image. Each image has a viewId and its own local pixel coordinates. ' +
+    'Responses may contain an overview and one detail image, downscaled per the configured detailScaleDivisor (1, 2 or 4). Each image has a viewId and its own local pixel coordinates. ' +
     'When views are listed, supply the current viewId for a coordinate action; the tool maps image coordinates to the physical screen. Never add the crop origin yourself. ' +
     'In legacy full-screen V1 responses no views are listed: omit viewId and use full-image coordinates. inspect and nextDetail require views (V2). ' +
-    'If text or the target is too small, use inspect with frameId, viewId and a rectangle in that view (x,y,width,height). ' +
+    'If text or the target is too small, use inspect with frameId, viewId and a rectangle in that view (x,y,width,height) to request that region at original 1:1 resolution. ' +
     'If the overview is too small to locate the right region, request screenshot with resolution:"original" for ONE fresh full-display image at native resolution. ' +
     'This replaces the current observation and its frameId; use the returned image coordinates and viewId. The next ordinary screenshot or post-action response resumes the configured overview mode. ' +
     'inspect crops the SAME captured image, does not refresh its age, and replaces the previous detail view. Maximum detail area: 1048576 physical pixels. ' +

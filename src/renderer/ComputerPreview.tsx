@@ -15,7 +15,8 @@ export function ComputerFrameContent({ frame }: { frame: ComputerFrame }) {
     <p className="computer-preview-geometry">Bildschirm: {observation.screenWidth} × {observation.screenHeight} Pixel · Windows-Skalierungsfaktor: {observation.scaleFactor} · Übersicht: 1:{observation.overviewScaleDivisor}</p>
     <ol className="computer-preview-views" aria-label="Bereitgestellte Modellbilder in Reihenfolge">
       {observation.views.map(view => <li key={view.viewId}><figure className={`computer-preview-view computer-preview-${view.kind}`}>
-        <figcaption><h3>{view.kind === 'overview' ? (observation.overviewScaleDivisor === 1 ? 'Vollbild in Originalauflösung' : 'Übersicht') : 'Detail in Originalauflösung'}</h3>
+        <figcaption><h3>{view.kind === 'overview' ? (observation.overviewScaleDivisor === 1 ? 'Vollbild in Originalauflösung' : 'Übersicht')
+          : (view.imageWidth === view.sourceRect.width && view.imageHeight === view.sourceRect.height ? 'Detail in Originalauflösung' : `Detail 1:${observation.detailScaleDivisor}`)}</h3>
           <p><code>{view.viewId}</code> · {view.imageWidth} × {view.imageHeight} Bildpixel</p>
           <p>Bildkoordinaten: (0, 0) bis ({view.imageWidth - 1}, {view.imageHeight - 1})</p>
           <p>Bildschirmursprung: ({view.sourceRect.x}, {view.sourceRect.y}) · Quellgröße: {view.sourceRect.width} × {view.sourceRect.height} Pixel</p>

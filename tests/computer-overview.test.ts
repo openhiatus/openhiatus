@@ -6,7 +6,7 @@ import { NativeComputer, ComputerDriverError, DesktopCoordinator, parseComputerI
 import type { ComputerAction } from '../src/main/computer-input';
 import type { ComputerImageProcessor, DecodedComputerImage } from '../src/main/computer-images';
 import type { ComputerRect, ComputerSize } from '../src/shared/computer-views';
-import { overviewSize } from '../src/main/computer-views';
+import { detailSize, mapViewPoint, mapViewRect, overviewSize } from '../src/main/computer-views';
 
 function png(size: ComputerSize, color = 0): string {
   const chunk = (type: string, data: Buffer) => {
@@ -24,14 +24,14 @@ function png(size: ComputerSize, color = 0): string {
 }
 const toolResult = (fields: Partial<ToolResult> = {}): ToolResult => ({ text: '', images: [], isError: false, degraded: false, rawJson: '{}', ...fields });
 function fixture() {
-  let time = 0, paint = 0, divisor = 8, decoded = 0, actionResult = toolResult();
+  let time = 0, paint = 0, divisor = 8, detailDivisor = 1, decoded = 0, actionResult = toolResult();
   const inputs: ComputerAction[] = [], crops: ComputerRect[] = [];
   let geometry = { width: 1920, height: 1080, scale: 1.25 };
   let pixels = new Uint8Array(geometry.width * geometry.height * 4);
   const processor: ComputerImageProcessor = {
     decode(base64, size) { decoded++; return { png: base64, ...size, data: pixels.slice() }; },
     overview(_image, factor) { const size = overviewSize(_image, factor); return { ...size, base64: png(size) }; },
-    crop(_image, rect) { crops.push({ ...rect }); return { ...rect, base64: png(rect) }; },
+    crop(_image, rect, factor = 1) { crops.push({ ...rect }); const size = detailSize(rect, factor); return { ...size, base64: png(size) }; },
   };
   const session: ComputerSession = {
     async screenshot() { return toolResult({ images: [{ mimeType: 'image/png', dataBase64: png(geometry) }], structuredJson: JSON.stringify({
@@ -41,12 +41,12 @@ function fixture() {
     async act(input) { inputs.push(input); return actionResult; }, dispose: async () => {},
   };
   const options = { createSession: async () => session, createImageProcessor: async () => processor, now: () => time,
-    desktopCoordinator: new DesktopCoordinator(), getOverviewScaleDivisor: () => divisor,
+    desktopCoordinator: new DesktopCoordinator(), getOverviewScaleDivisor: () => divisor, getDetailScaleDivisor: () => detailDivisor,
     captureTiming: { now: () => paint, wait: async (ms: number) => { paint += ms; } } };
   const computer = new NativeComputer(options);
   return { computer, inputs, crops, options, processor, get decoded() { return decoded; }, setTime: (now: number) => { time = now; },
     setActionResult: (result: ToolResult) => { actionResult = result; },
-    setDivisor: (value: number) => { divisor = value; }, setGeometry: (value: typeof geometry) => { geometry = value; pixels = new Uint8Array(value.width * value.height * 4); },
+    setDivisor: (value: number) => { divisor = value; }, setDetailDivisor: (value: number) => { detailDivisor = value; }, setGeometry: (value: typeof geometry) => { geometry = value; pixels = new Uint8Array(value.width * value.height * 4); },
     change(rect: ComputerRect) { for (let y = rect.y; y < rect.y + rect.height; y++) for (let x = rect.x; x < rect.x + rect.width; x++) pixels[(y * geometry.width + x) * 4] = 255; } };
 }
 const overview = (result: ComputerResult) => result.observation!.views[0];
@@ -203,6 +203,92 @@ test('automatic detail detects a remote change using originals, independent of t
   const rect = next.observation!.views[1].sourceRect;
   assert.equal(next.observation!.selection.reason, 'visual-change'); assert.ok(rect.x <= 1400 && rect.x + rect.width >= 1550);
   assert.ok(rect.y <= 500 && rect.y + rect.height >= 600); await f.computer.dispose();
+});
+
+test('automatic detail scales the output only, preserves physical change selection and maps a detail click at Windows DPI once', async () => {
+  for (const factor of [2, 4]) {
+    const f = fixture(); f.setDetailDivisor(factor); f.setGeometry({ width: 1920, height: 1080, scale: 1.75 });
+    const first = await f.computer.execute({ action: 'screenshot' }); f.change({ x: 1400, y: 500, width: 151, height: 101 });
+    const next = await f.computer.execute({ action: 'key', frameId: first.frameId, key: 'enter' });
+    const detail = next.observation!.views[1], source = detail.sourceRect;
+    assert.equal(next.observation!.selection.reason, 'visual-change'); assert.equal(next.observation!.detailScaleDivisor, factor);
+    assert.ok(source.x <= 1400 && source.x + source.width >= 1551 && source.y <= 500 && source.y + source.height >= 601);
+    assert.deepEqual({ width: detail.imageWidth, height: detail.imageHeight }, detailSize(source, factor));
+    const bytes = Buffer.from(detail.dataUrl.split(',')[1], 'base64');
+    assert.deepEqual([bytes.readUInt32BE(16), bytes.readUInt32BE(20)], [detail.imageWidth, detail.imageHeight]);
+    const point = { x: detail.imageWidth - 1, y: detail.imageHeight - 1 }, physical = mapViewPoint(detail, point);
+    await f.computer.execute({ action: 'click', frameId: next.frameId, viewId: detail.viewId, ...point });
+    assert.deepEqual(f.inputs[1], { action: 'click', frameId: next.frameId, ...physical, button: 'left', count: 1 });
+    await f.computer.dispose();
+  }
+});
+
+test('full overview plus scaled odd detail supports original inspect fallback and resumes the configured scale', async () => {
+  const f = fixture(); f.setDivisor(1); f.setDetailDivisor(2);
+  const first = await f.computer.execute({ action: 'screenshot' });
+  assert.deepEqual([overview(first).imageWidth, overview(first).imageHeight], [1920, 1080]);
+  assert.equal(first.observation!.detailScaleDivisor, 2);
+  const next = await f.computer.execute({ action: 'key', frameId: first.frameId, key: 'tab', viewId: overview(first).viewId,
+    nextDetail: { x: 13, y: 29, width: 799, height: 611 } });
+  const detail = next.observation!.views[1]; assert.deepEqual(detail.sourceRect, { x: 13, y: 29, width: 799, height: 611 });
+  assert.deepEqual([detail.imageWidth, detail.imageHeight], [400, 306]);
+  const region = { x: 1, y: 2, width: 9, height: 11 }, physical = mapViewRect(detail, region);
+  const inspected = await f.computer.execute({ action: 'inspect', frameId: next.frameId, viewId: detail.viewId, ...region });
+  const originalDetail = inspected.observation!.views[1];
+  assert.equal(inspected.frameId, next.frameId); assert.equal(inspected.observation!.at, next.observation!.at);
+  assert.equal(inspected.observation!.detailScaleDivisor, 1); assert.deepEqual(originalDetail.sourceRect, physical);
+  assert.deepEqual([originalDetail.imageWidth, originalDetail.imageHeight], [physical.width, physical.height]);
+  assert.equal(f.decoded, 2, 'inspect reuses the retained physical original');
+  const resumed = await f.computer.execute({ action: 'key', frameId: inspected.frameId, key: 'tab' });
+  assert.equal(resumed.observation!.detailScaleDivisor, 2);
+  const resumedDetail = resumed.observation!.views[1];
+  assert.deepEqual([resumedDetail.imageWidth, resumedDetail.imageHeight], Object.values(detailSize(resumedDetail.sourceRect, 2)));
+  const full = await f.computer.execute({ action: 'screenshot', resolution: 'original' });
+  assert.equal(full.observation!.detailScaleDivisor, 1); assert.equal(full.observation!.overviewScaleDivisor, 1);
+  assert.equal(full.observation!.views.length, 1); assert.deepEqual([overview(full).imageWidth, overview(full).imageHeight], [1920, 1080]);
+  assert.equal((await f.computer.execute({ action: 'screenshot' })).observation!.detailScaleDivisor, 2);
+  await f.computer.dispose();
+});
+
+test('detail factor freezes with desktop ownership, invalid settings cannot admit input and scaled mode still rejects missing views', async () => {
+  const f = fixture(); f.setDivisor(1); f.setDetailDivisor(2);
+  const first = await f.computer.execute({ action: 'screenshot' }); f.setDetailDivisor(4);
+  assert.equal((await f.computer.execute({ action: 'screenshot' })).observation!.detailScaleDivisor, 2);
+  await f.computer.stop(); const current = await f.computer.execute({ action: 'screenshot' });
+  assert.equal(current.observation!.detailScaleDivisor, 4);
+  await assert.rejects(f.computer.execute({ action: 'click', frameId: current.frameId, x: 1, y: 1 }), /current viewId/);
+  assert.equal(f.inputs.length, 0); await f.computer.stop(); f.setDetailDivisor(3);
+  await assert.rejects(f.computer.execute({ action: 'screenshot' }), error => {
+    assert.match(String((error as Error).cause), /detail divisor/); return true;
+  });
+  assert.equal(f.inputs.length, 0); await f.computer.dispose();
+});
+
+test('overview1/detail2 cannot omit viewId, including a drag with an explicit source view', async () => {
+  for (const action of ['click', 'move', 'drag'] as const) {
+    const f = fixture(); f.setDivisor(1); f.setDetailDivisor(2);
+    const first = await f.computer.execute({ action: 'screenshot' });
+    await assert.rejects(f.computer.execute({ action, frameId: first.frameId, x: 10, y: 20,
+      ...(action === 'drag' ? { fromViewId: overview(first).viewId, fromX: 1, fromY: 2 } : {}) }), /current viewId/);
+    assert.equal(f.inputs.length, 0, 'an explicitly named drag source cannot authorize an unnamed target coordinate space');
+    await f.computer.dispose();
+  }
+});
+
+test('overview1/detail2 cross-view drag maps its scaled source and validates the source view before native input', async () => {
+  const f = fixture(); f.setDivisor(1); f.setDetailDivisor(2);
+  const first = await f.computer.execute({ action: 'screenshot' });
+  const next = await f.computer.execute({ action: 'key', frameId: first.frameId, key: 'tab', viewId: overview(first).viewId,
+    nextDetail: { x: 13, y: 29, width: 799, height: 611 } });
+  const [wide, detail] = next.observation!.views, from = { x: detail.imageWidth - 1, y: detail.imageHeight - 1 };
+  const physicalSource = mapViewPoint(detail, from);
+  await f.computer.execute({ action: 'drag', frameId: next.frameId, viewId: wide.viewId, x: 1000, y: 700,
+    fromViewId: detail.viewId, fromX: from.x, fromY: from.y });
+  assert.deepEqual(f.inputs[1], { action: 'drag', frameId: next.frameId, x: 1000, y: 700, fromX: physicalSource.x, fromY: physicalSource.y });
+  const current = await f.computer.execute({ action: 'screenshot' }), count = f.inputs.length;
+  await assert.rejects(f.computer.execute({ action: 'drag', frameId: current.frameId, viewId: overview(current).viewId, x: 10, y: 20,
+    fromViewId: detail.viewId, fromX: 1, fromY: 2 }), /Unknown or replaced drag source view/);
+  assert.equal(f.inputs.length, count); await f.computer.dispose();
 });
 test('DPI change blocks input and fresh capture drops retained original geometry', async () => {
   const f = fixture(), first = await inspect(f);

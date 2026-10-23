@@ -25,9 +25,29 @@ test('computer overview settings default to full screen and offer only the exper
   assert.match(card, /value="1" selected="">Vollbild \(1:1\)/);
   const overview = card.match(/<select[^>]*-computer-overview"[^>]*>.*?<\/select>/)?.[0] ?? '';
   assert.deepEqual([...overview.matchAll(/<option value="([^"]+)"/g)].map(match => match[1]), ['1', '4', '8', '16', '32']);
-  assert.match(card, /höchstens einen Detailausschnitt in Originalauflösung/);
+  assert.match(card, /höchstens einen Detailausschnitt/);
   assert.match(card, /automatisch an die Bildschirmauflösung/); assert.match(card, /garantiert keine schnellere Bearbeitung/);
   assert.match(card, /aria-describedby="[^"]+-computer-overview-description"/);
+});
+
+test('detail scale and image retention default to unchanged behavior and remain independent of the computer role', () => {
+  const html = render(), detail = html.match(/<select[^>]*-computer-detail"[^>]*>.*?<\/select>/)?.[0] ?? '';
+  const retention = html.match(/<select[^>]*-computer-image-retention"[^>]*>.*?<\/select>/)?.[0] ?? '';
+  assert.deepEqual([...detail.matchAll(/<option value="([^"]+)"/g)].map(match => match[1]), ['1', '2', '4']);
+  assert.match(detail, /value="1" selected="">Original \(1:1\)/);
+  assert.deepEqual([...retention.matchAll(/<option value="([^"]+)"/g)].map(match => match[1]), ['0', '1', '2', '3', '5', '10']);
+  assert.match(retention, /value="0" selected="">Unbegrenzt/);
+  assert.doesNotMatch(detail, /disabled=""/); assert.doesNotMatch(retention, /disabled=""/);
+  assert.match(html, /Breite und Höhe.*halbiert/); assert.match(html, /Originalausschnitte bleiben auf Abruf verfügbar/);
+  assert.match(html, /Zählt Modellanfragen, keine Klicks/); assert.match(html, /wichtige Beobachtungen kurz im Text festhalten/);
+  assert.match(html, /auch ohne eigenes Computer-Modell/);
+  const selected = render(16, true, { computerDetailScaleDivisor: 2, computerImageRetentionCalls: 3 });
+  assert.match(selected, /value="2" selected="">Details 1:2/);
+  assert.match(selected, /value="3" selected="">Letzte 3 Modellanfragen/);
+  assert.match(render(16, true, { computerImageRetentionCalls: 4 }), /value="4" selected="">Letzte 4 Modellanfragen \(aktuell\)/);
+  const unavailable = render(undefined, false);
+  assert.match(unavailable, /<select[^>]*-computer-detail"[^>]*disabled=""/);
+  assert.match(unavailable, /<select[^>]*-computer-image-retention"[^>]*disabled=""/);
 });
 
 test('the separate computer model is opt-in with Fast enabled and cannot be enabled without a configured model', () => {

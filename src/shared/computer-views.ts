@@ -3,9 +3,14 @@ export interface ComputerSize { width: number; height: number; }
 export interface ComputerRect extends ComputerSize { x: number; y: number; }
 export interface ComputerPoint { x: number; y: number; }
 export const COMPUTER_OVERVIEW_FACTORS = [1, 4, 8, 16, 32] as const;
+export const COMPUTER_DETAIL_FACTORS = [1, 2, 4] as const;
 export const MAX_COMPUTER_DETAIL_PIXELS = 1_048_576;
 export function computerOverviewDivisor(value: unknown): number {
   if (typeof value !== 'number' || !Number.isFinite(value) || value < 1 || value > 64) throw new Error('Invalid computer overview divisor.');
+  return value;
+}
+export function computerDetailDivisor(value: unknown): number {
+  if (typeof value !== 'number' || !(COMPUTER_DETAIL_FACTORS as readonly number[]).includes(value)) throw new Error('Invalid computer detail divisor.');
   return value;
 }
 export interface ComputerViewDescriptor {
@@ -33,6 +38,8 @@ export interface ComputerObservation {
   screenHeight: number;
   scaleFactor: number;
   overviewScaleDivisor: number;
+  /** Actual detail scale for this observation; omitted legacy observations are 1:1. */
+  detailScaleDivisor?: number;
   views: ComputerViewImage[];
   selection: ComputerRegionSelection;
   timings: { imageProcessingMs: number; regionSelectionMs: number; };

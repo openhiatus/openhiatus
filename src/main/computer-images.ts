@@ -1,13 +1,13 @@
 import type { NativeImage } from 'electron';
 import type { ComputerPixels, ComputerRect, ComputerSize } from '../shared/computer-views.js';
-import { overviewSize, validateSourceRect } from './computer-views.js';
+import { detailSize, overviewSize, validateSourceRect } from './computer-views.js';
 
 export interface DecodedComputerImage extends ComputerPixels { png: string; }
 export interface ProcessedComputerImage extends ComputerSize { base64: string; }
 export interface ComputerImageProcessor {
   decode(pngBase64: string, size: ComputerSize): DecodedComputerImage;
   overview(image: DecodedComputerImage, divisor: number): ProcessedComputerImage;
-  crop(image: DecodedComputerImage, rect: ComputerRect): ProcessedComputerImage;
+  crop(image: DecodedComputerImage, rect: ComputerRect, divisor?: number): ProcessedComputerImage;
 }
 
 const PNG_SIGNATURE = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
@@ -76,9 +76,11 @@ export async function createComputerImageProcessor(): Promise<ComputerImageProce
       if (size.width === image.width && size.height === image.height) return { base64: source.png, ...size };
       return encode(source.image.resize({ width: size.width, height: size.height, quality: 'best' }), size);
     },
-    crop(image, rect) {
+    crop(image, rect, divisor = 1) {
       const source = original(image), valid = validateSourceRect(rect, image);
-      return encode(source.image.crop(valid), valid);
+      const size = detailSize(valid, divisor), crop = source.image.crop(valid);
+      return encode(size.width === valid.width && size.height === valid.height ? crop
+        : crop.resize({ width: size.width, height: size.height, quality: 'best' }), size);
     },
   };
 }

@@ -162,6 +162,7 @@ export class NativeComputer implements ComputerAdapter {
   constructor(private readonly options: { createSession?: ComputerSessionFactory; now?: () => number; timeoutMs?: number;
     desktopCoordinator?: DesktopCoordinator; captureTiming?: ComputerCaptureTiming;
     overviewScaleDivisor?: number; getOverviewScaleDivisor?: () => number;
+    detailScaleDivisor?: number; getDetailScaleDivisor?: () => number;
     createImageProcessor?: () => Promise<ComputerImageProcessor> } = {}) {
     this.observations = new ComputerObservations(options.createImageProcessor);
   }
@@ -210,7 +211,8 @@ export class NativeComputer implements ComputerAdapter {
         if (!this.desktopLease) {
           this.desktopLease = await (this.options.desktopCoordinator ?? sharedDesktopCoordinator).acquire(signal);
           this.frame = undefined; // Every new ownership interval starts with a fresh observation.
-          this.observations.configure(this.options.getOverviewScaleDivisor?.() ?? this.options.overviewScaleDivisor ?? 1);
+          this.observations.configure(this.options.getOverviewScaleDivisor?.() ?? this.options.overviewScaleDivisor ?? 1,
+            this.options.getDetailScaleDivisor?.() ?? this.options.detailScaleDivisor ?? 1);
           check(signal);
         }
         if (!this.session) {
