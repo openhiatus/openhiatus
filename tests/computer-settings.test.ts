@@ -8,7 +8,7 @@ import { settingsHandlers } from '../src/main/ipc/settings';
 import type { IpcPorts } from '../src/main/ipc/ports';
 import { decodeSnapshot } from '../src/shared/ipc/snapshot';
 import { snapshotFixture } from './ipc-fixtures';
-import { parseComputerTaskSettings } from '../src/shared/computer-task-settings';
+import { COMPUTER_WORKING_MEMORY_CALLS, computerWorkingMemoryCalls, parseComputerTaskSettings } from '../src/shared/computer-task-settings';
 
 test('overview preference migrates to full, persists experimental/custom divisors and cannot corrupt valid state', () => {
   const directory = mkdtempSync(join(tmpdir(), 'openhiatus-computer-settings-')), state = defaultState();
@@ -79,11 +79,11 @@ test('detail scale and image retention migrate independently of delegation and p
   const store = new StateStore(directory), restored = store.load();
   assert.equal(restored.preferences.computerDetailScaleDivisor, 1);
   assert.equal(restored.preferences.computerImageRetentionCalls, 0);
-  assert.deepEqual(restored.jobs![0].computer, { ...legacy, detailScaleDivisor: 1, imageRetentionCalls: 0 });
+  assert.deepEqual(restored.jobs![0].computer, { ...legacy, detailScaleDivisor: 1, imageRetentionCalls: 0, workingMemoryCalls: 0 });
   assert.deepEqual(parseComputerTaskSettings(legacy), restored.jobs![0].computer);
   for (const factor of [1, 2, 4]) for (const calls of [0, 1, 2, 3, 4, 5, 6, 10]) {
     Object.assign(restored.preferences, { computerDetailScaleDivisor: factor, computerImageRetentionCalls: calls });
-    restored.jobs![0].computer = { ...legacy, detailScaleDivisor: factor, imageRetentionCalls: calls };
+    restored.jobs![0].computer = { ...legacy, detailScaleDivisor: factor, imageRetentionCalls: calls, workingMemoryCalls: 0 };
     store.save(restored);
     const loaded = new StateStore(directory).load();
     assert.equal(loaded.preferences.computerDetailScaleDivisor, factor);
@@ -126,5 +126,64 @@ test('image settings are validated at command, snapshot and frozen-job boundarie
   }
   await assert.rejects(async () => handlers.savePreferences([{ computerDetailScaleDivisor: undefined }]));
   await assert.rejects(async () => handlers.savePreferences([{ computerImageRetentionCalls: undefined }]));
+  assert.equal(called.length, accepted);
+});
+
+test('working memory migrates legacy profiles and jobs to 0 and round-trips independent 0/10/15 windows', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'openhiatus-working-memory-')), state = defaultState();
+  assert.equal(state.preferences.computerWorkingMemoryCalls, 0);
+  delete state.preferences.computerWorkingMemoryCalls;
+  const legacy = { delegationEnabled: false, model: '', fast: true, overviewScaleDivisor: 16, detailScaleDivisor: 2, imageRetentionCalls: 2 };
+  state.jobs = [{ id: 'job', requestId: 'request', title: 'Synthetic', prompt: 'Synthetic', status: 'completed',
+    createdAt: 'now', updatedAt: 'now', model: 'synthetic/model', resources: [], computer: legacy }];
+  writeFileSync(join(directory, 'state.json'), JSON.stringify({ version: 1, state }));
+  const store = new StateStore(directory), restored = store.load();
+  assert.deepEqual(COMPUTER_WORKING_MEMORY_CALLS, [0, 10, 15]);
+  assert.equal(restored.preferences.computerWorkingMemoryCalls, 0);
+  assert.equal(restored.jobs![0].computer!.workingMemoryCalls, 0);
+  for (const calls of COMPUTER_WORKING_MEMORY_CALLS) {
+    assert.equal(computerWorkingMemoryCalls(calls), calls);
+    restored.preferences.computerWorkingMemoryCalls = calls;
+    restored.jobs![0].computer = { ...legacy, workingMemoryCalls: calls };
+    store.save(restored);
+    const loaded = new StateStore(directory).load();
+    assert.equal(loaded.preferences.computerWorkingMemoryCalls, calls);
+    assert.deepEqual(loaded.jobs![0].computer, restored.jobs![0].computer);
+    assert.equal(loaded.jobs![0].computer!.imageRetentionCalls, 2);
+  }
+  const before = readFileSync(join(directory, 'state.json'), 'utf8');
+  for (const value of [-1, 1, 2, 5, 11, 14, 16, 1.5, NaN, Infinity, null, '15', false]) {
+    assert.throws(() => computerWorkingMemoryCalls(value));
+    for (const area of ['preferences', 'job'] as const) {
+      const invalid = structuredClone(restored);
+      if (area === 'preferences') Object.assign(invalid.preferences, { computerWorkingMemoryCalls: value });
+      else Object.assign(invalid.jobs![0].computer!, { workingMemoryCalls: value });
+      assert.throws(() => store.save(invalid));
+      assert.equal(readFileSync(join(directory, 'state.json'), 'utf8'), before);
+    }
+  }
+});
+
+test('working memory validates commands, wire snapshots and frozen jobs without enabling it for legacy jobs', async () => {
+  const called: unknown[] = [];
+  const handlers = settingsHandlers({ controller: { savePreferences: async (patch: unknown) => { called.push(patch); } }, platform: {} } as unknown as IpcPorts);
+  const snapshot = snapshotFixture();
+  for (const calls of COMPUTER_WORKING_MEMORY_CALLS) {
+    const patch = { computerWorkingMemoryCalls: calls };
+    await handlers.savePreferences([patch]);
+    assert.deepEqual(called.at(-1), patch);
+    assert.equal(decodeSnapshot({ ...snapshot, preferences: { ...snapshot.preferences, ...patch } }).preferences.computerWorkingMemoryCalls, calls);
+    assert.equal(parseComputerTaskSettings({ delegationEnabled: false, model: '', fast: true, overviewScaleDivisor: 1, workingMemoryCalls: calls }).workingMemoryCalls, calls);
+  }
+  const accepted = called.length;
+  for (const value of [-1, 1, 2, 14, 16, 1.5, NaN, Infinity, null, '15', false]) {
+    await assert.rejects(async () => handlers.savePreferences([{ computerWorkingMemoryCalls: value }]));
+    assert.throws(() => decodeSnapshot({ ...snapshot, preferences: { ...snapshot.preferences, computerWorkingMemoryCalls: value } }));
+    const computer = { delegationEnabled: false, model: '', fast: true, overviewScaleDivisor: 1, workingMemoryCalls: value };
+    assert.throws(() => parseComputerTaskSettings(computer));
+    assert.throws(() => decodeSnapshot({ ...snapshot, jobs: [{ id: 'job', requestId: 'request', title: 'Synthetic', prompt: 'Synthetic',
+      status: 'completed', createdAt: 'now', updatedAt: 'now', model: 'synthetic/model', resources: [], computer }] }));
+  }
+  await assert.rejects(async () => handlers.savePreferences([{ computerWorkingMemoryCalls: undefined }]));
   assert.equal(called.length, accepted);
 });

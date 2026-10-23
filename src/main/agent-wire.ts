@@ -1,7 +1,7 @@
 import type { AgentEvent, DynamicFunctionTool, DynamicToolResponse } from '../shared/contracts.js';
 import { MODEL_SERVICE_TIERS } from '../shared/model-requests.js';
 import type { ResolvedModel } from './providers.js';
-import { computerImageRetentionCalls } from '../shared/computer-task-settings';
+import { computerImageRetentionCalls, computerWorkingMemoryCalls } from '../shared/computer-task-settings';
 
 export const MAX_PACKET_BYTES = 80 * 1024 * 1024;
 export const MAX_PROMPT_CHARS = 1_000_000;
@@ -13,6 +13,7 @@ export interface HostRun {
   dialog: boolean; tools: DynamicFunctionTool[]; instructions: string; freshThreadContext?: string;
   computerOnly?: boolean; serviceTier?: 'fast';
   computerImageRetentionCalls?: number;
+  computerWorkingMemoryCalls?: number;
 }
 export interface CommandParams {
   hello: Empty; run: HostRun; steer: { runId: string; text: string }; abort: Empty;
@@ -83,10 +84,15 @@ export function decodeRun(value: unknown): HostRun {
   if (input.computerImageRetentionCalls !== undefined) {
     try { imageRetention = computerImageRetentionCalls(input.computerImageRetentionCalls); } catch { return fail(); }
   }
+  let workingMemory: number | undefined;
+  if (input.computerWorkingMemoryCalls !== undefined) {
+    try { workingMemory = computerWorkingMemoryCalls(input.computerWorkingMemoryCalls); } catch { return fail(); }
+  }
   return { runId: uuid(input.runId), text: text(input.text, MAX_PROMPT_CHARS, true), workspace: text(input.workspace, 32_768, true), home: text(input.home, 32_768, true),
     instructions: text(input.instructions, MAX_PROMPT_CHARS), model: model(input.model), dialog: input.dialog, tools,
     ...(input.computerOnly === undefined ? {} : { computerOnly: input.computerOnly }), ...(input.serviceTier === undefined ? {} : { serviceTier: input.serviceTier }),
     ...(imageRetention === undefined ? {} : { computerImageRetentionCalls: imageRetention }),
+    ...(workingMemory === undefined ? {} : { computerWorkingMemoryCalls: workingMemory }),
     ...(threadId === undefined ? {} : { threadId }), ...(freshThreadContext === undefined ? {} : { freshThreadContext }) };
 }
 export function decodeToolResponse(value: unknown): DynamicToolResponse {

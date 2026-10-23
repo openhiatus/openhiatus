@@ -178,8 +178,10 @@ export class AgentHost {
       const settingsManager = pi.SettingsManager.inMemory({ packages: [], extensions: [], skills: [], prompts: [], themes: [],
         retry: { enabled: false, provider: { maxRetries: 0 } }, cacheWarming: 'off' }, { projectTrusted: false });
       const imageRetention = input.computerImageRetentionCalls ?? 0;
+      const workingMemory = input.computerWorkingMemoryCalls ?? 0;
+      const boundedComputerContext = imageRetention > 0 || workingMemory > 0;
       const resourceLoader = new pi.DefaultResourceLoader({ ...resourceOptions({ ...input,
-        instructions: `${input.instructions}${imageRetention ? `\n\n${computerImageHistoryInstructions(imageRetention)}` : ''}` }, settingsManager),
+        instructions: `${input.instructions}${boundedComputerContext ? `\n\n${computerImageHistoryInstructions(imageRetention, workingMemory)}` : ''}` }, settingsManager),
         skillsOverride: () => input.dialog || input.computerOnly ? { skills: [], diagnostics: [] } : pi.loadSkillsFromDir({ dir: join(input.home, 'skills'), source: APP_DISPLAY_NAME }),
       });
       await resourceLoader.reload();
@@ -189,8 +191,9 @@ export class AgentHost {
       this.session = session;
       const threadId = session.sessionId, imageHistoryPath = join(referenceDirectory, `${threadId}.computer-images.json`);
       let savedImages: unknown;
-      if (imageRetention) { try { savedImages = JSON.parse(await readFile(imageHistoryPath, 'utf8')); } catch { /* old screenshots remain expired on a legacy resume */ } }
-      const imageHistory = imageRetention ? new ComputerImageHistory(imageRetention, savedImages, input.threadId ? session.messages : []) : undefined;
+      if (boundedComputerContext) { try { savedImages = JSON.parse(await readFile(imageHistoryPath, 'utf8')); } catch { /* old computer context remains expired on a legacy resume */ } }
+      const imageHistory = boundedComputerContext ? new ComputerImageHistory(imageRetention, savedImages,
+        input.threadId ? session.messages : [], { workingMemoryCalls: workingMemory }) : undefined;
       const onPayload = session.agent.onPayload;
       session.agent.onPayload = async (payload, requestModel) => {
         const transformed = await onPayload?.(payload, requestModel);

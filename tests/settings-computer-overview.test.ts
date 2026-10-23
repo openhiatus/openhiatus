@@ -40,6 +40,7 @@ test('detail scale and image retention default to unchanged behavior and remain 
   assert.doesNotMatch(detail, /disabled=""/); assert.doesNotMatch(retention, /disabled=""/);
   assert.match(html, /Breite und Höhe.*halbiert/); assert.match(html, /Originalausschnitte bleiben auf Abruf verfügbar/);
   assert.match(html, /Zählt Modellanfragen, keine Klicks/); assert.match(html, /wichtige Beobachtungen kurz im Text festhalten/);
+  assert.match(html, /begrenzt auch die Zahl der Aufnahmen/); assert.match(html, /nur die aktuelle Arbeitsnotiz/); assert.match(html, /max\. 240 Zeichen/);
   assert.match(html, /auch ohne eigenes Computer-Modell/);
   const selected = render(16, true, { computerDetailScaleDivisor: 2, computerImageRetentionCalls: 3 });
   assert.match(selected, /value="2" selected="">Details 1:2/);
@@ -60,6 +61,21 @@ test('the separate computer model is opt-in with Fast enabled and cannot be enab
   assert.match(html, /Das Arbeitsmodell plant und prüft/);
   assert.match(html, /Ohne Aktivierung bedient das Arbeitsmodell den Computer/);
   assert.match(html, /höhere Kosten entstehen/);
+});
+
+test('working memory offers legacy history or 10/15 requests and renders 15 independently of image retention', () => {
+  const html = render(), memory = html.match(/<select[^>]*-computer-working-memory"[^>]*>.*?<\/select>/)?.[0] ?? '';
+  assert.deepEqual([...memory.matchAll(/<option value="([^"]+)"/g)].map(match => match[1]), ['0', '10', '15']);
+  assert.match(memory, /value="0" selected="">Bisherige Bedienhistorie/);
+  assert.doesNotMatch(memory, /disabled=""/);
+  assert.match(html, /Arbeitsgedächtnis im Modellkontext/);
+  assert.match(html, /Ältere Computeraufrufe und ihre Ergebnisse/);
+  assert.match(html, /im bestehenden Aufruf erneuert, ohne zusätzliche Zusammenfassungsanfrage/);
+  assert.match(html, /Nutzerauftrag, Nutzertexte und Dateien bleiben erhalten/);
+  const selected = render(16, true, { computerDetailScaleDivisor: 2, computerImageRetentionCalls: 2, computerWorkingMemoryCalls: 15 });
+  assert.match(selected, /<select[^>]*-computer-working-memory"[^>]*>.*?value="15" selected="">Letzte 15 Modellanfragen/);
+  assert.match(selected, /<select[^>]*-computer-image-retention"[^>]*>.*?value="2" selected="">Letzte 2 Modellanfragen/);
+  assert.match(render(undefined, false), /<select[^>]*-computer-working-memory"[^>]*disabled=""/);
 });
 
 test('computer settings retain the independently selected model and disable role changes during work', () => {

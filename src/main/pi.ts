@@ -8,7 +8,7 @@ import { DIALOG_INSTRUCTIONS } from './dialog.js';
 import { AGENT_INSTRUCTIONS } from './instructions.js';
 import { ProcessTransport, MAX_PROMPT_CHARS, type AgentTransport, type TransportCallbacks, type HostPacket, type ProcessTransportOptions, type HostRequest, type HostRun } from './agent-protocol.js';
 import { ProviderStore, redactError } from './providers.js';
-import { computerImageRetentionCalls } from '../shared/computer-task-settings';
+import { computerImageRetentionCalls, computerWorkingMemoryCalls } from '../shared/computer-task-settings';
 
 // agent-host installs these SDK tools itself. Registered host handlers cannot replace them.
 const WORKER_BUILTIN_TOOLS = new Set(['read', 'write', 'edit', 'powershell', 'grep', 'find', 'ls']);
@@ -21,6 +21,8 @@ export interface PiAdapterOptions {
   computerOnly?: boolean;
   computerImageRetentionCalls?: number;
   getComputerImageRetentionCalls?: () => number;
+  computerWorkingMemoryCalls?: number;
+  getComputerWorkingMemoryCalls?: () => number;
   instructions?: string;
   tools?: ToolsetPort;
   onEvent(event: AgentEvent): void;
@@ -44,6 +46,7 @@ export class PiAdapter implements AgentAdapter {
   constructor(options: PiAdapterOptions, private readonly dependencies: PiAdapterDependencies = {}) {
     if (options.computerOnly && options.role === 'dialog') throw new Error('Computerbedienung benötigt einen eigenen Arbeitsadapter.');
     if (options.computerImageRetentionCalls !== undefined) computerImageRetentionCalls(options.computerImageRetentionCalls);
+    if (options.computerWorkingMemoryCalls !== undefined) computerWorkingMemoryCalls(options.computerWorkingMemoryCalls);
     this.options = { ...options, home: resolve(options.home), workspace: resolve(options.workspace) };
     this.tools = options.tools ?? createToolRegistry([]);
   }
@@ -93,6 +96,7 @@ export class PiAdapter implements AgentAdapter {
     if (/^\s*\/goal(?:\s|$)/i.test(text)) throw new Error(`/goal wird in ${APP_DISPLAY_NAME} nicht unterstützt. Bitte einen normalen Arbeitsauftrag formulieren.`);
     if (options?.serviceTier && !this.options.computerOnly) throw new Error('Eine eigene Fast-Stufe ist nur für die getrennte Computerbedienung vorgesehen.');
     const imageRetention = this.options.role === 'dialog' ? 0 : computerImageRetentionCalls(this.options.getComputerImageRetentionCalls?.() ?? this.options.computerImageRetentionCalls ?? 0);
+    const workingMemory = this.options.role === 'dialog' ? 0 : computerWorkingMemoryCalls(this.options.getComputerWorkingMemoryCalls?.() ?? this.options.computerWorkingMemoryCalls ?? 0);
     const active: Active = { id: randomUUID(), abort: new AbortController(), threadId, stopping: false, pending: new Set(), credentialsPending: new Set(), modelSelection: model };
     this.active = active;
     try {
@@ -111,6 +115,7 @@ export class PiAdapter implements AgentAdapter {
       const input: HostRun = { runId: active.id, text, model: resolved.authType === 'chatgpt' ? { ...resolved, apiKey: '' } : resolved, threadId, home: this.options.home, workspace: this.options.workspace,
         dialog, ...(this.options.computerOnly ? { computerOnly: true } : {}), ...(options?.serviceTier ? { serviceTier: options.serviceTier } : {}),
         ...(this.options.computerImageRetentionCalls === undefined && !this.options.getComputerImageRetentionCalls ? {} : { computerImageRetentionCalls: imageRetention }),
+        ...(this.options.computerWorkingMemoryCalls === undefined && !this.options.getComputerWorkingMemoryCalls ? {} : { computerWorkingMemoryCalls: workingMemory }),
         tools: [...active.tools.definitions], instructions: `${this.options.instructions ?? (dialog ? DIALOG_INSTRUCTIONS : this.options.computerOnly ? 'Complete only the assigned bounded UI task using the supplied computer tools. Report observed results and uncertainties.' : AGENT_INSTRUCTIONS)}\n\n${this.options.getIdentityInstructions?.() ?? ''}`,
         freshThreadContext: options?.freshThreadContext };
       await transport.request('run', input, 60_000);

@@ -46,7 +46,8 @@ Die folgenden Namen beschreiben die Versuchsachsen. Übersicht und automatische 
 {
   "overviewScaleDivisor": 8,
   "detailScaleDivisor": 2,
-  "imageRetentionCalls": 3,
+  "imageRetentionCalls": 2,
+  "workingMemoryCalls": 15,
   "changeAnalysisScaleDivisor": 1,
   "overviewEncoding": "png"
 }
@@ -55,6 +56,7 @@ Die folgenden Namen beschreiben die Versuchsachsen. Übersicht und automatische 
 - `overviewScaleDivisor`: unabhängig wählbarer Versuchsparameter; der Vergleich enthält 4, 8, 16 und 32. Faktor 1 kann als bisheriger Vollbild-Vergleich dienen.
 - `detailScaleDivisor`: 1, 2 oder 4 für automatische Details, unabhängig von der Übersicht. Originalausschnitte über `inspect` bleiben 1:1 abrufbar; Quellrechteck und tatsächlich übertragene Bildmaße bestimmen die Koordinatenumrechnung.
 - `imageRetentionCalls`: Computerbilder nach einer festgelegten Zahl von Modellanfragen aus dem gesendeten Kontext entfernen. Wichtige Beobachtungen hält das Arbeitsmodell kurz im Text fest; ein zusätzlicher Zusammenfassungsaufruf ist nicht erforderlich. Cache-Effekt und Erfolgsquote müssen mitgemessen werden.
+- `workingMemoryCalls`: zusätzlich ältere Computeraufrufe mit ihren abgeschlossenen Ergebnissen nach 10 oder 15 Modellanfragen entfernen. Die aktuelle Arbeitsnotiz bleibt auf 240 Zeichen begrenzt und wird im bestehenden Computeraufruf ersetzt. Nutzerauftrag, Datei-/Dienstdaten und lokale Protokolle bleiben erhalten. Standard 0 erhält das bisherige Verhalten.
 - `changeAnalysisScaleDivisor`: eigener Parameter für die lokale Änderungserkennung. Eine Übersicht 1:32 darf den lokalen Detektor nicht ebenfalls auf 1:32 zwingen; sonst könnten wichtige kleine Änderungen bereits vor der Bereichsauswahl verschwinden.
 - `overviewEncoding`: zunächst verlustfreies PNG. Dateikompression und Auflösungsreduktion werden getrennt behandelt. Falls weitere Encodings untersucht werden, sind Format und Qualität eigene Parameter; sie werden nicht gleichzeitig unbemerkt mit dem Faktor verändert.
 

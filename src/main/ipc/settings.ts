@@ -1,7 +1,7 @@
 import type { PreferencesPatch, ProviderInput } from '../../shared/contracts';
 import { parseSkillFavorites } from '../../shared/skill-favorites';
 import { computerDetailDivisor, computerOverviewDivisor } from '../../shared/computer-views';
-import { computerImageRetentionCalls } from '../../shared/computer-task-settings';
+import { computerImageRetentionCalls, computerWorkingMemoryCalls } from '../../shared/computer-task-settings';
 import { command, inputObject, inputText, noArgs, type HandlerMap } from './command';
 import type { IpcPorts } from './ports';
 
@@ -9,7 +9,7 @@ const booleanPreferences = ['speakReplies', 'voiceConversation', 'earcons', 'mem
 const textPreferences = ['inputDeviceId', 'outputDeviceId', 'voiceId', 'model', 'dialogModel', 'memoryModel', 'computerModel'] as const;
 const deviceMetadata = ['inputDeviceLabel', 'inputDeviceGroupId', 'outputDeviceLabel', 'outputDeviceGroupId'] as const;
 function preferences(value: unknown): PreferencesPatch {
-  const input = inputObject(value, [...booleanPreferences, ...textPreferences, ...deviceMetadata, 'skillFavorites', 'computerOverviewScaleDivisor', 'computerDetailScaleDivisor', 'computerImageRetentionCalls'], 'Ungültige Einstellungen.');
+  const input = inputObject(value, [...booleanPreferences, ...textPreferences, ...deviceMetadata, 'skillFavorites', 'computerOverviewScaleDivisor', 'computerDetailScaleDivisor', 'computerImageRetentionCalls', 'computerWorkingMemoryCalls'], 'Ungültige Einstellungen.');
   const patch: PreferencesPatch = {};
   for (const key of booleanPreferences) if (Object.hasOwn(input, key)) {
     const item = input[key]; if (typeof item !== 'boolean') throw new Error('Ungültige Einstellung.'); patch[key] = item;
@@ -24,6 +24,7 @@ function preferences(value: unknown): PreferencesPatch {
   if (Object.hasOwn(input, 'computerOverviewScaleDivisor')) patch.computerOverviewScaleDivisor = computerOverviewDivisor(input.computerOverviewScaleDivisor);
   if (Object.hasOwn(input, 'computerDetailScaleDivisor')) patch.computerDetailScaleDivisor = computerDetailDivisor(input.computerDetailScaleDivisor);
   if (Object.hasOwn(input, 'computerImageRetentionCalls')) patch.computerImageRetentionCalls = computerImageRetentionCalls(input.computerImageRetentionCalls);
+  if (Object.hasOwn(input, 'computerWorkingMemoryCalls')) patch.computerWorkingMemoryCalls = computerWorkingMemoryCalls(input.computerWorkingMemoryCalls);
   return patch;
 }
 function providerInput(value: unknown): ProviderInput {

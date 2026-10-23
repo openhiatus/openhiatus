@@ -5,8 +5,8 @@ export interface Usage { inputTokens: number; outputTokens: number; cacheReadTok
 /** Immutable desktop configuration captured when a task is admitted. */
 export interface ComputerTaskSettings {
   delegationEnabled: boolean; model: string; fast: boolean; overviewScaleDivisor: number;
-  /** Missing in older admitted jobs: native details and unlimited image history. */
-  detailScaleDivisor?: number; imageRetentionCalls?: number;
+  /** Older jobs keep native details, unlimited image history and the previous tool history. */
+  detailScaleDivisor?: number; imageRetentionCalls?: number; workingMemoryCalls?: number;
 }
 export interface ModelRequest {
   role: 'dialog' | 'worker' | 'computer'; model: string;
@@ -23,7 +23,7 @@ export interface Preferences {
   inputDeviceId: string; outputDeviceId: string;
   inputDeviceLabel?: string; inputDeviceGroupId?: string; outputDeviceLabel?: string; outputDeviceGroupId?: string;
   computerOverviewScaleDivisor?: number;
-  computerDetailScaleDivisor?: number; computerImageRetentionCalls?: number;
+  computerDetailScaleDivisor?: number; computerImageRetentionCalls?: number; computerWorkingMemoryCalls?: number;
   computerDelegationEnabled?: boolean; computerModel?: string; computerFast?: boolean;
   speakReplies: boolean; voiceId: string; model: string; memoryAutoSummarize?: boolean; voiceConversation?: boolean; earcons?: boolean; skillFavorites?: SkillFavorites; dialogModel: string; memoryModel: string; fullAccessAcknowledged?: boolean; chatgptBackgroundUsage?: boolean;
 }

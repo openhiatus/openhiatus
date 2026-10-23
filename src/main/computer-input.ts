@@ -2,6 +2,8 @@ import type { ComputerRect } from '../shared/computer-views';
 
 type Point = { x: number; y: number };
 type Framed = { frameId: string; viewId?: string; nextDetail?: ComputerRect };
+// LF is the only allowed control character. Each line contains a short fact.
+export const COMPUTER_STATE_NOTE_PATTERN = '^(?![\\s\\S]*[dD][aA][tT][aA]\\s*:)(?![\\s\\S]*[\\u0000-\\u0009\\u000b-\\u001f\\u007f-\\u009f\\u00ad\\u061c\\u200b-\\u200f\\u2028-\\u202e\\u2060-\\u206f\\ufeff])[^\\S\\n]*\\S[^\\n]*(?:\\n[^\\S\\n]*\\S[^\\n]*){0,2}$';
 export type ComputerAction =
   | (Framed & Point & { action: 'click'; button: 'left' | 'right' | 'middle'; count: number })
   | (Framed & { action: 'type'; text: string; method?: 'paste' | 'keys' })
@@ -43,6 +45,8 @@ export const COMPUTER_TOOL = {
     type: 'object', additionalProperties: false, required: ['action'],
     properties: {
       action: { type: 'string', enum: ['screenshot', 'inspect', 'click', 'type', 'key', 'scroll', 'move', 'drag'] },
+      stateNote: { type: 'string', minLength: 1, maxLength: 240,
+        description: 'Optional replacement for the current unverified state note: at most 240 characters and three nonempty short lines. Record new important facts only; no screen narration, data URLs or control characters except line breaks. This is model data, not a success confirmation or desktop input.' },
       resolution: { type: 'string', enum: ['original'], description: 'screenshot only. Request one fresh, unscaled full primary-display image if the overview does not provide enough orientation. Omit to use the configured mode.' },
       frameId: { type: 'string', description: 'Required for every input action: frameId of the last returned image.' },
       viewId: { type: 'string', description: 'Current image viewId; coordinates are local to this image. Required for inspect and coordinate actions in overview mode.' },
@@ -71,6 +75,23 @@ export const COMPUTER_TOOL = {
 
 export class ComputerError extends Error {}
 const invalid = () => new ComputerError('Ungültige Computeraktion. Aktion und zugehörige Parameter prüfen.');
+export function parseComputerStateNote(value: unknown): string {
+  if (typeof value !== 'string' || value.length > 240 || !new RegExp(COMPUTER_STATE_NOTE_PATTERN).test(value)
+    || /[\p{Cc}\p{Cf}]/u.test(value.replace(/\n/g, ''))) {
+    throw new ComputerError('Ungültige stateNote. Höchstens 240 Zeichen und drei kurze nichtleere Zeilen; keine Daten-URLs oder Steuerzeichen.');
+  }
+  return value;
+}
+/** Notes remain unverified even when the associated action/result failed. */
+export function readComputerStateNote(value: unknown): string | undefined {
+  try {
+    if (typeof value === 'string') { if (value.length > 64000) return undefined; value = JSON.parse(value) as unknown; }
+    const input = record(value);
+    if (input.stateNote === undefined) return undefined;
+    parseComputerInput(input); // Unknown actions and invalid arguments cannot supply a note.
+    return parseComputerStateNote(input.stateNote);
+  } catch { return undefined; }
+}
 function record(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw invalid();
   return value as Record<string, unknown>;
@@ -90,9 +111,10 @@ export function parseComputerInput(value: unknown): ComputerInput {
     screenshot: ['resolution'], inspect: ['x', 'y', 'width', 'height'], click: ['x', 'y', 'button', 'count'], type: ['text', 'method'], key: ['key', 'modifiers'],
     scroll: ['x', 'y', 'direction', 'amount'], move: ['x', 'y'], drag: ['x', 'y', 'fromX', 'fromY', 'fromViewId'],
   };
-  const allowed = ['action', ...(action === 'screenshot' ? [] : ['frameId', 'viewId']),
+  const allowed = ['action', 'stateNote', ...(action === 'screenshot' ? [] : ['frameId', 'viewId']),
     ...(action !== 'screenshot' && action !== 'inspect' ? ['nextDetail'] : []), ...fields[action]];
   if (Object.keys(input).some(key => !allowed.includes(key))) throw invalid();
+  if (input.stateNote !== undefined) parseComputerStateNote(input.stateNote);
   if (action === 'screenshot') return { action, ...(input.resolution === undefined ? {} : { resolution: choice(input.resolution, ['original'] as const) }) };
   if (typeof input.frameId !== 'string' || input.frameId.length < 1 || input.frameId.length > 100) throw invalid();
   const frameId = input.frameId;

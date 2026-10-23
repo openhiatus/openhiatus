@@ -1,7 +1,7 @@
 import type { ComputerFrame, Snapshot } from '../contracts';
 import { computerDetailDivisor, MAX_COMPUTER_DETAIL_PIXELS, type ComputerObservation, type ComputerRect } from '../computer-views';
 import { parseSkillFavorites } from '../skill-favorites';
-import { computerImageRetentionCalls, parseComputerTaskSettings } from '../computer-task-settings';
+import { computerImageRetentionCalls, computerWorkingMemoryCalls, parseComputerTaskSettings } from '../computer-task-settings';
 import { parseModelRequestSummaries } from '../model-requests';
 import { array, boolean, choice, integer, invalidPayload, number, object, optional, text, type Decoder } from './decode';
 
@@ -27,7 +27,7 @@ export const decodeSnapshot: Decoder<Snapshot> = object({
     inputDeviceLabel: optional(text(1000)), inputDeviceGroupId: optional(text(1000)), outputDeviceLabel: optional(text(1000)), outputDeviceGroupId: optional(text(1000)),
     memoryAutoSummarize: optional(boolean), voiceConversation: optional(boolean), earcons: optional(boolean), skillFavorites: optional(parseSkillFavorites),
     fullAccessAcknowledged: optional(boolean), chatgptBackgroundUsage: optional(boolean), computerOverviewScaleDivisor: optional(overviewPreference),
-    computerDetailScaleDivisor: optional(detailPreference), computerImageRetentionCalls: optional(computerImageRetentionCalls),
+    computerDetailScaleDivisor: optional(detailPreference), computerImageRetentionCalls: optional(computerImageRetentionCalls), computerWorkingMemoryCalls: optional(computerWorkingMemoryCalls),
     computerDelegationEnabled: optional(boolean), computerModel: optional(text(300)), computerFast: optional(boolean) }),
   connections: object({ agent: choice(['offline', 'missing', 'ready', 'connecting']), account: body, speech: choice(['missing', 'saved', 'verified']) }),
   models,

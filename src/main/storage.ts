@@ -8,7 +8,7 @@ import type { Activity, BackgroundJob, Message, Preferences, Task, TaskStatus, U
 import { redact } from './redact';
 import { parseSkillFavorites } from '../shared/skill-favorites';
 import { computerDetailDivisor, computerOverviewDivisor } from '../shared/computer-views';
-import { computerImageRetentionCalls, parseComputerTaskSettings } from '../shared/computer-task-settings';
+import { computerImageRetentionCalls, computerWorkingMemoryCalls, parseComputerTaskSettings } from '../shared/computer-task-settings';
 import { parseModelRequestSummaries } from '../shared/model-requests';
 
 export interface SavedState { messages: Message[]; activity: Activity[]; task: Task; preferences: Preferences; jobs?: BackgroundJob[]; usage?: Usage; }
@@ -18,7 +18,7 @@ const taskStatuses = new Set<TaskStatus>(['idle', 'running', 'stopping', 'comple
 export function defaultState(): SavedState {
   return {
     messages: [], activity: [], task: { id: '', status: 'idle' },
-    preferences: { inputDeviceId: 'default', outputDeviceId: 'default', speakReplies: true, voiceId: 'Dennis', model: '', dialogModel: '', memoryModel: '', memoryAutoSummarize: true, voiceConversation: true, fullAccessAcknowledged: false, chatgptBackgroundUsage: false, computerOverviewScaleDivisor: 1, computerDetailScaleDivisor: 1, computerImageRetentionCalls: 0, computerDelegationEnabled: false, computerModel: '', computerFast: true },
+    preferences: { inputDeviceId: 'default', outputDeviceId: 'default', speakReplies: true, voiceId: 'Dennis', model: '', dialogModel: '', memoryModel: '', memoryAutoSummarize: true, voiceConversation: true, fullAccessAcknowledged: false, chatgptBackgroundUsage: false, computerOverviewScaleDivisor: 1, computerDetailScaleDivisor: 1, computerImageRetentionCalls: 0, computerWorkingMemoryCalls: 0, computerDelegationEnabled: false, computerModel: '', computerFast: true },
   };
 }
 
@@ -77,6 +77,7 @@ function validateState(value: unknown): SavedState {
     computerOverviewScaleDivisor: p.computerOverviewScaleDivisor === undefined ? 1 : computerOverviewDivisor(p.computerOverviewScaleDivisor),
     computerDetailScaleDivisor: p.computerDetailScaleDivisor === undefined ? 1 : computerDetailDivisor(p.computerDetailScaleDivisor),
     computerImageRetentionCalls: p.computerImageRetentionCalls === undefined ? 0 : computerImageRetentionCalls(p.computerImageRetentionCalls),
+    computerWorkingMemoryCalls: p.computerWorkingMemoryCalls === undefined ? 0 : computerWorkingMemoryCalls(p.computerWorkingMemoryCalls),
     computerDelegationEnabled: p.computerDelegationEnabled === true, computerModel: p.computerModel === undefined ? '' : string(p.computerModel, 300), computerFast: p.computerFast !== false,
     inputDeviceId: string(p.inputDeviceId, 1000), outputDeviceId: string(p.outputDeviceId, 1000),
     ...(p.inputDeviceLabel !== undefined ? { inputDeviceLabel: string(p.inputDeviceLabel, 1000) } : {}),

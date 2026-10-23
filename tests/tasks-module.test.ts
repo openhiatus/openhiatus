@@ -92,14 +92,14 @@ test('desktop model, Fast and image scale are captured before asynchronous admis
   const f = fixture();
   const settings = { model: 'sol', progressSpeech: false, computerDelegationEnabled: true,
     computerModel: 'chatgpt/gpt-6-luna', computerFast: true, computerOverviewScaleDivisor: 16,
-    computerDetailScaleDivisor: 2, computerImageRetentionCalls: 3 };
+    computerDetailScaleDivisor: 2, computerImageRetentionCalls: 3, computerWorkingMemoryCalls: 15 };
   f.ports.settings = () => settings;
   const pending = f.tasks.accept(f.admission('computer'));
   settings.computerModel = 'different'; settings.computerFast = false; settings.computerOverviewScaleDivisor = 4;
-  settings.computerDetailScaleDivisor = 4; settings.computerImageRetentionCalls = 10;
+  settings.computerDetailScaleDivisor = 4; settings.computerImageRetentionCalls = 10; settings.computerWorkingMemoryCalls = 0;
   const accepted = await pending; await tick();
   const expected = { delegationEnabled: true, model: 'chatgpt/gpt-6-luna', fast: true, overviewScaleDivisor: 16,
-    detailScaleDivisor: 2, imageRetentionCalls: 3 };
+    detailScaleDivisor: 2, imageRetentionCalls: 3, workingMemoryCalls: 15 };
   assert.deepEqual(accepted.job.computer, expected);
   assert.deepEqual(f.workers[0].createdJob.computer, expected);
   accepted.job.computer!.model = 'changed externally';
@@ -111,19 +111,23 @@ test('direct computer jobs freeze legacy image defaults and independently select
   const f = fixture();
   const legacy = await f.tasks.accept(f.admission('legacy-images')); await tick();
   assert.deepEqual(legacy.job.computer, { delegationEnabled: false, model: '', fast: true, overviewScaleDivisor: 1,
-    detailScaleDivisor: 1, imageRetentionCalls: 0 });
-  f.ports.settings = () => ({ ...f.settings, computerDetailScaleDivisor: 2, computerImageRetentionCalls: 3 });
+    detailScaleDivisor: 1, imageRetentionCalls: 0, workingMemoryCalls: 0 });
+  f.ports.settings = () => ({ ...f.settings, computerDetailScaleDivisor: 2, computerImageRetentionCalls: 3, computerWorkingMemoryCalls: 10 });
   const selected = await f.tasks.accept(f.admission('selected-images')); await tick();
   assert.equal(selected.job.computer!.delegationEnabled, false);
   assert.equal(selected.job.computer!.detailScaleDivisor, 2); assert.equal(selected.job.computer!.imageRetentionCalls, 3);
   assert.equal(f.tasks.get(legacy.job.id).computer!.imageRetentionCalls, 0);
+  assert.equal(selected.job.computer!.workingMemoryCalls, 10);
+  assert.equal(f.tasks.get(legacy.job.id).computer!.workingMemoryCalls, 0);
   await f.tasks.dispose();
 });
 
 test('invalid image settings fail before durable task admission or worker creation', async () => {
   const f = fixture();
   for (const patch of [{ computerDetailScaleDivisor: 3 }, { computerDetailScaleDivisor: NaN },
-    { computerImageRetentionCalls: -1 }, { computerImageRetentionCalls: 11 }, { computerImageRetentionCalls: 2.5 }]) {
+    { computerImageRetentionCalls: -1 }, { computerImageRetentionCalls: 11 }, { computerImageRetentionCalls: 2.5 },
+    { computerWorkingMemoryCalls: -1 }, { computerWorkingMemoryCalls: 1 }, { computerWorkingMemoryCalls: 14 },
+    { computerWorkingMemoryCalls: 16 }, { computerWorkingMemoryCalls: 1.5 }]) {
     f.ports.settings = () => ({ ...f.settings, ...patch });
     await assert.rejects(f.tasks.accept(f.admission('invalid-images')));
     assert.equal(f.projection().length, 0); assert.equal(f.workers.length, 0);

@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { nextReceipt, RECEIPT_PHRASES } from '../shared/receipts';
 import { favoriteLevel, parseSkillFavorites } from '../shared/skill-favorites';
 import { computerDetailDivisor } from '../shared/computer-views';
-import { computerImageRetentionCalls } from '../shared/computer-task-settings';
+import { computerImageRetentionCalls, computerWorkingMemoryCalls } from '../shared/computer-task-settings';
 import { favoriteSkillsContext } from './skill-favorites-context';
 import type { Activity, AudioClip, BackgroundJob, AgentAdapter, AgentEvent, ComputerFrame, Message, Preferences, SkillCatalog, Snapshot, SpeechCue, ProviderView, ProviderInput, DynamicFunctionTool, DynamicToolResponse, ChatGPTConnection } from '../shared/contracts';
 import { redact } from './redact';
@@ -99,6 +99,7 @@ export class AppController {
     saved.preferences.computerFast ??= true;
     saved.preferences.computerDetailScaleDivisor = computerDetailDivisor(saved.preferences.computerDetailScaleDivisor ?? 1);
     saved.preferences.computerImageRetentionCalls = computerImageRetentionCalls(saved.preferences.computerImageRetentionCalls ?? 0);
+    saved.preferences.computerWorkingMemoryCalls = computerWorkingMemoryCalls(saved.preferences.computerWorkingMemoryCalls ?? 0);
     saved.preferences.chatgptBackgroundUsage = saved.preferences.chatgptBackgroundUsage === true;
     saved.task = recoverForegroundTask(saved.task);
     if ((!deps.dialogAgent || !deps.createWorker) && saved.jobs) saved.jobs = recoverBackgroundJobs(saved.jobs);
@@ -159,7 +160,8 @@ export class AppController {
           computerDelegationEnabled: this.state.preferences.computerDelegationEnabled === true, computerModel: this.state.preferences.computerModel ?? '',
           computerFast: this.state.preferences.computerFast !== false, computerOverviewScaleDivisor: this.state.preferences.computerOverviewScaleDivisor ?? 1,
           computerDetailScaleDivisor: this.state.preferences.computerDetailScaleDivisor ?? 1,
-          computerImageRetentionCalls: this.state.preferences.computerImageRetentionCalls ?? 0 }),
+          computerImageRetentionCalls: this.state.preferences.computerImageRetentionCalls ?? 0,
+          computerWorkingMemoryCalls: this.state.preferences.computerWorkingMemoryCalls ?? 0 }),
         context: { skills: (query, max) => this.skillContext(query, max), capabilities: () => this.capabilitiesDocument().prompt, favorites: () => this.favoriteContext() },
         memory: deps.memory ? {
           documents: () => this.instructionDocuments(), retrieve: (query, max) => this.retrieveMemory(query, max),
@@ -592,6 +594,7 @@ export class AppController {
     if (patch.computerFast !== undefined && typeof patch.computerFast !== 'boolean') throw new Error('Ungültige Fast-Einstellung für das Computer-Modell.');
     if (Object.hasOwn(patch, 'computerDetailScaleDivisor')) computerDetailDivisor(patch.computerDetailScaleDivisor);
     if (Object.hasOwn(patch, 'computerImageRetentionCalls')) computerImageRetentionCalls(patch.computerImageRetentionCalls);
+    if (Object.hasOwn(patch, 'computerWorkingMemoryCalls')) computerWorkingMemoryCalls(patch.computerWorkingMemoryCalls);
     const computerModel = patch.computerModel ?? this.state.preferences.computerModel;
     if ((patch.computerDelegationEnabled ?? this.state.preferences.computerDelegationEnabled) && !this.state.models.some(model => model.id === computerModel)) throw new Error('Bitte zuerst ein verfügbares Computer-Modell auswählen.');
     const dialogChanged = patch.dialogModel !== undefined && patch.dialogModel !== this.state.preferences.dialogModel;

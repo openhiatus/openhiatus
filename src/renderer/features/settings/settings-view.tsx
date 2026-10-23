@@ -3,7 +3,7 @@ import { useId, useRef, useState, type KeyboardEvent } from 'react';
 import { AudioLines, ChevronDown, Headphones, KeyRound, Keyboard, LoaderCircle, Mic, Monitor, SlidersHorizontal, Square, Volume2 } from 'lucide-react';
 import type { PreferencesPatch, Snapshot } from '../../../shared/contracts';
 import { COMPUTER_DETAIL_FACTORS, COMPUTER_OVERVIEW_FACTORS } from '../../../shared/computer-views';
-import { COMPUTER_IMAGE_RETENTION_CALLS } from '../../../shared/computer-task-settings';
+import { COMPUTER_IMAGE_RETENTION_CALLS, COMPUTER_WORKING_MEMORY_CALLS } from '../../../shared/computer-task-settings';
 import { ProvidersView } from '../../ProvidersView';
 import type { AudioPhase } from '../voice';
 
@@ -58,6 +58,7 @@ export function SettingsView({ state, workBusy, summaryInProgress, voice, onPref
   const overviewFactor = state?.preferences.computerOverviewScaleDivisor ?? 1;
   const detailFactor = state?.preferences.computerDetailScaleDivisor ?? 1;
   const imageRetention = state?.preferences.computerImageRetentionCalls ?? 0;
+  const workingMemory = state?.preferences.computerWorkingMemoryCalls ?? 0;
   const computerModel = state?.preferences.computerModel ?? '';
   const computerModels = state?.models ?? [];
   const computerConfigured = computerModels.some(model => model.id === computerModel);
@@ -168,7 +169,13 @@ export function SettingsView({ state, workBusy, summaryInProgress, voice, onPref
             {COMPUTER_IMAGE_RETENTION_CALLS.map(calls => <option key={calls} value={calls}>{calls === 0 ? 'Unbegrenzt (bisheriges Verhalten)' : calls === 1 ? 'Letzte Modellanfrage' : `Letzte ${calls} Modellanfragen`}</option>)}
             {!COMPUTER_IMAGE_RETENTION_CALLS.some(calls => calls === imageRetention) && <option value={imageRetention}>Letzte {imageRetention} Modellanfragen (aktuell)</option>}
           </select><ChevronDown size={15} aria-hidden="true" /></div>
-          <p className="billing-note" id={`${id}-computer-image-retention-description`}>Zählt Modellanfragen, keine Klicks. Ältere Bilder werden nicht mehr mitgeschickt. Das Modell soll wichtige Beobachtungen kurz im Text festhalten. Die Einstellungen gelten auch ohne eigenes Computer-Modell.</p>
+          <p className="billing-note" id={`${id}-computer-image-retention-description`}>Zählt Modellanfragen, keine Klicks. Die Auswahl begrenzt auch die Zahl der Aufnahmen. Ältere Bilder werden nicht mehr mitgeschickt. Das Modell kann wichtige Beobachtungen kurz im Text festhalten; nur die aktuelle Arbeitsnotiz bleibt erhalten (max. 240 Zeichen). Die Einstellungen gelten auch ohne eigenes Computer-Modell.</p>
+          <label className="field-label" htmlFor={`${id}-computer-working-memory`}>Arbeitsgedächtnis im Modellkontext</label>
+          <div className="select-wrap"><select id={`${id}-computer-working-memory`} value={workingMemory} disabled={!ready}
+            aria-describedby={`${id}-computer-working-memory-description`} onChange={event => preference({ computerWorkingMemoryCalls: Number(event.target.value) })}>
+            {COMPUTER_WORKING_MEMORY_CALLS.map(calls => <option key={calls} value={calls}>{calls === 0 ? 'Bisherige Bedienhistorie' : `Letzte ${calls} Modellanfragen`}</option>)}
+          </select><ChevronDown size={15} aria-hidden="true" /></div>
+          <p className="billing-note" id={`${id}-computer-working-memory-description`}>Ältere Computeraufrufe und ihre Ergebnisse werden nach dieser Zahl von Modellanfragen nicht mehr mitgeschickt. Die aktuelle Kurznotiz (max. 240 Zeichen) wird im bestehenden Aufruf erneuert, ohne zusätzliche Zusammenfassungsanfrage. Nutzerauftrag, Nutzertexte und Dateien bleiben erhalten. Neue Aufträge übernehmen die ausgewählte Grenze; laufende Aufträge behalten ihre Einstellung.</p>
           <label className="settings-toggle"><span><strong>Eigenes Computer-Modell verwenden</strong><small>Das Arbeitsmodell plant und prüft. Das Computer-Modell bekommt begrenzte Bedienaufträge und die Bildschirmbilder.</small></span><input type="checkbox" checked={state?.preferences.computerDelegationEnabled === true}
             disabled={computerSettingsBusy || !computerConfigured} aria-describedby={`${id}-computer-model-description`} onChange={event => preference({ computerDelegationEnabled: event.target.checked })} /></label>
           <label className="field-label" htmlFor={`${id}-computer-model`}>Computer-Modell</label>

@@ -73,6 +73,7 @@ async function createApp(): Promise<void> {
   });
   const runtime = new PiAdapter({ ...runtimeOptions, role: 'worker', tools: createToolRegistry([computerTools()]),
     getComputerImageRetentionCalls: () => controller?.snapshot().preferences.computerImageRetentionCalls ?? 0,
+    getComputerWorkingMemoryCalls: () => controller?.snapshot().preferences.computerWorkingMemoryCalls ?? 0,
     getIdentityInstructions: () => controller?.identityInstructions() ?? '', onEvent: event => controller?.handle(event) });
   const dialogRuntime = new PiAdapter({ ...runtimeOptions, role: 'dialog', getIdentityInstructions: () => controller?.identityInstructions() ?? '',
     tools: createToolRegistry([{ bind: () => ({ tools: (controller?.dialogTools() ?? []).map(definition => defineTool({
@@ -89,11 +90,13 @@ async function createApp(): Promise<void> {
       getOverviewScaleDivisor: () => computer.overviewScaleDivisor,
       getDetailScaleDivisor: () => computer.detailScaleDivisor ?? 1,
       createWorker: (onEvent, tools, instructions) => new PiAdapter({ ...runtimeOptions, role: 'worker', computerOnly: true, instructions, tools,
-        computerImageRetentionCalls: computer.imageRetentionCalls ?? 0, onEvent }),
+        computerImageRetentionCalls: computer.imageRetentionCalls ?? 0,
+        computerWorkingMemoryCalls: computer.workingMemoryCalls ?? 0, onEvent }),
     }) : createComputerToolContribution({ getOverviewScaleDivisor: () => computer?.overviewScaleDivisor ?? 1,
       getDetailScaleDivisor: () => computer?.detailScaleDivisor ?? 1 });
     return new PiAdapter({ ...runtimeOptions, role: 'worker',
       computerImageRetentionCalls: computer?.imageRetentionCalls ?? 0,
+      computerWorkingMemoryCalls: computer?.workingMemoryCalls ?? 0,
       ...(computer?.delegationEnabled ? { instructions: `${AGENT_INSTRUCTIONS}\n\n${COMPUTER_PLANNER_INSTRUCTIONS}` } : {}),
       tools: createToolRegistry([desktop, serviceBroker.createReadTools(job.id)]),
       getIdentityInstructions: () => job.identityInstructions ?? '', onEvent });

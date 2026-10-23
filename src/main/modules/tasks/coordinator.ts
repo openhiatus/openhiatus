@@ -18,7 +18,7 @@ export interface BackgroundTaskPorts {
   createWorker(onEvent: (event: AgentEvent) => void, job: BackgroundJob): AgentAdapter;
   access: { assertFullAccess(): void; blocked(): boolean; };
   settings(): { model: string; progressSpeech: boolean; computerDelegationEnabled?: boolean; computerModel?: string; computerFast?: boolean; computerOverviewScaleDivisor?: number;
-    computerDetailScaleDivisor?: number; computerImageRetentionCalls?: number };
+    computerDetailScaleDivisor?: number; computerImageRetentionCalls?: number; computerWorkingMemoryCalls?: number };
   context: {
     skills(query: string, maxBytes: number): string;
     capabilities(): string;
@@ -134,7 +134,8 @@ export class BackgroundTaskCoordinator {
       const settings = this.ports.settings();
       const computer = parseComputerTaskSettings({ delegationEnabled: settings.computerDelegationEnabled === true, model: settings.computerModel ?? '',
         fast: settings.computerFast !== false, overviewScaleDivisor: settings.computerOverviewScaleDivisor ?? 1,
-        detailScaleDivisor: settings.computerDetailScaleDivisor ?? 1, imageRetentionCalls: settings.computerImageRetentionCalls ?? 0 });
+        detailScaleDivisor: settings.computerDetailScaleDivisor ?? 1, imageRetentionCalls: settings.computerImageRetentionCalls ?? 0,
+        workingMemoryCalls: settings.computerWorkingMemoryCalls ?? 0 });
       const frozen: AdmissionContext = { documents: structuredClone(this.ports.memory?.documents() ?? []), model: settings.model, computer,
         capabilities: this.clean(this.ports.context.capabilities()), favorites: this.ports.context.favorites() };
       const generation = this.generation, request = structuredClone(input);

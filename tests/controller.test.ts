@@ -64,13 +64,18 @@ test('direct controller image settings reject invalid values without changing st
   const f = fixture();
   assert.equal(f.app.snapshot().preferences.computerDetailScaleDivisor, 1);
   assert.equal(f.app.snapshot().preferences.computerImageRetentionCalls, 0);
-  await f.app.savePreferences({ computerDetailScaleDivisor: 2, computerImageRetentionCalls: 3 });
+  assert.equal(f.app.snapshot().preferences.computerWorkingMemoryCalls, 0);
+  await f.app.savePreferences({ computerDetailScaleDivisor: 2, computerImageRetentionCalls: 3, computerWorkingMemoryCalls: 15 });
   const before = f.app.snapshot().preferences;
   assert.equal(before.computerDelegationEnabled, false);
   assert.equal(before.computerDetailScaleDivisor, 2); assert.equal(before.computerImageRetentionCalls, 3);
+  assert.equal(before.computerWorkingMemoryCalls, 15);
   for (const patch of [{ computerDetailScaleDivisor: 3 }, { computerDetailScaleDivisor: null },
     { computerDetailScaleDivisor: undefined }, { computerImageRetentionCalls: -1 }, { computerImageRetentionCalls: 11 },
-    { computerImageRetentionCalls: 1.5 }, { computerImageRetentionCalls: '3' }, { computerImageRetentionCalls: undefined }]) {
+    { computerImageRetentionCalls: 1.5 }, { computerImageRetentionCalls: '3' }, { computerImageRetentionCalls: undefined },
+    { computerWorkingMemoryCalls: -1 }, { computerWorkingMemoryCalls: 1 }, { computerWorkingMemoryCalls: 14 },
+    { computerWorkingMemoryCalls: 16 }, { computerWorkingMemoryCalls: 1.5 }, { computerWorkingMemoryCalls: '15' },
+    { computerWorkingMemoryCalls: null }, { computerWorkingMemoryCalls: undefined }]) {
     await assert.rejects(f.app.savePreferences(patch as never));
     assert.deepEqual(f.app.snapshot().preferences, before);
   }
