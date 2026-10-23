@@ -5,7 +5,7 @@
 openHiatus is a desktop app that combines your choice of AI models, speech services, and a personal memory. You keep the conversation going while up to two tasks run in the background, and each task returns a result you can trace.
 
 ![Status: alpha](https://img.shields.io/badge/status-alpha-orange)
-![Version 0.1.6](https://img.shields.io/badge/version-0.1.5-blue)
+![Version 0.1.7](https://img.shields.io/badge/version-0.1.7-blue)
 ![Platform: Windows x64](https://img.shields.io/badge/platform-Windows%20x64-0078D6)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green)
 
@@ -50,6 +50,8 @@ The app interface is currently in German. English meanings are shown in parenthe
 3. **Speech (optional):** Under **Einstellungen → Sprache & Geräte** (Settings → Speech & devices), add your Inworld credentials, choose your audio devices, and run the speech test. Text input works without a speech service.
 
 Model and speech providers are used with your own accounts. Their availability, usage limits, and costs depend on the service you choose.
+
+Spoken replies include the actual answer. The system prompt asks the model to return an `openhiatus-reply` block with two fields: `spoken`, a self-contained answer of at most 450 characters including important limitations, and `text`, the complete written reply. Both are produced in the same model request. The app accepts speech up to 500 characters unchanged and shortens longer speech without failing the task. Only the full written answer appears in the conversation. Older plain-text replies remain supported, and malformed output stays recoverable without reading raw protocol data aloud. See the [structured-reply contract](docs/structured-replies.md).
 
 ### Keyboard shortcuts
 

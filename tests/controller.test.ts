@@ -43,6 +43,18 @@ test('changing a device ID without identity metadata cannot retain the previous 
   await f.app.dispose();
 });
 
+test('legacy direct-task completion scrubs secrets revealed by structured reply decoding', async () => {
+  const f = fixture(); await f.app.saveSpeechKey('synthetic-secret');
+  await f.app.send('Antworte auf die Frage.', 'encoded-direct');
+  const encoded = [...'synthetic-secret'].map(c => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0')).join('');
+  const raw = '```openhiatus-reply\n' + JSON.stringify({ spoken: 'Ergebnis synthetic-secret.', text: 'Geprüfter Text synthetic-secret.' }).replaceAll('synthetic-secret', encoded) + '\n```';
+  f.app.handle({ type: 'completed', status: 'completed', text: raw });
+  const text = f.app.snapshot().messages.at(-1)!.text;
+  assert.ok(!text.includes('synthetic-secret'));
+  assert.ok(text.startsWith('Geprüfter Text'));
+  await f.app.dispose();
+});
+
 test('computer delegation requires an available role and safely disables when its model disappears', async () => {
   const f = fixture();
   assert.equal(f.app.snapshot().preferences.computerDelegationEnabled, false);

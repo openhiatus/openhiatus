@@ -7,7 +7,10 @@ import assert from 'node:assert/strict';
 await mkdir('.test-data', { recursive: true });
 await mkdir('artifacts', { recursive: true });
 const profile = await mkdtemp(path.resolve('.test-data/conversation-ui-'));
-const replies = ['Präzise Grüße aus dem ersten Gespräch.', 'Der Gesprächsverlauf bleibt nach dem Neustart erhalten.'];
+const longOpening = 'Die Prüfung ist abgeschlossen. Zwei Angaben konnten noch nicht bestätigt werden.';
+const longAnswer = `## Vollständige Prüfdetails\n\n${'Ein zusätzlicher nachvollziehbarer Detailpunkt. '.repeat(80)}\n\n${longOpening}`;
+const replies = ['Präzise Grüße aus dem ersten Gespräch.', 'Der Gesprächsverlauf bleibt nach dem Neustart erhalten.',
+  '```openhiatus-reply\n' + JSON.stringify({ spoken: longOpening, text: longAnswer }) + '\n```'];
 const requests = [];
 const server = createServer(async (request, response) => {
   try {
@@ -90,9 +93,17 @@ try {
   await expect.poll(() => restarted.evaluate(async () => (await window.openhiatus.snapshot()).task.status), { timeout: 30000 }).toBe('completed');
   await checkHistory(restarted, 4, replies[1], 'second-reply');
   assert.equal(requests.length, 2);
+  await restarted.getByRole('textbox', { name: 'Dein Auftrag', exact: true }).fill('Gib das ausführliche Prüfergebnis aus.');
+  await restarted.getByRole('button', { name: 'Auftrag senden', exact: true }).click();
+  await expect.poll(() => restarted.evaluate(async () => (await window.openhiatus.snapshot()).task.status), { timeout: 30000 }).toBe('completed');
+  await checkHistory(restarted, 6, longAnswer, 'long-reply');
+  const spokenReply = await restarted.evaluate(async () => (await window.openhiatus.snapshot()).speech.at(-1)?.text);
+  assert.equal(spokenReply, longOpening, 'Speech must use the model-authored summary rather than extracting the written opening.');
+  assert.ok(spokenReply.length <= 500, 'The TTS cue must stay inside the technical speech budget.');
+  assert.equal(requests.length, 3, 'Speech shortening must not start an extra model request.');
   assert.deepEqual(exceptions, []);
   await restarted.screenshot({ path: 'artifacts/openhiatus-gespraech-neustart.png' });
-  const result = { status: 'passed', profile, requireContext, modelRequests: requests.length, checked: ['real SDK conversation through UI send', 'visible and persisted user/assistant messages', 'history survives restart', 'restart never repeats model work', 'second dialogue after restart', 'unknown context never claims a fresh conversation', 'no cloud requests or existing user profiles'], diagnostics };
+  const result = { status: 'passed', profile, requireContext, modelRequests: requests.length, checked: ['real SDK conversation through UI send', 'visible and persisted user/assistant messages', 'history survives restart', 'restart never repeats model work', 'second dialogue after restart', 'model-authored speech separated from full written answer without another model call', 'technical 500-character speech budget', 'unknown context never claims a fresh conversation', 'no cloud requests or existing user profiles'], diagnostics };
   await writeFile(path.join(profile, 'conversation-check.json'), JSON.stringify(result, null, 2), 'utf8');
   console.log(JSON.stringify(result, null, 2));
 } finally { if (instance) await instance.close(); server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }

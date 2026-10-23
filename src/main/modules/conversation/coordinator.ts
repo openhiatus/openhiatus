@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { AgentAdapter, AgentEvent, BackgroundJob, DynamicToolResponse, Message, Task } from '../../../shared/contracts';
+import { toSpokenAssistantReply } from '../../../shared/spoken-reply';
+import { parseAssistantReply } from '../../../shared/assistant-reply';
 
 /** Durable dialogue data projected into the application's existing snapshot and store. */
 export interface ConversationState {
@@ -217,14 +219,21 @@ export class ConversationCoordinator {
     this.task.status = event.status;
     if (event.error) this.task.error = this.ports.effects.clean(event.error);
     const answer = this.messages.find(message => message.id === this.turn?.answerId);
-    let additionalReply = this.ports.effects.clean(event.text || event.error || '').trim();
+    const decoded = parseAssistantReply(this.ports.effects.clean(event.text || event.error || ''));
+    const parsed = { ...decoded, text: this.ports.effects.clean(decoded.text),
+      ...(decoded.spoken === undefined ? {} : { spoken: this.ports.effects.clean(decoded.spoken) }) };
+    let additionalReply = parsed.text;
+    let spokenReply = parsed.spoken;
     for (const acknowledged of this.turn?.acknowledgements ?? []) {
       if (additionalReply === acknowledged) additionalReply = '';
       else if (additionalReply.startsWith(acknowledged)) additionalReply = additionalReply.slice(acknowledged.length).trim();
+      if (spokenReply === acknowledged) spokenReply = '';
+      else if (spokenReply?.startsWith(acknowledged)) spokenReply = spokenReply.slice(acknowledged.length).trim();
     }
     if (answer && additionalReply && additionalReply !== answer.text) answer.text = [answer.text, additionalReply].filter(Boolean).join('\n\n');
     if (answer && !answer.text && event.status !== 'completed') answer.text = this.task.error || 'Das Gespräch wurde unterbrochen.';
-    if (additionalReply) this.ports.effects.speak(additionalReply.length <= 1600 ? additionalReply : 'Meine Antwort steht vollständig im Gespräch.');
+    if (parsed.invalid) this.ports.effects.reportError(new Error('Die Antwort hatte ein ungültiges Ausgabeformat. Verfügbare Antwortdaten bleiben erhalten.'));
+    if (additionalReply) this.ports.effects.speak(toSpokenAssistantReply({ text: additionalReply, spoken: spokenReply, unreadable: parsed.unreadable }));
     if (answer && !answer.text) this.messages = this.messages.filter(message => message.id !== answer.id);
     this.finish(answer);
     this.changed(); this.queueNext();

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { BackgroundTaskCoordinator, type BackgroundTaskPorts, type TaskAdmission } from '../src/main/modules/tasks';
 import type { AgentAdapter, AgentEvent, BackgroundJob, Message, SpeechCue } from '../src/shared/contracts';
 import type { CoreProposalInput, MemoryPeriodPage } from '../src/shared/memory';
+import { parseMemoryReply } from '../src/main/instructions';
 
 const tick = () => new Promise<void>(resolve => setImmediate(resolve));
 class Worker implements AgentAdapter {
@@ -213,6 +214,105 @@ test('progress, frames and final speech remain attributed to their job and late 
   f.workers[1].finish('Geprüftes Ergebnis synthetic-secret.');
   assert.equal(f.cues.at(-1)?.jobId, second.job.id); assert.equal(f.messages[0].jobId, second.job.id);
   assert.ok(!f.messages[0].text.includes('synthetic-secret')); await f.tasks.dispose();
+});
+
+test('a medium-length task answer speaks its result and uncertainty instead of replacing it with a pointer', async () => {
+  const f = fixture(); const accepted = await f.tasks.accept(f.admission('version-check')); await tick();
+  const result = 'Nein, die installierte CLI-Version 1.2.3 ist nicht aktuell; angeboten wird 1.2.4. '
+    + 'Die Version der Windows-App habe ich noch nicht geprüft. '
+    + 'Der Vergleich bezieht sich ausschließlich auf die überprüfte CLI-Installation. '
+    + 'Ein Update wurde nicht gestartet und keine laufende Sitzung verändert. '
+    + 'Die Anmeldung ist davon unabhängig und muss für eine reine Versionsprüfung nicht erneuert werden. '
+    + 'Die App kann einen eigenen Aktualisierungsweg verwenden; daraus folgt kein bestätigter App-Stand.';
+  assert.ok(result.length > 450 && result.length < 1200);
+  f.workers[0].finish(result); await tick();
+  assert.equal(f.tasks.get(accepted.job.id).result, result);
+  assert.equal(f.messages[0].text, `Aufgabe version-check\n\n${result}`);
+  assert.equal(f.cues.at(-1)?.text, result);
+  assert.ok(f.cues.at(-1)!.text.length <= 500);
+  assert.equal(f.cues.at(-1)?.jobId, accepted.job.id);
+  await f.tasks.dispose();
+});
+
+test('long task results keep a useful spoken opening while full detail and secret scrubbing remain in the journal', async () => {
+  const f = fixture(); const accepted = await f.tasks.accept(f.admission('long-result')); await tick();
+  const lead = 'Die Prüfung ist abgeschlossen. Ein Teil der Angaben konnte nicht bestätigt werden.';
+  const result = `${lead}\n\n## Einzelheiten\n${'Ein zusätzlicher geprüfter Detailpunkt. '.repeat(80)}synthetic-secret`;
+  f.workers[0].finish(result); await tick();
+  const cue = f.cues.at(-1)!;
+  assert.ok(cue.text.startsWith(`Aufgabe long-result: ${lead}`));
+  assert.ok(cue.text.length <= 500 && cue.text.length < result.length);
+  assert.ok(!cue.text.includes('synthetic-secret'));
+  assert.ok(f.messages[0].text.includes('Einzelheiten') && f.messages[0].text.includes('[entfernt]'));
+  assert.equal(f.tasks.get(accepted.job.id).result, result.replaceAll('synthetic-secret', '[entfernt]'));
+  await f.tasks.dispose();
+});
+
+test('failed task speech includes the actual failure reason even when its details are long', async () => {
+  const f = fixture(); const accepted = await f.tasks.accept(f.admission('failed-result')); await tick();
+  const reason = 'Die Verbindung konnte nicht bestätigt werden. Es wurde keine Änderung ausgeführt.';
+  const error = `${reason} ${'Weitere technische Einzelheiten zum Fehler. '.repeat(80)}`;
+  f.workers[0].emit({ type: 'completed', status: 'failed', error }); await tick();
+  assert.equal(f.tasks.get(accepted.job.id).status, 'failed');
+  assert.ok(f.cues.at(-1)?.text.startsWith(`Aufgabe failed-result: Die Aufgabe wurde nicht abgeschlossen. ${reason}`));
+  assert.ok(f.cues.at(-1)!.text.length <= 500);
+  assert.ok(f.messages[0].text.includes(error));
+  await f.tasks.dispose();
+});
+
+test('a task uses the model-authored speech field independently of the full written answer', async () => {
+  const f = fixture(); f.ports.parseReply = parseMemoryReply;
+  const accepted = await f.tasks.accept(f.admission('structured-result')); await tick();
+  const spoken = 'Die CLI ist nicht aktuell. Die Windows-App konnte ich noch nicht prüfen.';
+  const text = `## Vollständiger Prüfbericht\n\n${'Ein nachvollziehbarer technischer Detailpunkt. '.repeat(80)}\n\n${spoken}`;
+  f.workers[0].finish('```openhiatus-reply\n' + JSON.stringify({ spoken, text }) + '\n```'); await tick();
+  assert.equal(f.cues.at(-1)?.text, spoken);
+  assert.equal(f.cues.at(-1)?.jobId, accepted.job.id);
+  assert.equal(f.tasks.get(accepted.job.id).result, text);
+  assert.equal(f.messages[0].text, `Aufgabe structured-result\n\n${text}`);
+  assert.ok(!f.messages[0].text.includes('openhiatus-reply'));
+  await f.tasks.dispose();
+});
+
+test('a task accepts the 450-to-500 character margin and excessive speech never aborts the result', async () => {
+  const f = fixture(); f.ports.parseReply = parseMemoryReply;
+  const first = await f.tasks.accept(f.admission('speech-margin')); await tick();
+  const spoken = 'Nein, dieser Stand ist nicht bestätigt. ' + 'Eine weitere Prüfung ist erforderlich. '.repeat(11);
+  assert.ok(spoken.trim().length > 450 && spoken.trim().length <= 500);
+  f.workers[0].finish('```openhiatus-reply\n' + JSON.stringify({ spoken, text: 'Vollständige Prüfdetails.' }) + '\n```'); await tick();
+  assert.equal(f.cues.at(-1)?.text, spoken.trim());
+  assert.equal(f.tasks.get(first.job.id).status, 'completed');
+  const second = await f.tasks.accept(f.admission('speech-overflow')); await tick();
+  f.workers[1].finish('```openhiatus-reply\n' + JSON.stringify({ spoken: spoken.repeat(5), text: 'Weitere vollständige Prüfdetails.' }) + '\n```'); await tick();
+  assert.equal(f.tasks.get(second.job.id).status, 'completed');
+  assert.ok(f.cues.at(-1)!.text.length <= 500);
+  assert.ok(f.cues.at(-1)?.text.includes('nicht bestätigt'));
+  assert.ok(f.messages.at(-1)?.text.endsWith('Weitere vollständige Prüfdetails.'));
+  await f.tasks.dispose();
+});
+
+test('decoded structured task fields are scrubbed again before journaling or speaking', async () => {
+  const f = fixture(); f.ports.parseReply = parseMemoryReply;
+  const accepted = await f.tasks.accept(f.admission('encoded-secret')); await tick();
+  const encoded = [...'synthetic-secret'].map(c => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0')).join('');
+  const raw = '```openhiatus-reply\n' + JSON.stringify({ spoken: 'Ergebnis synthetic-secret.', text: 'Geprüfter Text synthetic-secret.' }).replaceAll('synthetic-secret', encoded) + '\n```';
+  f.workers[0].finish(raw); await tick();
+  assert.ok(f.messages[0].text.includes('[entfernt]'));
+  assert.ok(!JSON.stringify(f.messages).includes('synthetic-secret'));
+  assert.ok(!f.tasks.get(accepted.job.id).result?.includes('synthetic-secret'));
+  assert.equal(f.cues.at(-1)?.text, 'Ergebnis [entfernt].');
+  await f.tasks.dispose();
+});
+
+test('failed tasks never read an unreadable reply envelope as their error reason', async () => {
+  const f = fixture(); f.ports.parseReply = parseMemoryReply;
+  const accepted = await f.tasks.accept(f.admission('invalid-failure')); await tick();
+  f.workers[0].emit({ type: 'completed', status: 'failed', text: '{"spoken":invalid,"text":"rawProtocol"}' }); await tick();
+  assert.equal(f.tasks.get(accepted.job.id).status, 'failed');
+  const cue = f.cues.at(-1)!.text;
+  assert.ok(cue.includes('nicht abgeschlossen') && cue.includes('nicht vollständig aufbereitet'));
+  assert.ok(!cue.includes('rawProtocol') && !cue.includes('spoken'));
+  await f.tasks.dispose();
 });
 
 test('archive paging stays within the same worker and duplicate pages fail only their owning job', async () => {
