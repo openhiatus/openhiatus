@@ -4,6 +4,7 @@ import type { BackgroundJobView } from '../../../shared/contracts';
 import { MessageBody } from '../conversation';
 import { formatTaskNumber, formatTaskTime, taskFilters, taskIsActive, taskMatches, taskStatusDescription, taskStatusLabel, tasksForFilter, taskUsageLabel, type TaskFilter } from './presentation';
 import { TaskStopActions } from './stop-actions';
+import { TaskModelMetrics } from './model-metrics';
 
 export interface TasksViewProps {
   jobs: readonly BackgroundJobView[];
@@ -44,6 +45,7 @@ function TaskDetails({ job, busy, onStop, onError }: { job: BackgroundJobView; b
         <div><dt>Cache gelesen</dt><dd>{formatTaskNumber(job.usage.cacheReadTokens)}</dd></div><div><dt>Cache geschrieben</dt><dd>{formatTaskNumber(job.usage.cacheWriteTokens)}</dd></div>
       </dl>}
     </section>
+    <TaskModelMetrics job={job} />
     <details className="tasks-stored-context"><summary>Gespeicherter Auftragskontext<ChevronDown size={16} aria-hidden="true" /></summary><p className="tasks-prompt">{job.prompt}</p></details>
   </article>;
 }

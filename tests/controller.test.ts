@@ -43,6 +43,45 @@ test('changing a device ID without identity metadata cannot retain the previous 
   await f.app.dispose();
 });
 
+test('computer delegation requires an available role and safely disables when its model disappears', async () => {
+  const f = fixture();
+  assert.equal(f.app.snapshot().preferences.computerDelegationEnabled, false);
+  assert.equal(f.app.snapshot().preferences.computerFast, true);
+  await assert.rejects(f.app.savePreferences({ computerDelegationEnabled: true }), /Computer-Modell/);
+  await assert.rejects(f.app.savePreferences({ computerModel: 'unavailable', computerDelegationEnabled: true }), /nicht verfügbar/);
+  await assert.rejects(f.app.savePreferences({ computerFast: 'true' } as never), /Fast-Einstellung/);
+  await f.app.savePreferences({ computerModel: 'test-model', computerDelegationEnabled: true, computerFast: false });
+  assert.equal(f.app.snapshot().preferences.computerDelegationEnabled, true);
+  assert.equal(f.app.snapshot().preferences.model, 'test-model');
+  f.app.handle({ type: 'models', models: [{ id: 'replacement', label: 'Other model' }] });
+  assert.equal(f.app.snapshot().preferences.computerModel, '');
+  assert.equal(f.app.snapshot().preferences.computerDelegationEnabled, false);
+  await f.app.savePreferences({ computerModel: '', computerDelegationEnabled: false });
+  await f.app.dispose();
+});
+
+test('direct controller image settings reject invalid values without changing state', async () => {
+  const f = fixture();
+  assert.equal(f.app.snapshot().preferences.computerDetailScaleDivisor, 1);
+  assert.equal(f.app.snapshot().preferences.computerImageRetentionCalls, 0);
+  assert.equal(f.app.snapshot().preferences.computerWorkingMemoryCalls, 0);
+  await f.app.savePreferences({ computerDetailScaleDivisor: 2, computerImageRetentionCalls: 3, computerWorkingMemoryCalls: 15 });
+  const before = f.app.snapshot().preferences;
+  assert.equal(before.computerDelegationEnabled, false);
+  assert.equal(before.computerDetailScaleDivisor, 2); assert.equal(before.computerImageRetentionCalls, 3);
+  assert.equal(before.computerWorkingMemoryCalls, 15);
+  for (const patch of [{ computerDetailScaleDivisor: 3 }, { computerDetailScaleDivisor: null },
+    { computerDetailScaleDivisor: undefined }, { computerImageRetentionCalls: -1 }, { computerImageRetentionCalls: 11 },
+    { computerImageRetentionCalls: 1.5 }, { computerImageRetentionCalls: '3' }, { computerImageRetentionCalls: undefined },
+    { computerWorkingMemoryCalls: -1 }, { computerWorkingMemoryCalls: 1 }, { computerWorkingMemoryCalls: 14 },
+    { computerWorkingMemoryCalls: 16 }, { computerWorkingMemoryCalls: 1.5 }, { computerWorkingMemoryCalls: '15' },
+    { computerWorkingMemoryCalls: null }, { computerWorkingMemoryCalls: undefined }]) {
+    await assert.rejects(f.app.savePreferences(patch as never));
+    assert.deepEqual(f.app.snapshot().preferences, before);
+  }
+  await f.app.dispose();
+});
+
 test('computer previews are transient and late frames after Stop are not published', async () => {
   const f = fixture();
   const frame: ComputerFrame = { dataUrl: 'data:image/png;base64,cHJpdmF0ZS1zY3JlZW4=', frameId: 'frame-test', width: 10, height: 10, at: new Date().toISOString() };

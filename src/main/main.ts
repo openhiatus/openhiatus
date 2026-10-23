@@ -8,6 +8,8 @@ import { PiAdapter } from './pi';
 import { createToolRegistry, defineTool } from './modules/tools';
 import { ServiceBroker } from './modules/services';
 import { createComputerToolContribution } from './platform/tools';
+import { createDelegatedComputerToolContribution } from './platform/tools/computer-delegation';
+import { AGENT_INSTRUCTIONS, COMPUTER_PLANNER_INSTRUCTIONS } from './instructions';
 import { ProviderStore, ModelClient } from './providers';
 import { StateStore, CredentialStore } from './storage';
 import { WorkerStateStore, WorkerMemoryStore } from './platform/persistence';
@@ -65,7 +67,13 @@ async function createApp(): Promise<void> {
   const runtimeOptions = { executable: process.execPath, hostEntry: path.join(__dirname, 'agent-host.mjs'), processHost, home, workspace, providers };
   services = new ServiceBroker();
   const serviceBroker = services;
-  const runtime = new PiAdapter({ ...runtimeOptions, role: 'worker', tools: createToolRegistry([createComputerToolContribution()]),
+  const computerTools = () => createComputerToolContribution({
+    getOverviewScaleDivisor: () => controller?.snapshot().preferences.computerOverviewScaleDivisor ?? 1,
+    getDetailScaleDivisor: () => controller?.snapshot().preferences.computerDetailScaleDivisor ?? 1,
+  });
+  const runtime = new PiAdapter({ ...runtimeOptions, role: 'worker', tools: createToolRegistry([computerTools()]),
+    getComputerImageRetentionCalls: () => controller?.snapshot().preferences.computerImageRetentionCalls ?? 0,
+    getComputerWorkingMemoryCalls: () => controller?.snapshot().preferences.computerWorkingMemoryCalls ?? 0,
     getIdentityInstructions: () => controller?.identityInstructions() ?? '', onEvent: event => controller?.handle(event) });
   const dialogRuntime = new PiAdapter({ ...runtimeOptions, role: 'dialog', getIdentityInstructions: () => controller?.identityInstructions() ?? '',
     tools: createToolRegistry([{ bind: () => ({ tools: (controller?.dialogTools() ?? []).map(definition => defineTool({
@@ -75,9 +83,24 @@ async function createApp(): Promise<void> {
       },
     })) }) }]), onEvent: event => controller?.handleDialog(event),
   });
-  const createWorker = (onEvent: (event: AgentEvent) => void, job: BackgroundJob) => new PiAdapter({ ...runtimeOptions, role: 'worker',
-    tools: createToolRegistry([createComputerToolContribution(), serviceBroker.createReadTools(job.id)]),
-    getIdentityInstructions: () => job.identityInstructions ?? '', onEvent });
+  const createWorker = (onEvent: (event: AgentEvent) => void, job: BackgroundJob) => {
+    // Admission captured these values before asynchronous memory lookup/queueing.
+    const computer = job.computer;
+    const desktop = computer?.delegationEnabled ? createDelegatedComputerToolContribution({ model: computer.model, fast: computer.fast,
+      getOverviewScaleDivisor: () => computer.overviewScaleDivisor,
+      getDetailScaleDivisor: () => computer.detailScaleDivisor ?? 1,
+      createWorker: (onEvent, tools, instructions) => new PiAdapter({ ...runtimeOptions, role: 'worker', computerOnly: true, instructions, tools,
+        computerImageRetentionCalls: computer.imageRetentionCalls ?? 0,
+        computerWorkingMemoryCalls: computer.workingMemoryCalls ?? 0, onEvent }),
+    }) : createComputerToolContribution({ getOverviewScaleDivisor: () => computer?.overviewScaleDivisor ?? 1,
+      getDetailScaleDivisor: () => computer?.detailScaleDivisor ?? 1 });
+    return new PiAdapter({ ...runtimeOptions, role: 'worker',
+      computerImageRetentionCalls: computer?.imageRetentionCalls ?? 0,
+      computerWorkingMemoryCalls: computer?.workingMemoryCalls ?? 0,
+      ...(computer?.delegationEnabled ? { instructions: `${AGENT_INSTRUCTIONS}\n\n${COMPUTER_PLANNER_INSTRUCTIONS}` } : {}),
+      tools: createToolRegistry([desktop, serviceBroker.createReadTools(job.id)]),
+      getIdentityInstructions: () => job.identityInstructions ?? '', onEvent });
+  };
   const speech = new SpeechService({ getKey: () => credentials.get('inworld'), getVoice: () => controller?.snapshot().preferences.voiceId || 'Dennis', cacheDirectory: path.join(dataDirectory, 'speech-cache') });
   controller = new AppController({ version: app.getVersion(), store, credentials, speech, memory, providers, chatgpt, modelClient: new ModelClient(providers), agent: runtime, dialogAgent: dialogRuntime, createWorker, workspace, profileDirectory: dataDirectory,
     publishComputerFrame: frame => { if (window && !window.isDestroyed()) window.webContents.send('openhiatus:computer-frame', decodeComputerFrame(frame)); },

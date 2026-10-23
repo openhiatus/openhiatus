@@ -64,6 +64,22 @@ Choose a specific microphone and speaker to keep using those devices. A disconne
 
 You can also stop individual tasks in the task view. If another program already uses a global hotkey, the app shows a notice, and the buttons in the window keep working.
 
+### Experimental desktop views (source builds)
+
+Under **Einstellungen → Bedienung → Bildschirmübersicht** (Settings → Controls → Screen overview), choose a true scaling factor of 1:4, 1:8, 1:16 or 1:32. The next desktop task receives a small overview and at most one detail crop. Automatic detail resolution is independently selectable as 1:1, 1:2 or 1:4. A local pixel comparison selects changed regions; the model can request an original-resolution crop with `inspect` or predict the next region with an action. The first observation has no change history and starts with the overview. If orientation is insufficient, the model can request `screenshot` with `resolution: "original"` for one fresh, unscaled full-display image. Subsequent ordinary observations resume the configured factors. No additional model is used for selection. The app detects the primary display's resolution automatically.
+
+**Bildaufbewahrung** (Image retention) bounds both the lifetime and number of captured computer frames. With a value of 2, at most two captures are present and each is included in at most two model requests. New views of the same capture replace its earlier images without extending its lifetime. An optional working note supplied with an existing computer call is limited to 240 characters; only its latest version remains in the outgoing context. User attachments, unrelated tool images, and local audit logs are preserved. No additional summarization calls are made. Removing earlier images can reduce prompt-cache reuse, so reduced context alone does not establish a cost or speed improvement. See [the image-budget contract](docs/computer-use-image-budget.md).
+
+**Arbeitsgedächtnis** (Working memory) separately limits UI interaction history to 10 or 15 model requests. Older computer calls and their completed results are removed together, while the latest short working note remains. The host signals when that note should be replaced during an existing computer call. The user request, file/service data, and local logs are preserved. The compatible default keeps existing UI history; this experimental cutoff must be enabled deliberately.
+
+**Full screen, original-resolution details, and unlimited image retention remain the compatible defaults.** In a [four-run LibreOffice comparison](docs/computer-use-image-budget.md#manual-comparison-23-october-2026), the latest configuration reduced API-equivalent cost per computer call from about **USD 0.189 to USD 0.0144** (92.37%) while passing first-phase artifact acceptance. Its total task cost was USD 5.04; this is a single-task result using Standard API comparison prices, not a ChatGPT billing claim or a general guarantee. Smaller images can require more inspection steps. Only the primary display is supported. The [computer-use plan](docs/computer-use-uebersicht-und-detail-plan.md) documents the contract and comparison criteria.
+
+### Experimental separate computer model
+
+Under **Einstellungen → Bedienung → Bildschirmübersicht**, optionally enable **Eigenes Computer-Modell verwenden** (Use a separate computer model), select a model such as `gpt-6-luna`, and enable **Fast** for its requests. The work model keeps planning and checking the task. It delegates bounded UI subtasks through `computer_task`; the computer model receives screenshots and performs several observed actions before returning a text report. The work model can explicitly request screenshots for its own verification. The mode is off by default and changes apply to newly admitted tasks.
+
+The computer runtime has the desktop tool and a bounded result-reporting tool: no shell, file, skill, service or delegation tools. One host executor retains the existing frame, coordinate and Stop checks. Short observation handles reduce identifier copying; stale or misspelled handles are still rejected exactly. Subtasks are limited to 40 desktop calls and four minutes; reaching a limit returns control to the planner. Task details show usage and request timing by model, and distinguish requested Fast from the service tier actually returned by the provider. Fast currently requires an OpenAI Responses model. Availability and charges depend on your connection. End-to-end speed, cost and task accuracy need a fresh comparison; a cheaper model alone does not establish an improvement. See the [computer-model experiment](docs/computer-use-computermodell.md).
+
 ## Privacy and safety
 
 > [!IMPORTANT]
@@ -117,6 +133,9 @@ npm run test:ipc
 npm run test:storage-ui
 npm run test:memory-storage-ui
 npm run test:memory-ui
+npm run test:computer-images
+npm run test:computer-preview
+npm run test:computer-model-ui
 ```
 
 </details>

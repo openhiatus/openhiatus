@@ -2,6 +2,8 @@ import { APP_DISPLAY_NAME } from '../shared/branding';
 import { randomUUID } from 'node:crypto';
 import { nextReceipt, RECEIPT_PHRASES } from '../shared/receipts';
 import { favoriteLevel, parseSkillFavorites } from '../shared/skill-favorites';
+import { computerDetailDivisor } from '../shared/computer-views';
+import { computerImageRetentionCalls, computerWorkingMemoryCalls } from '../shared/computer-task-settings';
 import { favoriteSkillsContext } from './skill-favorites-context';
 import type { Activity, AudioClip, BackgroundJob, AgentAdapter, AgentEvent, ComputerFrame, Message, Preferences, SkillCatalog, Snapshot, SpeechCue, ProviderView, ProviderInput, DynamicFunctionTool, DynamicToolResponse, ChatGPTConnection } from '../shared/contracts';
 import { redact } from './redact';
@@ -92,6 +94,12 @@ export class AppController {
     saved.preferences.fullAccessAcknowledged = saved.preferences.fullAccessAcknowledged === true;
     saved.preferences.dialogModel ??= '';
     saved.preferences.memoryModel ??= '';
+    saved.preferences.computerModel ??= '';
+    saved.preferences.computerDelegationEnabled = saved.preferences.computerDelegationEnabled === true;
+    saved.preferences.computerFast ??= true;
+    saved.preferences.computerDetailScaleDivisor = computerDetailDivisor(saved.preferences.computerDetailScaleDivisor ?? 1);
+    saved.preferences.computerImageRetentionCalls = computerImageRetentionCalls(saved.preferences.computerImageRetentionCalls ?? 0);
+    saved.preferences.computerWorkingMemoryCalls = computerWorkingMemoryCalls(saved.preferences.computerWorkingMemoryCalls ?? 0);
     saved.preferences.chatgptBackgroundUsage = saved.preferences.chatgptBackgroundUsage === true;
     saved.task = recoverForegroundTask(saved.task);
     if ((!deps.dialogAgent || !deps.createWorker) && saved.jobs) saved.jobs = recoverBackgroundJobs(saved.jobs);
@@ -108,7 +116,7 @@ export class AppController {
       checkpointsBlocked: () => this.stopPending(),
       checkpointFailed: error => this.activity('error', 'Verlauf konnte nicht gespeichert werden', error instanceof Error ? error.message : 'Lokaler Schreibfehler'),
     });
-    this.modelManagement = new ModelManagementCoordinator({ model: saved.preferences.model, dialogModel: saved.preferences.dialogModel, memoryModel: saved.preferences.memoryModel }, {
+    this.modelManagement = new ModelManagementCoordinator({ model: saved.preferences.model, dialogModel: saved.preferences.dialogModel, memoryModel: saved.preferences.memoryModel, computerModel: saved.preferences.computerModel }, {
       providers: deps.providers, chatgpt: deps.chatgpt,
       lifecycle: {
         assertIdle: () => this.ensureIdle(), closed: () => this.closing, workRevision: () => this.workEpoch,
@@ -118,6 +126,7 @@ export class AppController {
       projection: { publish: state => {
         this.state.providers = state.providers; this.state.models = state.models; this.state.connections.agent = state.agent; this.state.connections.account = state.account;
         this.state.preferences = { ...this.state.preferences, ...state.selections };
+        if (!state.models.some(model => model.id === state.selections.computerModel)) this.state.preferences.computerDelegationEnabled = false;
         if (state.chatgpt) this.state.chatgpt = state.chatgpt;
       }, changed: save => this.changed(save) },
       clean: text => this.clean(text),
@@ -147,7 +156,12 @@ export class AppController {
       this.tasks = new BackgroundTaskCoordinator(saved.jobs ?? [], {
         createWorker: deps.createWorker,
         access: { assertFullAccess: () => this.requireFullAccess(), blocked: () => this.closing || this.shuttingDown || this.stopPending() },
-        settings: () => ({ model: this.state.preferences.model, progressSpeech: this.state.preferences.speakReplies && this.state.preferences.voiceConversation !== false }),
+        settings: () => ({ model: this.state.preferences.model, progressSpeech: this.state.preferences.speakReplies && this.state.preferences.voiceConversation !== false,
+          computerDelegationEnabled: this.state.preferences.computerDelegationEnabled === true, computerModel: this.state.preferences.computerModel ?? '',
+          computerFast: this.state.preferences.computerFast !== false, computerOverviewScaleDivisor: this.state.preferences.computerOverviewScaleDivisor ?? 1,
+          computerDetailScaleDivisor: this.state.preferences.computerDetailScaleDivisor ?? 1,
+          computerImageRetentionCalls: this.state.preferences.computerImageRetentionCalls ?? 0,
+          computerWorkingMemoryCalls: this.state.preferences.computerWorkingMemoryCalls ?? 0 }),
         context: { skills: (query, max) => this.skillContext(query, max), capabilities: () => this.capabilitiesDocument().prompt, favorites: () => this.favoriteContext() },
         memory: deps.memory ? {
           documents: () => this.instructionDocuments(), retrieve: (query, max) => this.retrieveMemory(query, max),
@@ -576,6 +590,13 @@ export class AppController {
       patch = { ...patch, outputDeviceLabel: patch.outputDeviceLabel ?? '', outputDeviceGroupId: patch.outputDeviceGroupId ?? '' };
     }
     this.modelManagement.validateSelections(patch);
+    if (patch.computerDelegationEnabled !== undefined && typeof patch.computerDelegationEnabled !== 'boolean') throw new Error('Ungültige Einstellung für das Computer-Modell.');
+    if (patch.computerFast !== undefined && typeof patch.computerFast !== 'boolean') throw new Error('Ungültige Fast-Einstellung für das Computer-Modell.');
+    if (Object.hasOwn(patch, 'computerDetailScaleDivisor')) computerDetailDivisor(patch.computerDetailScaleDivisor);
+    if (Object.hasOwn(patch, 'computerImageRetentionCalls')) computerImageRetentionCalls(patch.computerImageRetentionCalls);
+    if (Object.hasOwn(patch, 'computerWorkingMemoryCalls')) computerWorkingMemoryCalls(patch.computerWorkingMemoryCalls);
+    const computerModel = patch.computerModel ?? this.state.preferences.computerModel;
+    if ((patch.computerDelegationEnabled ?? this.state.preferences.computerDelegationEnabled) && !this.state.models.some(model => model.id === computerModel)) throw new Error('Bitte zuerst ein verfügbares Computer-Modell auswählen.');
     const dialogChanged = patch.dialogModel !== undefined && patch.dialogModel !== this.state.preferences.dialogModel;
     const workChanged = !this.deps.dialogAgent && patch.model !== undefined && patch.model !== this.state.preferences.model;
     if (patch.voiceConversation !== undefined && typeof patch.voiceConversation !== 'boolean') throw new Error('Ungültige Einstellung für den Sprachdialog.');

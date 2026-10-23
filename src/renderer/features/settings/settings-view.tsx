@@ -1,7 +1,9 @@
 import { AudioDeviceSelect } from './audio-device-select';
 import { useId, useRef, useState, type KeyboardEvent } from 'react';
-import { AudioLines, Headphones, KeyRound, Keyboard, LoaderCircle, Mic, SlidersHorizontal, Square, Volume2 } from 'lucide-react';
+import { AudioLines, ChevronDown, Headphones, KeyRound, Keyboard, LoaderCircle, Mic, Monitor, SlidersHorizontal, Square, Volume2 } from 'lucide-react';
 import type { PreferencesPatch, Snapshot } from '../../../shared/contracts';
+import { COMPUTER_DETAIL_FACTORS, COMPUTER_OVERVIEW_FACTORS } from '../../../shared/computer-views';
+import { COMPUTER_IMAGE_RETENTION_CALLS, COMPUTER_WORKING_MEMORY_CALLS } from '../../../shared/computer-task-settings';
 import { ProvidersView } from '../../ProvidersView';
 import type { AudioPhase } from '../voice';
 
@@ -53,6 +55,14 @@ export function SettingsView({ state, workBusy, summaryInProgress, voice, onPref
   const id = useId();
   const recording = voice.phase === 'recording' || voice.phase === 'mic-test';
   const ready = state !== undefined;
+  const overviewFactor = state?.preferences.computerOverviewScaleDivisor ?? 1;
+  const detailFactor = state?.preferences.computerDetailScaleDivisor ?? 1;
+  const imageRetention = state?.preferences.computerImageRetentionCalls ?? 0;
+  const workingMemory = state?.preferences.computerWorkingMemoryCalls ?? 0;
+  const computerModel = state?.preferences.computerModel ?? '';
+  const computerModels = state?.models ?? [];
+  const computerConfigured = computerModels.some(model => model.id === computerModel);
+  const computerSettingsBusy = !ready || workBusy || summaryInProgress;
 
   function preference(value: PreferencesPatch): void {
     try { void Promise.resolve(onPreference(value)).catch(onError); } catch (error) { onError(error); }
@@ -137,6 +147,47 @@ export function SettingsView({ state, workBusy, summaryInProgress, voice, onPref
             if (!event.target.checked) voice.stopEarcons(); preference({ earcons: event.target.checked });
           }} /></label>
           <label className="settings-toggle"><span><strong>Sprachgespräch</strong><small>Nach Ende der Aufnahme wird das erkannte Gesagte automatisch gesendet. Ausgeschaltet kannst du das Transkript vor dem Senden prüfen.</small></span><input type="checkbox" checked={state?.preferences.voiceConversation !== false} disabled={!ready} onChange={event => preference({ voiceConversation: event.target.checked })} /></label>
+        </section>
+        <section className="settings-card settings-computer">
+          <div className="settings-card-head"><span className="service-icon"><Monitor size={22} aria-hidden="true" /></span><div><h2>Bildschirmbilder</h2><p>Experimentell · gilt ab dem nächsten Desktop-Auftrag.</p></div></div>
+          <label className="field-label" htmlFor={`${id}-computer-overview`}>Auflösung der Übersicht</label>
+          <div className="select-wrap"><select id={`${id}-computer-overview`} value={overviewFactor} disabled={!ready}
+            aria-describedby={`${id}-computer-overview-description`} onChange={event => preference({ computerOverviewScaleDivisor: Number(event.target.value) })}>
+            {COMPUTER_OVERVIEW_FACTORS.map(factor => <option key={factor} value={factor}>{factor === 1 ? 'Vollbild (1:1)' : `Übersicht 1:${factor}`}</option>)}
+            {!COMPUTER_OVERVIEW_FACTORS.some(factor => factor === overviewFactor) && <option value={overviewFactor}>Übersicht 1:{overviewFactor} (aktuell)</option>}
+          </select><ChevronDown size={15} aria-hidden="true" /></div>
+          <p className="billing-note" id={`${id}-computer-overview-description`}>Das bedienende Modell erhält die Übersicht und bei Bedarf höchstens einen Detailausschnitt. Die Ausschnittgröße passt sich automatisch an die Bildschirmauflösung an. Eine kleinere Übersicht garantiert keine schnellere Bearbeitung.</p>
+          <label className="field-label" htmlFor={`${id}-computer-detail`}>Auflösung der Details</label>
+          <div className="select-wrap"><select id={`${id}-computer-detail`} value={detailFactor} disabled={!ready}
+            aria-describedby={`${id}-computer-detail-description`} onChange={event => preference({ computerDetailScaleDivisor: Number(event.target.value) })}>
+            {COMPUTER_DETAIL_FACTORS.map(factor => <option key={factor} value={factor}>{factor === 1 ? 'Original (1:1)' : `Details 1:${factor}`}</option>)}
+          </select><ChevronDown size={15} aria-hidden="true" /></div>
+          <p className="billing-note" id={`${id}-computer-detail-description`}>Bei 1:2 sind Breite und Höhe der automatischen Detailansicht halbiert, bei 1:4 geviertelt. Originalausschnitte bleiben auf Abruf verfügbar.</p>
+          <label className="field-label" htmlFor={`${id}-computer-image-retention`}>Bildaufbewahrung im Modellkontext</label>
+          <div className="select-wrap"><select id={`${id}-computer-image-retention`} value={imageRetention} disabled={!ready}
+            aria-describedby={`${id}-computer-image-retention-description`} onChange={event => preference({ computerImageRetentionCalls: Number(event.target.value) })}>
+            {COMPUTER_IMAGE_RETENTION_CALLS.map(calls => <option key={calls} value={calls}>{calls === 0 ? 'Unbegrenzt (bisheriges Verhalten)' : calls === 1 ? 'Letzte Modellanfrage' : `Letzte ${calls} Modellanfragen`}</option>)}
+            {!COMPUTER_IMAGE_RETENTION_CALLS.some(calls => calls === imageRetention) && <option value={imageRetention}>Letzte {imageRetention} Modellanfragen (aktuell)</option>}
+          </select><ChevronDown size={15} aria-hidden="true" /></div>
+          <p className="billing-note" id={`${id}-computer-image-retention-description`}>Zählt Modellanfragen, keine Klicks. Die Auswahl begrenzt auch die Zahl der Aufnahmen. Ältere Bilder werden nicht mehr mitgeschickt. Das Modell kann wichtige Beobachtungen kurz im Text festhalten; nur die aktuelle Arbeitsnotiz bleibt erhalten (max. 240 Zeichen). Die Einstellungen gelten auch ohne eigenes Computer-Modell.</p>
+          <label className="field-label" htmlFor={`${id}-computer-working-memory`}>Arbeitsgedächtnis im Modellkontext</label>
+          <div className="select-wrap"><select id={`${id}-computer-working-memory`} value={workingMemory} disabled={!ready}
+            aria-describedby={`${id}-computer-working-memory-description`} onChange={event => preference({ computerWorkingMemoryCalls: Number(event.target.value) })}>
+            {COMPUTER_WORKING_MEMORY_CALLS.map(calls => <option key={calls} value={calls}>{calls === 0 ? 'Bisherige Bedienhistorie' : `Letzte ${calls} Modellanfragen`}</option>)}
+          </select><ChevronDown size={15} aria-hidden="true" /></div>
+          <p className="billing-note" id={`${id}-computer-working-memory-description`}>Ältere Computeraufrufe und ihre Ergebnisse werden nach dieser Zahl von Modellanfragen nicht mehr mitgeschickt. Die aktuelle Kurznotiz (max. 240 Zeichen) wird im bestehenden Aufruf erneuert, ohne zusätzliche Zusammenfassungsanfrage. Nutzerauftrag, Nutzertexte und Dateien bleiben erhalten. Neue Aufträge übernehmen die ausgewählte Grenze; laufende Aufträge behalten ihre Einstellung.</p>
+          <label className="settings-toggle"><span><strong>Eigenes Computer-Modell verwenden</strong><small>Das Arbeitsmodell plant und prüft. Das Computer-Modell bekommt begrenzte Bedienaufträge und die Bildschirmbilder.</small></span><input type="checkbox" checked={state?.preferences.computerDelegationEnabled === true}
+            disabled={computerSettingsBusy || !computerConfigured} aria-describedby={`${id}-computer-model-description`} onChange={event => preference({ computerDelegationEnabled: event.target.checked })} /></label>
+          <label className="field-label" htmlFor={`${id}-computer-model`}>Computer-Modell</label>
+          <div className="select-wrap"><select id={`${id}-computer-model`} value={computerModel} disabled={computerSettingsBusy || !computerModels.length}
+            aria-describedby={`${id}-computer-model-description`} onChange={event => preference({ computerModel: event.target.value, ...(event.target.value === '' ? { computerDelegationEnabled: false } : {}) })}>
+            <option value="">{computerModels.length ? 'Computer-Modell auswählen' : 'Zuerst einen Anbieter einrichten'}</option>
+            {computerModel && !computerConfigured && <option value={computerModel}>{computerModel} – nicht verfügbar</option>}
+            {computerModels.map(model => <option key={model.id} value={model.id}>{model.label}</option>)}
+          </select><ChevronDown size={15} aria-hidden="true" /></div>
+          <label className="settings-toggle"><span><strong>Fast für das Computer-Modell</strong><small>Fordert die schnelle Verarbeitung beim Modellanbieter an.</small></span><input type="checkbox" checked={state?.preferences.computerFast !== false}
+            disabled={computerSettingsBusy || !computerConfigured} onChange={event => preference({ computerFast: event.target.checked })} /></label>
+          <p className="billing-note" id={`${id}-computer-model-description`}>Die getrennte Bedienung ist freiwillig und gilt ab dem nächsten Auftrag. Ohne Aktivierung bedient das Arbeitsmodell den Computer. Wähle ein Modell, das Bilder und Werkzeuge unterstützt. Fast wird separat angefordert; bei API-Zugängen können dafür höhere Kosten entstehen. Fast ist derzeit für ChatGPT- und OpenAI-Responses-Verbindungen umgesetzt.</p>
         </section>
         <section className="settings-card settings-shortcuts"><div className="settings-card-head"><span className="service-icon"><Keyboard size={22} aria-hidden="true" /></span><div><h2>Tastenkürzel</h2><p>Die wichtigsten Wege für Aufnahme, Versand und Stopp</p></div></div>
           <dl><div><dt><kbd>F8</kbd></dt><dd>Aufnahme starten oder beenden</dd></div><div><dt><kbd>F9</kbd></dt><dd>Den vorbereiteten Text senden</dd></div><div><dt><kbd>Strg</kbd><span> + </span><kbd>Enter</kbd></dt><dd>Text im Gespräch senden</dd></div><div><dt><kbd>Esc</kbd></dt><dd>Aufträge und Audio in openHiatus stoppen</dd></div><div><dt><kbd>Strg</kbd><span> + </span><kbd>Alt</kbd><span> + </span><kbd>F12</kbd></dt><dd>Globalen Stopp auslösen</dd></div></dl>

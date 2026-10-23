@@ -1,5 +1,71 @@
 # openHiatus – Testprotokoll
 
+## Berichte und Beobachtungskennungen – 23. Oktober 2026
+
+Die Computerlaufzeit erhält einen ausdrücklichen terminalen Berichtsrückweg. Begrenzte verschachtelte Beobachtungen und Tabellen mit mehr als 20 Zeilen werden als Daten transportiert; ein nützlicher Bericht wird nicht wegen einer undokumentierten kleinen Stringlisten-Grenze verworfen. Die fachliche Prüfung bleibt beim Arbeitsmodell. Der Berichtsabschluss beendet den Teilauftrag und wartet auf die bestehende Freigabe; er startet keine weitere Modellrunde. JSON-Textabschlüsse bleiben ein kompatibler Rückweg.
+
+Kurze pro Prozess eindeutige Aufnahme-/Ansichtskennungen ersetzen lange UUIDs im Computerwerkzeug. Alte, falsch übernommene oder fremde Handles werden weiterhin exakt abgewiesen. Die Regression prüft fehlende Eingabe bei Einzeichenfehlern, verbrauchte Aufnahmen und neue Kennungen nach Stopp. Sitzungs- und Prozesskontrollkennungen sind davon nicht betroffen.
+
+Bei einem sicher erkannten Treiberfehler vor dem Senden wird das nun ausdrücklich erklärt. Nach Kontrolle eines sichtbaren Menüs kann das Modell einen zulässigen Tastaturweg wählen. Bei unklarer oder bereits erfolgter Zustellung gelten weiterhin Bildprüfung und das Verbot blinder Wiederholung. Eine Integritätsblockade erhält keinen Umgehungshinweis. Die native Vordergrundprüfung wird nicht deaktiviert; eine universelle Behebung von Popup-Klickfehlern wird damit nicht behauptet.
+
+Architekturprüfung, Typprüfung und **629 Tests** bestehen ohne Fehler oder Auslassungen. Der anschließende Build und die versteckte Computer-Vorschau bestehen. Die echten Pi-/lokalen Responses-Prüfungen bestätigen den terminalen Bericht ohne Folgerunde, vollständige strukturierte Zeilenlisten und die Freigabe einer begonnenen synthetischen Eingabe vor Rückgabe. Es wurden keine Cloudanfragen, nativen Desktopaufnahmen oder Eingaben für diese Abnahme ausgeführt; reale Aufgabenqualität bleibt gesondert zu vergleichen.
+
+## Kompatibler Fast-Parameter – 23. Oktober 2026
+
+Die Fast-Auswahl wird jetzt als `service_tier: "priority"` übertragen. `priority` und `fast` bezeichnen laut OpenAI dieselbe Verarbeitung; die Verwendung des kompatiblen Namens behebt die Ablehnung `Unsupported service_tier: fast` vor dem ersten Werkzeugaufruf. Dies schaltet weder Fast aus noch versucht es nach einem Fehler automatisch erneut mit Standardverarbeitung.
+
+Die neue Regression verwendet den echten Pi-Host, den ChatGPT-Zugangsabruf und synthetische pro Anfrage wechselnde Token. Der abgefangene HTTP-Transport lehnt den neueren Wert mit der konkreten 400-Antwort ab und akzeptiert ausschließlich `priority`. Zwei reguläre Modellturns behalten die tatsächlichen Antwortstufen `priority` beziehungsweise `default` getrennt bei. Eine erfolgreiche Anfrage wird nicht mit bestätigtem Fast gleichgesetzt. Die Prüfung verwendet keine echten Zugangsdaten, Cloudanfragen oder Desktopoperationen.
+
+`npm run check` besteht mit Architekturprüfung, Typprüfung und **622 Tests** ohne Fehler oder Auslassungen. Der anschließend separat ausgeführte Build besteht; bekannte lucide-react-Warnungen bleiben unverändert.
+
+## Getrenntes Computermodell – 23. Oktober 2026
+
+Der optionale Modus trennt das Arbeitsmodell von einer eingeschränkten Computerlaufzeit. Das Arbeitsmodell übergibt begrenzte Bedienziele; das Computermodell erhält Bildschirmbilder und führt mehrere beobachtete Desktopaktionen aus. Der Rückweg ist normalerweise ein Textbericht mit ausdrücklich ungeprüfter Abschlussbehauptung. Eigene Aufnahmen zur Prüfung kann das Arbeitsmodell gesondert anfordern. Der Standard bleibt die bisherige Bedienung durch das Arbeitsmodell.
+
+| Prüfung | Ergebnis |
+| --- | --- |
+| `npm run check` | Architektur, Typprüfung und 621 Tests ohne Fehler oder Auslassungen. |
+| `npm run build` | Windows-Helfer, Main, Agent-Host und Renderer gebaut; bekannte lucide-react-Warnungen ohne Buildfehler. |
+| Echter Pi-Transport, lokale Modellnachbildung | Arbeitsmodell delegiert; Computerlaufzeit erhält Bilder und erledigt mehrere synthetische Eingaben; Textbericht enthält keine Bilder im Arbeitsmodell-Kontext; ausdrückliche Originalbildprüfung funktioniert. Beide Rollen verwenden echte Pi-Adapter und Agent-Hosts mit lokalem Responses-SSE-Server. |
+| Rechte und Lebensdauer | Computerlaufzeit ohne SDK-Datei-/Shellwerkzeuge, Skills, Erweiterungen oder Prozessübergabe. Sitzungsfortsetzung zwischen gewöhnlicher und eingeschränkter Rolle wird abgelehnt. Host-Limits, konkurrierende Aufrufe, verzögerter Start, Freigabefehler und wiederholter Stopp geprüft. |
+| Verschachtelter Stopp | Stopp des Arbeitsmodells beendet auch den Computerauftrag und bestätigt die Freigabe erst nach Abschluss einer bereits begonnenen synthetischen Eingabe. Keine Folgeaktion oder späte Bildausgabe. |
+| Fast und Verbrauch | `service_tier: fast` in jedem geprüften Computerrequest; tatsächlich zurückgegebene Stufen `fast` und `default` getrennt gespeichert. Messung auch am Kompaktierungs-Stream angeschlossen. Kumulative Computer- und Arbeitsverbräuche über mehrere Teilaufträge und fortgesetzte Turns ohne Überschreiben oder doppelte Zählung. Keine statische Standardpreis-Schätzung als Fast-Abrechnung. |
+| Einstellungen und Speicherung | Opt-in aus, Fast an; unabhängige Modellwahl, sichere Auswahl bei fehlendem Modell, unveränderliche Konfiguration ab Auftragsannahme, Storage-/IPC-Rundlauf und begrenzte Messgruppen geprüft. |
+| `npm run test:computer-model-ui` | Versteckte Electron-Ansicht: Faktor 16, Aktivierung, unabhängige Modellwahl, Sperre während Arbeit, deaktivierte Delegation nach Leeren der Auswahl und unterscheidbare tatsächliche/fehlende Service-Stufe geprüft. |
+| Bild- und Vorschau-Regression | `test:computer-images` und `test:computer-preview` bestanden; 64 Übersichten und 36 Originalausschnitte, korrekte Fehlerbilder und Vollbildrückfall. |
+
+Die neue Einstellungsansicht wurde visuell geprüft. Für diese technischen Prüfungen gab es keine Cloud-Modellaufrufe, nativen Bildschirmaufnahmen oder Desktop-Eingaben. Der neue Geschwindigkeits-/Kosten-/Qualitätsvergleich mit echtem Computermodell bleibt ein gesonderter manuell gestarteter Versuch. Die [Versuchsbeschreibung](computer-use-computermodell.md) erläutert Ablauf und Messgrenzen.
+
+## Treiberfehler und Kontrollbilder – 22. Oktober 2026
+
+`isError` und eine ausdrücklich gemeldete Ablehnung sind getrennte Fälle. Die Windows-Implementierung des installierten cua-driver 0.22.0 prüft das Vordergrundfenster auch **nach** dem gesendeten Klick. Ein Fensterwechsel kann deshalb eine Fehlermeldung auslösen, obwohl die Eingabe bereits gesendet wurde. Ein solcher Fehler beweist weder eine ausgebliebene Eingabe noch den fachlichen Erfolg. Grundlage: [Windows-Klickpfad des installierten Tags](https://github.com/trycua/cua/blob/cua-driver-rs-v0.22.0/libs/cua-driver/rust/crates/platform-windows/src/input/mouse.rs#L630-L710).
+
+openHiatus klassifiziert bekannte Fehlersignaturen lokal und übergibt nur feste Fehlercodes, Zustellungs-/Effekt-Enums und begrenzte Verifikationsmetadaten. Native Texte, HWNDs, beobachtete Werte und JSON-Rohdaten werden nicht in Diagnostik übernommen. Unbekannte Fehlercodes werden als unbekannt markiert. Ein Treiberfehler nach zugelassener Eingabe liefert nach Möglichkeit das aktuelle Kontrollbild mit neuer Bildkennung; Modell und Vorschau erhalten dieselben Bilder. Der Werkzeugstatus bleibt fehlerhaft. Es gibt keine automatische Eingabewiederholung, Methodenumschaltung oder Umdeutung einer Bildänderung als Erfolg.
+
+Gezielte synthetische Prüfungen decken Fehler vor und nach dem Klick, unklare SendInput-Zustellung, explizite Ablehnung, Kontrollbildfehler, ausbleibendes Einfügen nach Clipboardfehler und Stopp während der Fehlerbeobachtung ab. Der echte Pi-Konverter erhält Fehlerstatus und Kontrollbild sowohl im Vollbild- als auch im Übersichtmodus. Die versteckte Electron-Prüfung bestätigt den vollständigen Fehler-/Bild-/Vorschauweg bei Faktor 16 ohne native Desktopaufnahme oder Eingabe.
+
+`npm run check` besteht mit Architekturprüfung, Typprüfung und **581 Tests** ohne Fehler oder Auslassungen. `npm run build` und `npm run test:computer-preview` bestehen; die bekannten lucide-react-Buildwarnungen bleiben. Der Fehlertest führt genau einen synthetischen Aktionsaufruf, keine native Eingabe und keinen Modellaufruf aus. Ein neuer realer Aufgabenlauf bleibt erforderlich; die Änderung beweist keine Behebung jedes nativen Windows-Klickfehlers.
+
+## Experimentelle Übersicht-/Detailansichten – 22. Oktober 2026
+
+Quellstand auf Basis von 0.1.6; noch kein neues Windows-Paket. Vollbild bleibt Standard. Der wählbare Versuch liefert eine echte Übersichtsskalierung, höchstens einen Originalausschnitt und lokale Bereichsauswahl. `inspect` verwendet dieselbe Aufnahme; `nextDetail` kann einen Bereich für die nächste Antwort vorgeben. Bei fehlender Orientierung kann das Modell mit `screenshot` und `resolution: "original"` ausdrücklich ein frisches Gesamtbild anfordern. Die nächste gewöhnliche Beobachtung verwendet wieder den eingestellten Faktor. Bildkennungen und Koordinaten werden vor einer einzelnen nativen Eingabe geprüft.
+
+| Prüfung | Ergebnis |
+| --- | --- |
+| `npm run check` | Architektur, Typprüfung und 572 Tests bestanden; keine Fehler oder Auslassungen. |
+| `npm run build` | Windows-Helfer, Main, Agent-Host und Renderer erfolgreich gebaut. Bestehende Warnungen zu `use client` in lucide-react bleiben ohne Buildfehler. |
+| Geometrie / Auswahl | Originalpixel-Vergleich, kleine Änderungen, entfernte Dialoge, Rauschen, Scroll-/Gesamtänderung, Randfälle, Größenbudget, stabile Auswahl und DPI-/Geometriewechsel synthetisch geprüft. |
+| Lebensdauer / Abbruch | Alte oder ersetzte Ansichten können keine Eingabe auslösen. `inspect` verlängert die Aufnahme nicht. Stop wartet auf laufende Bildinitialisierung; die bestehenden Treiber-, Desktopbesitz- und Einmalaktionsprüfungen bestehen. |
+| `npm run test:computer-images` | Echtes Electron: 64 Übersichten und 36 pixelgenau verglichene Ausschnitte; zehn Bildgeometrien im Hauptlauf, weitere Läufe mit Skalierungsflags 1,25 / 1,5 / 2. Keine Desktopaufnahmen oder Eingaben. |
+| Transport | Der installierte Pi-Converter erzeugt echte Bildblöcke. V2 enthält nur Übersicht/Detail; im Metadatentext steht kein Originalbild. Der Detail-Hook betrifft nur die markierte Computerantwort, auch wenn fremde Anhänge identische Bildbytes haben. |
+| `npm run test:computer-preview` | Verstecktes Electron-Testfenster mit synthetischer Sitzung: 3840 × 2160-Quelle, 240 × 135-Übersicht, 960 × 544-Originalausschnitt; exakt gleiche Bilder in Modellantwort und Vorschau. Ausdrücklicher Original-Vollbildabruf und anschließende Rückkehr zu Faktor 16 bestehen mit insgesamt drei synthetischen Aufnahmen. Einspaltige schmale Ansicht, Stopp, Fokus, Escape und Vollbildkompatibilität bestanden. Null Desktop-Eingaben. |
+| Original-Vollbild auf Anfrage | Frische Bildkennung, genau ein vollständiges Bild, keine zusätzliche Eingabe, unveränderte Originalpixel, identische Klickkoordinaten und automatische Rückkehr zum gespeicherten Faktor nach einer Aktion oder gewöhnlichen Aufnahme geprüft. Alte Kennungen bleiben ungültig; V1 und Original-Bilddetailbehandlung sind kompatibel. |
+| Einstellungen | Faktor 1 als Standard/Migration, experimentelle Faktoren und benutzerdefinierter gültiger Faktor, Speicher-/IPC-Rundlauf sowie Ablehnung ungültiger Werte geprüft. |
+
+Die Vorschau-Screenshots sind visuell geprüft; generierte Nachweise und synthetische Testprofile werden nicht eingecheckt. Es wurden keine Cloudmodelle, persönlichen Konten, echten Bildschirmaufnahmen oder bestehenden Nutzerprofile für diese Abnahme verwendet. Der Pixelvergleich und die Bildaufbereitung laufen zunächst synchron im Main-Prozess; ihre Zeiten sind getrennt in V2 protokolliert.
+
+Offen bleiben native Zielklicks mit unterschiedlichen Windows-DPI, vollständige Aufgaben über mehrere Programmtypen, Paketabnahme und wiederholte Zeit-/Token-/Erfolgsvergleiche. Die synthetischen Prüfungen belegen den technischen Vertrag, keinen Geschwindigkeitsgewinn. Der [Computer-Use-Plan](computer-use-uebersicht-und-detail-plan.md) beschreibt die weitere Abnahme.
+
 ## 0.1.6: Feste Mikrofon- und Lautsprecherauswahl – 22. Oktober 2026
 
 Konkrete Audiogeräte bleiben auch im getrennten Zustand ausgewählt. Die Einstellungen zeigen das gespeicherte Gerät mit dem Zusatz „nicht angeschlossen“ an. Name und Gruppenkennung werden zusammen mit der Geräte-ID gespeichert. Eine gleiche ID hat Vorrang; bei geänderter ID kann das Gerät anhand eindeutiger Gruppen-/Namenszuordnung wiedererkannt werden. Mehrdeutige Zuordnungen erfordern eine erneute Auswahl. Windows-Standardgerät bleibt eine ausdrücklich wählbare Alternative.

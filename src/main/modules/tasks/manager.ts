@@ -1,13 +1,16 @@
 import { validateUsage } from './usage';
+import { parseModelRequest } from '../../../shared/model-requests';
+import { parseComputerTaskSettings } from '../../../shared/computer-task-settings';
 import { randomUUID } from 'node:crypto';
-import type { BackgroundJob, AgentAdapter, AgentEvent, Usage } from '../../../shared/contracts';
+import type { BackgroundJob, AgentAdapter, AgentEvent, Usage, ComputerTaskSettings, ModelRequest } from '../../../shared/contracts';
 
 export interface JobRequest {
   requestId: string; title: string; prompt: string; model: string;
   resources: string[];
   identityInstructions?: string;
+  computer?: ComputerTaskSettings;
 }
-interface Runtime { adapter: AgentAdapter; stop?: Promise<void>; release?: Promise<void>; disposal?: Promise<void>; ended: boolean; usageBase?: Usage; }
+interface Runtime { adapter: AgentAdapter; stop?: Promise<void>; release?: Promise<void>; disposal?: Promise<void>; ended: boolean; usageBase?: Usage; workerUsage?: Usage; computerUsage?: Usage; }
 export interface JobDependencies {
   createWorker(onEvent: (event: AgentEvent) => void, job: BackgroundJob): AgentAdapter;
   prepare?(): void | Promise<void>;
@@ -20,6 +23,7 @@ export interface JobDependencies {
 }
 
 const unfinished = (job: BackgroundJob) => ['queued', 'running', 'stopping'].includes(job.status);
+const zeroUsage = (): Usage => ({ inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 });
 function resource(value: string): string { return value.trim().replaceAll('\\', '/').replace(/\/+$/, '').toLowerCase(); }
 export function resourcesConflict(a: string[], b: string[]): boolean {
   return a.some(left => b.some(right => {
@@ -59,7 +63,7 @@ export class JobManager {
       return Promise.reject(new Error('Es warten bereits 50 Aufgaben. Bitte zuerst einige abschließen oder stoppen.'));
     }
     const epoch = this.epoch;
-    const request = { ...input, resources: [...input.resources] };
+    const request = { ...input, resources: [...input.resources], ...(input.computer ? { computer: parseComputerTaskSettings(input.computer) } : {}) };
     // Reserve the request synchronously, including while another admission is writing.
     const accepted = this.admissionTail.then(() => this.admit(request, epoch, onAdmitted));
     this.admissions.set(input.requestId, accepted);
@@ -183,11 +187,18 @@ export class JobManager {
     const runtime = this.runtimes.get(job.id);
     if (!runtime || runtime.ended || this.closed) return;
     if (event.type === 'started' && job.status === 'running') {
-      if (job.turnId !== event.turnId) runtime.usageBase = job.usage ? { ...job.usage } : undefined;
+      if (job.turnId !== event.turnId) {
+        runtime.usageBase = job.usage ? { ...job.usage } : undefined;
+        runtime.workerUsage = undefined; runtime.computerUsage = undefined;
+      }
       job.threadId = event.threadId; job.turnId = event.turnId; this.update(job);
-    } else if (event.type === 'usage' && job.status === 'running') {
+    } else if ((event.type === 'usage' || event.type === 'computer-usage') && job.status === 'running') {
       const usage = validateUsage(event.usage); if (!usage) return;
-      job.usage = addUsage(runtime.usageBase, usage); this.update(job);
+      if (event.type === 'computer-usage') runtime.computerUsage = usage;
+      else runtime.workerUsage = usage;
+      job.usage = addUsage(addUsage(runtime.usageBase, runtime.workerUsage ?? zeroUsage()), runtime.computerUsage ?? zeroUsage()); this.update(job);
+    } else if (event.type === 'model-request' && job.status === 'running') {
+      this.recordRequest(job, parseModelRequest(event.request)); this.update(job);
     } else if (event.type === 'completed') {
       // A cancellation is acknowledged by stop(), even if a successful result races it.
       if (job.status === 'stopping') return;
@@ -199,6 +210,20 @@ export class JobManager {
       if (event.error) job.error = this.deps.clean(event.error);
       this.update(job); this.deps.onResult(job); this.releaseIdle(job, runtime); queueMicrotask(() => this.pump());
     } else if (job.status === 'running') this.deps.onEvent(job, event);
+  }
+  private recordRequest(job: BackgroundJob, request: ModelRequest): void {
+    const summaries = job.modelRequests ??= [];
+    let summary = summaries.find(row => row.role === request.role && row.model === request.model
+      && row.requestedServiceTier === request.requestedServiceTier && row.actualServiceTier === request.actualServiceTier);
+    if (!summary) {
+      // Each job freezes its models; this also bounds malformed/adversarial event streams.
+      if (summaries.length >= 64) return;
+      const { status: _status, ...fields } = request;
+      summary = { ...fields, requests: 0, completed: 0, failed: 0, aborted: 0, elapsedMs: 0 };
+      delete summary.usage; summaries.push(summary);
+    }
+    summary.requests++; summary[request.status]++; summary.elapsedMs += request.elapsedMs;
+    if (request.usage) summary.usage = addUsage(summary.usage, request.usage);
   }
   private releaseIdle(job: BackgroundJob, runtime: Runtime): void {
     if (!runtime.adapter.hasManagedWork || runtime.release || runtime.stop) return;

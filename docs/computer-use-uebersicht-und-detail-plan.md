@@ -1,6 +1,18 @@
-# Computer Use: variable Übersichtsskalierung und Detail 1:1
+# Computer Use: variable Übersicht und skalierbare Details
 
-Stand: 21. Oktober 2026. Plan auf Basis von openHiatus, Version 0.1.4. Die nachfolgenden Änderungen sind noch nicht implementiert.
+Stand: 23. Oktober 2026. Die experimentelle Umsetzung liegt auf Basis von openHiatus 0.1.6 vor. Der Vollbildweg bleibt Standard. Skalierbare automatische Details und ein begrenztes Bildgedächtnis sind zusätzlich implementiert; aktueller Vertrag, Einstellungen und Vergleich: [Computer-use image budget](computer-use-image-budget.md). Die folgenden Forschungs- und Abnahmeziele sind damit noch nicht vollständig erledigt.
+
+## Umgesetzter Stand und offene Abnahme
+
+- Die Einstellung `computerOverviewScaleDivisor` bietet 1:1, 1:4, 1:8, 1:16 und 1:32. Endliche Faktoren von 1 bis 64 sind im Datenvertrag zulässig. Die Auswahl wird beim nächsten Erwerb der Desktopsteuerung übernommen und bleibt während dieser Arbeitsphase unverändert.
+- `computer-views.ts` rechnet Punkte und Rechtecke anhand der tatsächlichen Bildgrößen um. `computer-images.ts` erzeugt Übersicht und Originalausschnitt mit Electrons `nativeImage`, explizit bei Bildskalierung 1. `computer-regions.ts` wählt einen Bereich aus Originalpixel-Differenzen, bisherigem Ausschnitt, Aktionspunkt und optionalem Modellhinweis.
+- `computer-observations.ts` hält die aktuelle Originalaufnahme und ihre Ansichten. `computer-input.ts` definiert den Werkzeugvertrag. `computer.ts` prüft Lebensdauer und Treibergeometrie, übersetzt eine Aktion und behält die bestehende Darstellungswartezeit sowie Stop-Logik bei.
+- Metadaten V2, `inspect`, `nextDetail`, Drag zwischen Ansichten, skalierbare automatische Details und eine Vorschau derselben Modellbilder sind angeschlossen. Nur Übersicht 1 und Detail 1 zusammen verwenden den bisherigen Vollbildvertrag V1 ohne Bildaufbereitung. Ein Detail darf höchstens 1.048.576 Originalpixel umfassen; übergroße Anforderungen werden abgelehnt.
+- Bei fehlender Orientierung kann das Modell ausdrücklich `{"action":"screenshot","resolution":"original"}` aufrufen. Diese Antwort enthält genau ein frisches, vollständiges Originalbild des Hauptmonitors und neue Bildkennungen. Die nächste gewöhnliche Aufnahme oder Aktionsantwort verwendet wieder den gespeicherten Faktor. Im Übersichtsmodus bleibt auch die volle Ansicht im V2-Koordinatenvertrag mit Faktor 1; im bisherigen Vollbildmodus bleibt V1 erhalten. Die Größenbegrenzung für Details gilt weiter für Ausschnittanforderungen. Auch das ausdrücklich angeforderte Vollbild erhält beim unterstützten OpenAI-Adapter die Original-Bilddetailstufe.
+- Der OpenAI-Responses-Hook setzt `detail: original` nur für markierte Bilder der zugehörigen Computer-Werkzeugantwort und ausdrücklich unterstützte Modelle. Fremde Bilder, andere Anbieter und unbekannte Modelle behalten ihr bisheriges Verhalten. Anbietergrenzen können dennoch zu einer internen Verkleinerung führen. [OpenAI: Computer-use integration](https://developers.openai.com/api/docs/guides/tools-computer-use-integration)
+- Geometrie, Auswahl, Lebensdauer, Transport und Vorschau sind synthetisch geprüft. Echte Windows-Zielklicks bei verschiedenen DPI, allgemeine Programmaufgaben, Paketabnahme und wiederholte Vergleiche aus Gesamtdauer, Tokenverbrauch und Erfolgsquote bleiben offen. Die Skalierungsflags der Bildtests simulieren unterschiedliche Electron-Skalierungen; sie ersetzen keine Windows-DPI-Abnahme.
+
+Die Bildaufbereitung und der begrenzte Pixelvergleich laufen in dieser ersten Version synchron im Main-Prozess. Ihre getrennten lokalen Zeiten stehen in den Metadaten. Eine Auslagerung hinter dem Bild-Port bleibt möglich, falls Messungen relevante UI-Blockaden zeigen. Es gibt noch keine gemessene Beschleunigungszusage und keinen neuen Auslieferungsstandard.
 
 ## Ziel und Grundentscheidung
 
@@ -28,19 +40,23 @@ Die bisher diskutierte Normierung aller Auflösungen auf dieselbe längere Bilds
 
 ### Vorzusehende Variablen
 
-Die folgenden Namen beschreiben geplante Parameter, keine bereits vorhandene Laufzeitkonfiguration:
+Die folgenden Namen beschreiben die Versuchsachsen. Übersicht und automatische Details sind als `computerOverviewScaleDivisor` und `computerDetailScaleDivisor` unabhängig einstellbar. Die lokale Analyse bleibt bei nativer Auflösung, das Encoding bei PNG. `computerImageRetentionCalls` begrenzt zusätzlich die Mitgabe historischer Computerbilder; 0 erhält das bisherige unbegrenzte Verhalten:
 
 ```json
 {
   "overviewScaleDivisor": 8,
-  "detailScaleDivisor": 1,
+  "detailScaleDivisor": 2,
+  "imageRetentionCalls": 2,
+  "workingMemoryCalls": 15,
   "changeAnalysisScaleDivisor": 1,
   "overviewEncoding": "png"
 }
 ```
 
 - `overviewScaleDivisor`: unabhängig wählbarer Versuchsparameter; der Vergleich enthält 4, 8, 16 und 32. Faktor 1 kann als bisheriger Vollbild-Vergleich dienen.
-- `detailScaleDivisor`: bleibt in diesem Vorhaben 1. Eine kleinere Übersicht reduziert nicht die Auflösung des Originalausschnitts.
+- `detailScaleDivisor`: 1, 2 oder 4 für automatische Details, unabhängig von der Übersicht. Originalausschnitte über `inspect` bleiben 1:1 abrufbar; Quellrechteck und tatsächlich übertragene Bildmaße bestimmen die Koordinatenumrechnung.
+- `imageRetentionCalls`: Computerbilder nach einer festgelegten Zahl von Modellanfragen aus dem gesendeten Kontext entfernen. Wichtige Beobachtungen hält das Arbeitsmodell kurz im Text fest; ein zusätzlicher Zusammenfassungsaufruf ist nicht erforderlich. Cache-Effekt und Erfolgsquote müssen mitgemessen werden.
+- `workingMemoryCalls`: zusätzlich ältere Computeraufrufe mit ihren abgeschlossenen Ergebnissen nach 10 oder 15 Modellanfragen entfernen. Die aktuelle Arbeitsnotiz bleibt auf 240 Zeichen begrenzt und wird im bestehenden Computeraufruf ersetzt. Nutzerauftrag, Datei-/Dienstdaten und lokale Protokolle bleiben erhalten. Standard 0 erhält das bisherige Verhalten.
 - `changeAnalysisScaleDivisor`: eigener Parameter für die lokale Änderungserkennung. Eine Übersicht 1:32 darf den lokalen Detektor nicht ebenfalls auf 1:32 zwingen; sonst könnten wichtige kleine Änderungen bereits vor der Bereichsauswahl verschwinden.
 - `overviewEncoding`: zunächst verlustfreies PNG. Dateikompression und Auflösungsreduktion werden getrennt behandelt. Falls weitere Encodings untersucht werden, sind Format und Qualität eigene Parameter; sie werden nicht gleichzeitig unbemerkt mit dem Faktor verändert.
 
@@ -131,7 +147,7 @@ Erst der anschließende Vergleich vollständiger Aufgaben entscheidet über die 
 
 ## Bild- und Koordinatenvertrag
 
-Eine Aufnahme besitzt `frameId`, `capturedAt`, Bildschirmkennung, Originalbreite, Originalhöhe und die bereits vom Treiber gelieferte Windows-Skalierung. Jede ausgegebene Ansicht besitzt eine eigene `viewId`, die tatsächlichen Bildabmessungen und ihr Quellrechteck im Original.
+Eine Aufnahme besitzt `frameId`, die Aufnahmezeit `at`, Bildschirmkennung, Originalbreite, Originalhöhe und die bereits vom Treiber gelieferte Windows-Skalierung. Jede ausgegebene Ansicht besitzt eine eigene `viewId`, die tatsächlichen Bildabmessungen und ihr Quellrechteck im Original.
 
 | Ansicht | Ausgegebenes Bild | Quellrechteck im Original |
 | --- | --- | --- |
@@ -171,7 +187,10 @@ Beispiel für eine Detailanforderung aus der Übersicht:
   "action": "inspect",
   "frameId": "aufnahme-42",
   "viewId": "overview-42",
-  "rect": { "x": 200, "y": 88, "width": 112, "height": 75 }
+  "x": 200,
+  "y": 88,
+  "width": 112,
+  "height": 75
 }
 ```
 
@@ -180,6 +199,8 @@ Diese zweite Anforderung wählt im 4K-Original einen Bereich ab (1600, 704) mit 
 `click`, `move` und `scroll` benötigen die Ansicht des Zielpunkts. Ein `drag` kann Start und Ziel in unterschiedlichen Ansichten derselben Aufnahme angeben: `fromViewId` beschreibt den Ursprung; ohne diese Angabe gilt dieselbe Ansicht wie für das Ziel. `type` und `key` behalten die Zuordnung zur Aufnahme und zum sichtbar geprüften Fokus; sie erhalten keine künstlichen Koordinaten.
 
 ## Auswahl, Lebensdauer und Grenzen des Details
+
+Aufnahme- und Ansichtskennungen sind kurze, exakt zu übernehmende Handles. Ein Prozessnamensraum und eine fortlaufende Sequenz vermeiden Wiederverwendung. Es gibt keine unscharfe Zuordnung oder automatische Korrektur falsch übernommener Kennungen. Das Format der Kennung verändert weder die Gültigkeitsdauer noch die Koordinatenprüfung.
 
 - Es gibt pro Antwort eine Übersicht und höchstens einen aktiven Detailbereich. Ein neuer Bereich ersetzt den vorherigen. Der Detailbereich darf abhängig von der Aufgabe unterschiedlich groß sein; es gibt keine feste Excel- oder Fenstergröße.
 - Eine ausdrückliche Modellwahl verwendet sichtbare Bildkoordinaten. openHiatus kennt deren Ursprung und rechnet sie in Originalkoordinaten um. Ein lokaler Selektor liefert dagegen bereits ein Rechteck im aktuellen Original; beide Wege erzeugen denselben geprüften Ansichtsvertrag. Der Bereich kann innerhalb des Details weiter eingegrenzt oder über die Übersicht neu gewählt werden.
@@ -200,10 +221,10 @@ Die Komponenten erhalten getrennte Aufgaben:
 | Neuer Geometriebaustein `computer-views.ts` | Ansichten, Rechtecke, Skalierung, Rundung und Punktumrechnung; ohne Kenntnis bestimmter Programme oder Modellanbieter |
 | Neuer Bildbaustein `computer-images.ts` | PNG decodieren, Übersicht erzeugen, Originalausschnitt ausgeben und tatsächliche Abmessungen prüfen |
 | Neuer Auswahlbaustein `computer-regions.ts` | Räumliche Bilddifferenz und austauschbare Auswahlstrategien; Auswahlgrund und Laufzeit erfassen, ohne selbst Eingaben auszuführen |
-| `computer.ts` | Aktuelle Originalaufnahme und Ansichtenzuordnung halten, `inspect` verarbeiten, Eingaben übersetzen und anschließend an den bestehenden Treiber übergeben |
-| `pi.ts` | Beschriftete Übersicht und Detail als echte Bildinhalte mit den zugehörigen Metadaten übertragen |
+| `computer-observations.ts`, `computer-input.ts`, `computer.ts` | Originalaufnahme und Ansichten halten, Werkzeugparameter prüfen, `inspect` verarbeiten, Eingaben übersetzen und an den bestehenden Treiber übergeben |
+| `platform/tools/computer-tools.ts` und Pi-Transport | Beschriftete Übersicht und Detail als echte Bildinhalte mit den zugehörigen Metadaten übertragen |
 | `agent-host.ts` | Bildreihenfolge erhalten und die unterstützte Bilddetail-Einstellung im jeweiligen Anbieteradapter setzen |
-| `contracts.ts`, Vorschau und Desktop-Skill | Ansichten eindeutig darstellen und dem Modell die Verwendung von `frameId` und `viewId` erklären |
+| Gemeinsame Verträge, Vorschau und Werkzeugbeschreibung | Ansichten eindeutig darstellen und dem Modell die Verwendung von `frameId` und `viewId` erklären; eigene lokale Skills können darauf verweisen |
 
 Für die Bildaufbereitung ist zunächst Electrons bereits vorhandenes `nativeImage` vorgesehen. Es unterstützt das Lesen eines PNG aus einem Buffer sowie Zuschneiden und Verkleinern. Die Verarbeitung wird ausdrücklich auf eine Bildrepräsentation mit Skalierung 1 festgelegt; Abmessungen und native Bildintegration werden im tatsächlichen Electron geprüft. Eine neue Bildbibliothek ist zunächst nicht nötig. [Electron-Dokumentation](https://www.electronjs.org/docs/latest/api/native-image)
 
@@ -214,6 +235,8 @@ Der native CUA-Treiber bleibt für Aufnahme und Eingabe zuständig. Bildaufberei
 ## Modelltransport und Vorschau
 
 Die Werkzeugantwort enthält je Ansicht eine kurze Zuordnung und den zugehörigen Bildblock. Das vollständige Original wird im neuen Ablauf nicht zusätzlich an das Modell geschickt.
+
+Ein ausdrücklich angefordertes Original-Vollbild ist die Ausnahme: `screenshot` mit `resolution: "original"` liefert ausschließlich dieses neue Gesamtbild. Bei unbekannter Ziellage oder zu starker Verkleinerung muss das Modell damit keine Ausschnitte auf Verdacht anfordern. Der gespeicherte Faktor wird dafür nicht geändert. Diese Rückfallaufrufe und ihre größeren Bilder gehen in die Zeit- und Tokenauswertung ein; sie sind kein kostenloser Auswahlschritt.
 
 Bei OpenAI empfiehlt die offizielle Dokumentation `detail: original` für koordinatenabhängige Computer-Use-Bilder, sofern das gewählte Modell es unterstützt. Auch dann gelten Modellgrenzen; die lokale PNG-Auflösung allein garantiert keine unveränderte Verarbeitung beim Anbieter. Die Implementierung berücksichtigt deshalb sowohl tatsächliche Bildgröße als auch die unterstützte Detailstufe. [OpenAI-Dokumentation zu Bilddetails](https://developers.openai.com/api/docs/guides/images-vision#choose-an-image-detail-level)
 
@@ -258,5 +281,7 @@ Vom Anbieter gemeldete Gesamttoken werden getrennt von geschätzten Bildtokens a
 Für die Auswahlentscheidung gilt als zu prüfende Rechnung: gesparte Übertragungs- und Modellzeit minus lokale Auswahlkosten, zusätzliche Auswahlschritte und Korrekturen. Primäres Ziel ist die gesamte Aufgabendauer bei erhaltener Erfolgsquote. Mittlere beziehungsweise typische Zeiten und langsame Ausreißer werden getrennt betrachtet; fehlgeschlagene oder abgebrochene Versuche werden nicht aus der Auswertung entfernt. Die neue Darstellung gilt als Verbesserung, wenn Aufgaben insgesamt schneller werden und die Treffergenauigkeit erhalten bleibt.
 
 ## Abgrenzung der ersten Version
+
+Der zusätzliche Versuch mit getrenntem Arbeits- und Computermodell ist in [Computer-Use mit Computermodell](computer-use-computermodell.md) beschrieben. Er verwendet denselben Bild- und Koordinatenvertrag. Seine Modellübergaben, Fast-Stufe und gesonderten Verbräuche müssen bei Vergleichen zusätzlich erfasst werden.
 
 Die erste Versuchsphase umfasst die mit variablen Faktoren verkleinerte Übersicht, einen Originalausschnitt, lokale Änderungserkennung, vergleichbare Auswahlstrategien, eindeutige Ansichten, sichere Koordinatenumrechnung und eine passende Vorschau. Bereichsauswahl und Skalierungsprofile werden vor der produktiven Festlegung über mehrere Auflösungen gemessen. Automatische OCR, zusätzliche lokale VLMs, neue UIA-/Fensteranbindungen und eine Bereinigung älterer Bilder im Modellkontext sind mögliche Folgeversuche mit eigenen Kosten. Anwendungsregeln für bestimmte Programme oder gerätespezifische Nutzereinstellungen sind keine Voraussetzung.

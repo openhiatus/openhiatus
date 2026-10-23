@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { deflateSync } from 'node:zlib';
 import type { CuaDriverSessionLike, PressKeyInput, ToolResult } from '@trycua/cua-driver';
-import { COMPUTER_TOOL, COMPUTER_METADATA_PREFIX, computerReplyMetadata, ComputerCleanupError, DesktopCoordinator, NativeComputer, parseComputerInput, pasteComputerText, type ComputerInput, type ComputerSession } from '../src/main/computer.js';
+import { COMPUTER_TOOL, COMPUTER_METADATA_PREFIX, computerReplyMetadata, ComputerCleanupError, ComputerDriverError, DesktopCoordinator, NativeComputer, parseComputerInput, pasteComputerText, type ComputerInput, type ComputerSession } from '../src/main/computer.js';
 
 const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a7N8AAAAASUVORK5CYII=';
 function result(values: Partial<ToolResult> = {}): ToolResult {
@@ -320,13 +320,69 @@ test('Stop during lazy initialization disposes the created session and never cap
   assert.deepEqual(session.calls, ['dispose']);
 });
 
-test('native refusal invalidates frames and requires a new observation rather than replaying input', async () => {
+test('an ambiguous native input failure returns a fresh observed frame and never replays the input', async () => {
   const { computer, sessions } = fixture();
   const image = await computer.execute({ action: 'screenshot' });
   sessions[0].actionResult = result({ isError: true, text: 'password' });
-  await assert.rejects(computer.execute({ action: 'type', frameId: image.frameId, text: 'password' }), /abgelehnt/);
+  let recovery!: NonNullable<ComputerDriverError['recovery']>;
+  await assert.rejects(computer.execute({ action: 'type', frameId: image.frameId, text: 'password' }), error => {
+    assert.ok(error instanceof ComputerDriverError); assert.ok(error.recovery); recovery = error.recovery;
+    assert.notEqual(recovery.frameId, image.frameId); assert.equal(recovery.image.base64, PNG);
+    assert.equal(error.diagnostic.operation, 'type'); assert.equal(error.diagnostic.isError, true);
+    assert.doesNotMatch(error.message + recovery.text, /password|abgelehnt/);
+    return true;
+  });
   await assert.rejects(computer.execute({ action: 'type', frameId: image.frameId, text: 'password' }), /veraltet/);
   assert.equal(sessions[0].inputs.length, 1);
+  // The preceding stale-frame error invalidates the recovery too, just like any
+  // other rejected admission. Capture again to make a new observed decision.
+  const fresh = await computer.execute({ action: 'screenshot' });
+  sessions[0].actionResult = result();
+  await computer.execute({ action: 'key', frameId: fresh.frameId, key: 'tab' });
+  assert.deepEqual(sessions[0].inputs.map(input => input.action), ['type', 'key']);
+  await computer.dispose();
+});
+
+test('a failed post-click foreground check preserves the next observed action without declaring click success', async () => {
+  const { computer, sessions } = fixture(); const first = await computer.execute({ action: 'screenshot' });
+  sessions[0].actionResult = result({ isError: true,
+    text: 'foreground_unavailable: exact target HWND 123 or a verified same-process post-action window was not foreground after the click (private window)' });
+  let recovery!: NonNullable<ComputerDriverError['recovery']>;
+  await assert.rejects(computer.execute({ action: 'click', frameId: first.frameId, x: 0, y: 0 }), error => {
+    assert.ok(error instanceof ComputerDriverError); assert.ok(error.recovery); recovery = error.recovery;
+    assert.equal(error.diagnostic.failureStage, 'after-input');
+    assert.equal(error.diagnostic.effect, undefined);
+    assert.doesNotMatch(error.message + recovery.text, /123|private window|refused/);
+    assert.equal(JSON.parse(recovery.text).driverFailure.failureReason, 'post-action-foreground-mismatch'); return true;
+  });
+  sessions[0].actionResult = result();
+  await computer.execute({ action: 'key', frameId: recovery.frameId, key: 'tab' });
+  assert.deepEqual(sessions[0].inputs.map(input => input.action), ['click', 'key']);
+  await computer.dispose();
+});
+
+test('a failed control capture preserves original input diagnostics and invalidates the consumed frame', async () => {
+  const { computer, sessions } = fixture(); const first = await computer.execute({ action: 'screenshot' });
+  sessions[0].actionResult = result({ isError: true, errorCode: 'foreground_unavailable' });
+  sessions[0].capture = result({ isError: true, errorCode: 'facility_unavailable', text: 'private native detail' });
+  await assert.rejects(computer.execute({ action: 'click', frameId: first.frameId, x: 0, y: 0 }), error => {
+    assert.ok(error instanceof ComputerDriverError); assert.equal(error.recovery, undefined);
+    assert.equal(error.diagnostic.operation, 'click'); assert.equal(error.diagnostic.errorCode, 'foreground_unavailable');
+    assert.equal(error.recoveryFailure?.operation, 'screenshot'); assert.equal(error.recoveryFailure?.errorCode, 'facility_unavailable');
+    assert.doesNotMatch(error.message, /private native detail/); return true;
+  });
+  await assert.rejects(computer.execute({ action: 'click', frameId: first.frameId, x: 0, y: 0 }), /veraltet/);
+  assert.equal(sessions[0].inputs.length, 1); await computer.dispose();
+});
+
+test('Stop during failure recovery prevents image delivery and never repeats the failed input', async () => {
+  const { computer, sessions } = fixture(); const first = await computer.execute({ action: 'screenshot' });
+  const entered = deferred(), finish = deferred();
+  sessions[0].actionResult = result({ action: { effect: 4, route: 2, delivery: { mode: 1, deliveredCount: 0 } } });
+  sessions[0].beforeCapture = async () => { entered.resolve(); await finish.promise; };
+  const action = assert.rejects(computer.execute({ action: 'click', frameId: first.frameId, x: 0, y: 0 }), /unterbrochen/);
+  await entered.promise; const stop = computer.stop(); finish.resolve(); await Promise.all([action, stop]);
+  assert.equal(sessions[0].inputs.length, 1); assert.equal(sessions[0].calls.filter(call => call === 'screenshot').length, 2);
   await computer.dispose();
 });
 
@@ -582,4 +638,19 @@ test('unconfirmed clipboard writes never paste; ambiguous paste failures never r
   const untouched = clipboardFixture();
   await assert.rejects(pasteComputerText(untouched.driver, { session: 'test' }, 'never', aborted.signal), /unterbrochen/);
   assert.deepEqual(untouched.calls, []);
+});
+
+test('failed clipboard write returns control-image diagnostics without claiming clipboard replacement or sending paste', async () => {
+  const f = clipboardFixture(); f.setClipboardResult(result({ isError: true, errorCode: 'permission_denied', text: 'private input' }));
+  const session = new FakeSession();
+  session.act = async (input, signal) => pasteComputerText(f.driver, { session: 'test' }, (input as Extract<ComputerInput, { action: 'type' }>).text, signal);
+  const computer = new NativeComputer({ createSession: async () => session, captureTiming: paintClock() });
+  const first = await computer.execute({ action: 'screenshot' });
+  await assert.rejects(computer.execute({ action: 'type', frameId: first.frameId, text: 'private input' }), error => {
+    assert.ok(error instanceof ComputerDriverError); assert.ok(error.recovery);
+    assert.equal(error.diagnostic.operation, 'clipboard-write'); assert.equal(error.diagnostic.errorCode, 'permission_denied');
+    assert.equal(JSON.parse(error.recovery.text).clipboard, 'write-unconfirmed');
+    assert.doesNotMatch(error.message + error.recovery.text, /private input/); return true;
+  });
+  assert.deepEqual(f.calls, ['clipboard']); await computer.dispose();
 });

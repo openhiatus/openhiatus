@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { ModelManagementCoordinator, type ModelManagementPorts, type ModelManagementState } from '../src/main/modules/models';
 import type { ChatGPTConnection, ProviderView } from '../src/shared/contracts';
 
-function fixture(withProvider = true) {
+function fixture(withProvider = true, computerModel?: string) {
   let roster: ProviderView[] = [{ id: 'api', label: 'API', configured: true, verified: true, models: [{ id: 'api/one', label: 'One' }] }];
   let keys = ['synthetic-old-key'], auth: ChatGPTConnection = { status: 'signed-out', planUsage: true };
   let active = false, closed = false, revision = 0, invalidations = 0, starts = 0, stops = 0;
@@ -24,7 +24,7 @@ function fixture(withProvider = true) {
     projection: { publish(state) { published.push(state); }, changed() {} },
     clean(text) { assert.ok(models, 'composition assigns the owner before initialization invokes redaction'); for (const secret of models.secrets()) text = text.replaceAll(secret, '[entfernt]'); return text; },
   };
-  models = new ModelManagementCoordinator({ model: 'saved-missing', dialogModel: '', memoryModel: '' }, ports);
+  models = new ModelManagementCoordinator({ model: 'saved-missing', dialogModel: '', memoryModel: '', ...(computerModel !== undefined ? { computerModel } : {}) }, ports);
   return { models, ports, published, auth: (next: ChatGPTConnection) => { auth = next; }, active: (value: boolean) => { active = value; },
     advanceWork: () => { revision++; }, closed: () => { closed = true; }, counts: () => ({ starts, stops, invalidations }),
     save: (next: typeof save) => { save = next; }, signIn: (next: typeof signIn) => { signIn = next; }, cancel: (next: typeof cancel) => { cancel = next; } };
@@ -53,6 +53,37 @@ test('runtime models and connection events work without a provider adapter and p
   f.models.offline(); assert.equal(f.models.snapshot().account, 'Test account'); assert.equal(f.models.snapshot().agent, 'offline');
   f.models.handle({ type: 'models', models: [{ id: 'two', label: 'Two' }] });
   assert.deepEqual(f.models.snapshot().selections, { model: 'two', dialogModel: 'two', memoryModel: 'two' });
+});
+
+test('the optional computer role suggests only Luna on its first available catalog and never substitutes another model', () => {
+  const f = fixture(false, ''); f.models.initialize();
+  assert.equal(f.models.snapshot().selections.computerModel, '');
+  f.models.handle({ type: 'models', models: [{ id: 'chatgpt/gpt-6.1-sol', label: 'Sol' }, { id: 'chatgpt/gpt-6-luna', label: 'Luna' }] });
+  assert.equal(f.models.snapshot().selections.computerModel, 'chatgpt/gpt-6-luna');
+  assert.equal(f.models.snapshot().selections.model, 'chatgpt/gpt-6.1-sol');
+  f.models.handle({ type: 'models', models: [{ id: 'chatgpt/gpt-6.1-sol', label: 'Sol' }] });
+  assert.equal(f.models.snapshot().selections.computerModel, '');
+  f.models.handle({ type: 'models', models: [{ id: 'chatgpt/gpt-6.1-sol', label: 'Sol' }, { id: 'chatgpt/gpt-6-luna', label: 'Luna' }] });
+  assert.equal(f.models.snapshot().selections.computerModel, '', 'a removed computer model requires explicit reselection');
+});
+
+test('a computer role without Luna stays unconfigured and accepts other explicitly selected available models', () => {
+  const f = fixture(false, ''); f.models.initialize();
+  f.models.handle({ type: 'models', models: [{ id: 'other/vision', label: 'Vision' }] });
+  assert.equal(f.models.snapshot().selections.computerModel, '');
+  f.models.select({ computerModel: 'other/vision' });
+  assert.equal(f.models.snapshot().selections.computerModel, 'other/vision');
+  assert.throws(() => f.models.select({ computerModel: 'missing/vision' }), /nicht verfügbar/);
+  f.models.select({ computerModel: '' });
+  assert.equal(f.models.snapshot().selections.computerModel, '');
+});
+
+test('an existing computer selection is retained and a missing one cannot silently switch to available Luna', () => {
+  for (const computerModel of ['other/vision', 'missing/vision']) {
+    const f = fixture(false, computerModel); f.models.initialize();
+    f.models.handle({ type: 'models', models: [{ id: 'other/vision', label: 'Vision' }, { id: 'chatgpt/gpt-6-luna', label: 'Luna' }] });
+    assert.equal(f.models.snapshot().selections.computerModel, computerModel === 'other/vision' ? 'other/vision' : '');
+  }
 });
 
 test('provider mutations own the update lock and release it after success or failure without losing captured secrets', async () => {
