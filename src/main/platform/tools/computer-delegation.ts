@@ -26,6 +26,7 @@ export interface DelegatedComputerOptions {
   readonly computer?: ComputerAdapter;
   readonly getOverviewScaleDivisor?: () => number;
   readonly getDetailScaleDivisor?: () => number;
+  readonly runDesktopOperation?: <T>(operation: () => Promise<T>) => Promise<T>;
   readonly maxActions?: number;
   readonly maxDurationMs?: number;
 }
@@ -119,7 +120,8 @@ function taskInput(value: unknown): TaskInput {
 export function createDelegatedComputerToolContribution(options: DelegatedComputerOptions): ToolContribution {
   const maxActions = bounded(options.maxActions, 40, 1000), maxDurationMs = bounded(options.maxDurationMs, 240000, 1800000);
   if (!options.model.trim()) throw new Error('A computer worker model is required.');
-  const base = createToolRegistry([createComputerToolContribution({ computer: options.computer, getOverviewScaleDivisor: options.getOverviewScaleDivisor, getDetailScaleDivisor: options.getDetailScaleDivisor })]);
+  const base = createToolRegistry([createComputerToolContribution({ computer: options.computer, getOverviewScaleDivisor: options.getOverviewScaleDivisor,
+    getDetailScaleDivisor: options.getDetailScaleDivisor, runDesktopOperation: options.runDesktopOperation })]);
   const states = new Set<BindingState>(), retained = new Set<ChildRun>();
   let active: ChildRun | undefined, viewBusy = false, baseBinding: BoundToolset | undefined, baseState: BindingState | undefined;
   let releasing: Promise<void> | undefined;

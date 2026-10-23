@@ -45,6 +45,19 @@ test('device identity metadata is accepted and validated before preferences reac
   assert.equal(f.calls.length, 1);
 });
 
+test('workspace appearance preferences cross the typed boundary only with valid values', async () => {
+  const f = fixture(), patch = { sidebarMode: 'collapsed', activityOverlayEnabled: true, activityOverlaySize: 160 };
+  assert.equal((await f.router.dispatch('savePreferences', [patch])).ok, true);
+  assert.deepEqual(f.calls.at(-1), { name: 'savePreferences', args: [patch] });
+  for (const invalid of [{ sidebarMode: 'small' }, { sidebarMode: undefined }, { activityOverlayEnabled: 1 },
+    { activityOverlaySize: 95 }, { activityOverlaySize: 321 }, { activityOverlaySize: 120.5 }]) {
+    assert.equal((await f.router.dispatch('savePreferences', [invalid])).ok, false);
+  }
+  assert.equal(f.calls.length, 1);
+  Object.assign(f.snapshot.preferences, patch);
+  assert.deepEqual(decodeResponse('snapshot', await f.router.dispatch('snapshot', [])).preferences, f.snapshot.preferences);
+});
+
 test('every known command validates and produces its declared result through the same router/client contract', async () => {
   const f = fixture();
   for (const name of Object.keys(validArgs)) {

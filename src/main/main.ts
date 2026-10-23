@@ -17,6 +17,8 @@ import { SpeechService } from './speech';
 import { resolveDemoFile } from './resolve-demo-file';
 import { redact } from './redact';
 import { VoiceOverlay, parseVoiceOverlayState } from './voice-overlay';
+import { ActivityOverlay, ACTIVITY_OVERLAY_RESIZE_CHANNEL } from './activity-overlay';
+import { activityOverlayState } from './activity-overlay-state';
 import { startNativeVoiceHotkeys } from './native-hotkeys';
 import { createIpcRouter } from './ipc';
 import { decodeComputerFrame, decodeSnapshot, type IpcResponse } from '../shared/ipc';
@@ -31,6 +33,7 @@ app.setPath('userData', dataDirectory);
 const locked = app.requestSingleInstanceLock();
 if (!locked) app.quit();
 let window: BrowserWindow | undefined, controller: AppController | undefined, voiceOverlay: VoiceOverlay | undefined;
+let activityOverlay: ActivityOverlay | undefined;
 let services: ServiceBroker | undefined;
 let stateWriter: WorkerStateStore | undefined;
 let memoryWriter: WorkerMemoryStore | undefined;
@@ -67,9 +70,11 @@ async function createApp(): Promise<void> {
   const runtimeOptions = { executable: process.execPath, hostEntry: path.join(__dirname, 'agent-host.mjs'), processHost, home, workspace, providers };
   services = new ServiceBroker();
   const serviceBroker = services;
+  const runDesktopOperation = <T>(operation: () => Promise<T>): Promise<T> => activityOverlay?.runHidden(operation) ?? operation();
   const computerTools = () => createComputerToolContribution({
     getOverviewScaleDivisor: () => controller?.snapshot().preferences.computerOverviewScaleDivisor ?? 1,
     getDetailScaleDivisor: () => controller?.snapshot().preferences.computerDetailScaleDivisor ?? 1,
+    runDesktopOperation,
   });
   const runtime = new PiAdapter({ ...runtimeOptions, role: 'worker', tools: createToolRegistry([computerTools()]),
     getComputerImageRetentionCalls: () => controller?.snapshot().preferences.computerImageRetentionCalls ?? 0,
@@ -89,11 +94,12 @@ async function createApp(): Promise<void> {
     const desktop = computer?.delegationEnabled ? createDelegatedComputerToolContribution({ model: computer.model, fast: computer.fast,
       getOverviewScaleDivisor: () => computer.overviewScaleDivisor,
       getDetailScaleDivisor: () => computer.detailScaleDivisor ?? 1,
+      runDesktopOperation,
       createWorker: (onEvent, tools, instructions) => new PiAdapter({ ...runtimeOptions, role: 'worker', computerOnly: true, instructions, tools,
         computerImageRetentionCalls: computer.imageRetentionCalls ?? 0,
         computerWorkingMemoryCalls: computer.workingMemoryCalls ?? 0, onEvent }),
     }) : createComputerToolContribution({ getOverviewScaleDivisor: () => computer?.overviewScaleDivisor ?? 1,
-      getDetailScaleDivisor: () => computer?.detailScaleDivisor ?? 1 });
+      getDetailScaleDivisor: () => computer?.detailScaleDivisor ?? 1, runDesktopOperation });
     return new PiAdapter({ ...runtimeOptions, role: 'worker',
       computerImageRetentionCalls: computer?.imageRetentionCalls ?? 0,
       computerWorkingMemoryCalls: computer?.workingMemoryCalls ?? 0,
@@ -104,13 +110,33 @@ async function createApp(): Promise<void> {
   const speech = new SpeechService({ getKey: () => credentials.get('inworld'), getVoice: () => controller?.snapshot().preferences.voiceId || 'Dennis', cacheDirectory: path.join(dataDirectory, 'speech-cache') });
   controller = new AppController({ version: app.getVersion(), store, credentials, speech, memory, providers, chatgpt, modelClient: new ModelClient(providers), agent: runtime, dialogAgent: dialogRuntime, createWorker, workspace, profileDirectory: dataDirectory,
     publishComputerFrame: frame => { if (window && !window.isDestroyed()) window.webContents.send('openhiatus:computer-frame', decodeComputerFrame(frame)); },
-    publish: state => { if (window && !window.isDestroyed()) window.webContents.send('openhiatus:state', decodeSnapshot(state)); },
+    publish: state => {
+      activityOverlay?.update(activityOverlayState(state));
+      if (window && !window.isDestroyed()) window.webContents.send('openhiatus:state', decodeSnapshot(state));
+    },
   });
   await controller.initialize();
   const rendererFile = path.join(__dirname, 'renderer', 'index.html'), rendererUrl = pathToFileURL(rendererFile).href;
-  window = new BrowserWindow({ width: 1360, height: 900, minWidth: 980, minHeight: 700, title: APP_DISPLAY_NAME, backgroundColor: '#131714', autoHideMenuBar: true,
+  window = new BrowserWindow({ width: 1360, height: 900, minWidth: 560, minHeight: 440, title: APP_DISPLAY_NAME, backgroundColor: '#131714', autoHideMenuBar: true,
     webPreferences: { preload: path.join(__dirname, 'preload.cjs'), nodeIntegration: false, contextIsolation: true, sandbox: true, webSecurity: true, spellcheck: false, backgroundThrottling: false } });
   window.removeMenu();
+  activityOverlay = new ActivityOverlay({
+    canShow: () => !!window && !window.isDestroyed() && !window.webContents.isDestroyed() && !quitting
+      && (window.isMinimized() || !window.isVisible() || !window.isFocused()),
+    workArea: () => window && !window.isDestroyed() ? screen.getDisplayMatching(window.getBounds()).workArea : screen.getPrimaryDisplay().workArea,
+    onSizeChange: async size => { try { await controller?.savePreferences({ activityOverlaySize: size }); } catch (error) { controller?.reportError(error); throw error; } },
+    createWindow: () => {
+      const overlay = new BrowserWindow({ width: 144, height: 144, title: `${APP_DISPLAY_NAME} · Arbeitsanzeige`,
+        show: false, transparent: true, frame: false, focusable: false, alwaysOnTop: true, skipTaskbar: true,
+        resizable: false, movable: false, minimizable: false, maximizable: false, closable: false, backgroundColor: '#00000000', autoHideMenuBar: true,
+        webPreferences: { preload: path.join(__dirname, 'activity-overlay-preload.cjs'), nodeIntegration: false, contextIsolation: true, sandbox: true, webSecurity: true, spellcheck: false } });
+      overlay.removeMenu(); overlay.setIgnoreMouseEvents(true, { forward: true });
+      overlay.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+      overlay.webContents.on('will-navigate', event => event.preventDefault());
+      return overlay;
+    },
+  });
+  activityOverlay.update(activityOverlayState(controller.snapshot()));
   voiceOverlay = new VoiceOverlay({
     canShow: () => !!window && !window.isDestroyed() && (window.isMinimized() || !window.isVisible() || !window.isFocused()) && !quitting,
     bounds: () => { const area = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea; const width = Math.min(520, area.width - 32), height = Math.min(300, area.height - 32); return { x: area.x + area.width - width - 16, y: area.y + area.height - height - 16, width, height }; },
@@ -124,15 +150,19 @@ async function createApp(): Promise<void> {
     // confirm shutdown; a failed flush must leave a visible way to retry closing.
     if (!disposed) { event.preventDefault(); if (!quitting) app.quit(); }
   });
-  window.on('focus', () => voiceOverlay?.hide());
-  window.on('closed', () => { voiceOverlay?.dispose(); void voiceHotkeys?.dispose().catch(() => {}); });
+  window.on('focus', () => { voiceOverlay?.hide(); activityOverlay?.refresh(); });
+  const refreshActivityOverlay = () => activityOverlay?.refresh();
+  window.on('blur', refreshActivityOverlay); window.on('minimize', refreshActivityOverlay); window.on('restore', refreshActivityOverlay);
+  window.on('show', refreshActivityOverlay); window.on('hide', refreshActivityOverlay); window.on('move', refreshActivityOverlay); window.on('resize', refreshActivityOverlay);
+  screen.on('display-added', refreshActivityOverlay); screen.on('display-removed', refreshActivityOverlay); screen.on('display-metrics-changed', refreshActivityOverlay);
+  window.on('closed', () => { voiceOverlay?.dispose(); activityOverlay?.dispose(); void voiceHotkeys?.dispose().catch(() => {}); });
   session.defaultSession.setPermissionRequestHandler((contents, permission, callback, details) => {
     callback(contents === window?.webContents && contents.getURL() === rendererUrl && permission === 'media' && 'mediaTypes' in details && !!details.mediaTypes?.includes('audio') && !details.mediaTypes.includes('video'));
   });
   session.defaultSession.setPermissionCheckHandler((contents, permission) => contents === window?.webContents && contents.getURL() === rendererUrl && permission === 'media');
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' })); window.webContents.on('will-navigate', event => event.preventDefault());
-  window.webContents.on('render-process-gone', () => { voiceOverlay?.stop(); void controller?.stop().catch(() => {}); });
-  powerMonitor.on('suspend', () => { voiceOverlay?.stop(); void controller?.stop().catch(() => {}); });
+  window.webContents.on('render-process-gone', () => { voiceOverlay?.stop(); activityOverlay?.stop(); void controller?.stop().catch(() => {}); });
+  powerMonitor.on('suspend', () => { voiceOverlay?.stop(); activityOverlay?.stop(); void controller?.stop().catch(() => {}); });
   const ipcController = controller;
   const ipc = createIpcRouter({ controller: ipcController, reportError: error => ipcController.reportError(error), platform: {
     stopVoiceOverlay: () => voiceOverlay?.stop(),
@@ -148,6 +178,9 @@ async function createApp(): Promise<void> {
   ipcMain.on('openhiatus:voice-overlay', (event, value: unknown) => {
     if (!trustedRenderer(event)) return;
     const state = parseVoiceOverlayState(value); if (state) voiceOverlay?.update(state);
+  });
+  ipcMain.on(ACTIVITY_OVERLAY_RESIZE_CHANNEL, (event, value: unknown) => {
+    if (!quitting && event.senderFrame === event.sender.mainFrame) activityOverlay?.handleResize(event.sender, value);
   });
   ipcMain.handle('openhiatus:call', async (event, method: unknown, args: unknown): Promise<IpcResponse> => {
     if (!trustedRenderer(event)) return { ok: false, error: 'Unzulässiger Aufruf.' };
@@ -182,9 +215,10 @@ async function createApp(): Promise<void> {
 app.on('second-instance', () => { window?.restore(); window?.focus(); });
 app.on('window-all-closed', () => app.quit());
 app.on('before-quit', event => {
-  if (disposed) return; event.preventDefault(); if (quitting) return; quitting = true; voiceOverlay?.stop();
-  void (controller?.dispose() ?? Promise.resolve()).then(async () => { await memoryWriter?.dispose(); await stateWriter?.dispose(); services?.dispose(); voiceOverlay?.dispose(); await voiceHotkeys?.dispose(); disposed = true; globalShortcut.unregisterAll(); app.quit(); }).catch(() => {
-    quitting = false; void dialog.showMessageBox({ type: 'error', title: `${APP_DISPLAY_NAME} konnte die Arbeit nicht sicher beenden`, message: `Die laufende Arbeit oder das Speichern konnte nicht sicher abgeschlossen werden. ${APP_DISPLAY_NAME} bleibt geöffnet. Bitte erneut versuchen.` });
+  if (disposed) return; event.preventDefault(); if (quitting) return; quitting = true; voiceOverlay?.stop(); activityOverlay?.stop();
+  void (controller?.dispose() ?? Promise.resolve()).then(async () => { await memoryWriter?.dispose(); await stateWriter?.dispose(); services?.dispose(); voiceOverlay?.dispose(); activityOverlay?.dispose(); await voiceHotkeys?.dispose(); disposed = true; globalShortcut.unregisterAll(); app.quit(); }).catch(() => {
+    quitting = false; if (controller) activityOverlay?.update(activityOverlayState(controller.snapshot()));
+    void dialog.showMessageBox({ type: 'error', title: `${APP_DISPLAY_NAME} konnte die Arbeit nicht sicher beenden`, message: `Die laufende Arbeit oder das Speichern konnte nicht sicher abgeschlossen werden. ${APP_DISPLAY_NAME} bleibt geöffnet. Bitte erneut versuchen.` });
   });
 });
 if (locked) app.whenReady().then(createApp).catch(() => { void dialog.showMessageBox({ type: 'error', title: APP_DISPLAY_NAME, message: `${APP_DISPLAY_NAME} konnte nicht starten. Bitte prüfen, ob das vollständige App-Paket und das lokale Datenverzeichnis zugänglich sind.` }).then(async () => { await Promise.allSettled([memoryWriter?.dispose(), stateWriter?.dispose()]); disposed = true; app.quit(); }); });

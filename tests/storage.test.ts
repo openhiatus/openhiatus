@@ -8,6 +8,27 @@ import { CredentialStore, StateStore, defaultState, type CredentialCrypto } from
 
 function directory() { return mkdtempSync(join(tmpdir(), 'openhiatus-storage-test-')); }
 
+test('workspace appearance preferences migrate and survive restart without overwriting invalid profiles', () => {
+  const path = directory(), state = defaultState();
+  delete state.preferences.sidebarMode; delete state.preferences.activityOverlayEnabled; delete state.preferences.activityOverlaySize;
+  writeFileSync(join(path, 'state.json'), JSON.stringify({ version: 1, state }), 'utf8');
+  const store = new StateStore(path), restored = store.load();
+  assert.equal(restored.preferences.sidebarMode, 'auto');
+  assert.equal(restored.preferences.activityOverlayEnabled, false); assert.equal(restored.preferences.activityOverlaySize, 144);
+  Object.assign(restored.preferences, { sidebarMode: 'collapsed', activityOverlayEnabled: true, activityOverlaySize: 272 });
+  store.save(restored);
+  assert.equal(new StateStore(path).load().preferences.sidebarMode, 'collapsed');
+  assert.equal(new StateStore(path).load().preferences.activityOverlayEnabled, true);
+  assert.equal(new StateStore(path).load().preferences.activityOverlaySize, 272);
+  const original = readFileSync(join(path, 'state.json'), 'utf8');
+  for (const patch of [{ sidebarMode: 'narrow' }, { sidebarMode: null }, { activityOverlayEnabled: 'true' },
+    { activityOverlaySize: 95 }, { activityOverlaySize: 321 }, { activityOverlaySize: 144.5 }, { activityOverlaySize: null }]) {
+    const invalid = structuredClone(restored); Object.assign(invalid.preferences, patch);
+    assert.throws(() => store.save(invalid));
+    assert.equal(readFileSync(join(path, 'state.json'), 'utf8'), original);
+  }
+});
+
 test('background jobs roundtrip explicit fields, redact results, and restart never replays queued or running work', () => {
   const path = directory(); const store = new StateStore(path); const state = defaultState();
   const secret = 'sk-synthetic-provider-key-12345678901234567890';

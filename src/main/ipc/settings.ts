@@ -2,14 +2,15 @@ import type { PreferencesPatch, ProviderInput } from '../../shared/contracts';
 import { parseSkillFavorites } from '../../shared/skill-favorites';
 import { computerDetailDivisor, computerOverviewDivisor } from '../../shared/computer-views';
 import { computerImageRetentionCalls, computerWorkingMemoryCalls } from '../../shared/computer-task-settings';
+import { activityOverlaySize, sidebarMode } from '../../shared/workspace-preferences';
 import { command, inputObject, inputText, noArgs, type HandlerMap } from './command';
 import type { IpcPorts } from './ports';
 
-const booleanPreferences = ['speakReplies', 'voiceConversation', 'earcons', 'memoryAutoSummarize', 'chatgptBackgroundUsage', 'computerDelegationEnabled', 'computerFast'] as const;
+const booleanPreferences = ['speakReplies', 'voiceConversation', 'earcons', 'memoryAutoSummarize', 'chatgptBackgroundUsage', 'computerDelegationEnabled', 'computerFast', 'activityOverlayEnabled'] as const;
 const textPreferences = ['inputDeviceId', 'outputDeviceId', 'voiceId', 'model', 'dialogModel', 'memoryModel', 'computerModel'] as const;
 const deviceMetadata = ['inputDeviceLabel', 'inputDeviceGroupId', 'outputDeviceLabel', 'outputDeviceGroupId'] as const;
 function preferences(value: unknown): PreferencesPatch {
-  const input = inputObject(value, [...booleanPreferences, ...textPreferences, ...deviceMetadata, 'skillFavorites', 'computerOverviewScaleDivisor', 'computerDetailScaleDivisor', 'computerImageRetentionCalls', 'computerWorkingMemoryCalls'], 'Ungültige Einstellungen.');
+  const input = inputObject(value, [...booleanPreferences, ...textPreferences, ...deviceMetadata, 'skillFavorites', 'computerOverviewScaleDivisor', 'computerDetailScaleDivisor', 'computerImageRetentionCalls', 'computerWorkingMemoryCalls', 'sidebarMode', 'activityOverlaySize'], 'Ungültige Einstellungen.');
   const patch: PreferencesPatch = {};
   for (const key of booleanPreferences) if (Object.hasOwn(input, key)) {
     const item = input[key]; if (typeof item !== 'boolean') throw new Error('Ungültige Einstellung.'); patch[key] = item;
@@ -21,6 +22,8 @@ function preferences(value: unknown): PreferencesPatch {
     const item = input[key]; if (typeof item !== 'string' || item.length > 1000) throw new Error('Ungültige Geräteeinstellung.'); patch[key] = item;
   }
   if (Object.hasOwn(input, 'skillFavorites')) patch.skillFavorites = parseSkillFavorites(input.skillFavorites);
+  if (Object.hasOwn(input, 'sidebarMode')) patch.sidebarMode = sidebarMode(input.sidebarMode);
+  if (Object.hasOwn(input, 'activityOverlaySize')) patch.activityOverlaySize = activityOverlaySize(input.activityOverlaySize);
   if (Object.hasOwn(input, 'computerOverviewScaleDivisor')) patch.computerOverviewScaleDivisor = computerOverviewDivisor(input.computerOverviewScaleDivisor);
   if (Object.hasOwn(input, 'computerDetailScaleDivisor')) patch.computerDetailScaleDivisor = computerDetailDivisor(input.computerDetailScaleDivisor);
   if (Object.hasOwn(input, 'computerImageRetentionCalls')) patch.computerImageRetentionCalls = computerImageRetentionCalls(input.computerImageRetentionCalls);

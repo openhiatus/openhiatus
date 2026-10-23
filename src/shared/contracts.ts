@@ -1,4 +1,5 @@
 import type { SkillFavorites } from './skill-favorites';
+import type { SidebarMode } from './workspace-preferences';
 import type { MemorySnapshot, MemorySource, MemorySearchResult, MemoryPeriodRequest, MemoryPeriodPage, SummaryJobState } from './memory';
 
 export interface Usage { inputTokens: number; outputTokens: number; cacheReadTokens: number; cacheWriteTokens: number; costUsd?: number; }
@@ -20,6 +21,7 @@ export interface Message { id: string; role: 'user' | 'assistant'; text: string;
 export interface Activity { id: string; at: string; kind: 'system' | 'command' | 'file' | 'error'; title: string; detail?: string; }
 export interface Task { id: string; status: TaskStatus; threadId?: string; turnId?: string; error?: string; }
 export interface Preferences {
+  sidebarMode?: SidebarMode; activityOverlayEnabled?: boolean; activityOverlaySize?: number;
   inputDeviceId: string; outputDeviceId: string;
   inputDeviceLabel?: string; inputDeviceGroupId?: string; outputDeviceLabel?: string; outputDeviceGroupId?: string;
   computerOverviewScaleDivisor?: number;

@@ -1,7 +1,7 @@
 {
   "name": "openhiatus",
   "productName": "openHiatus",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "private": true,
   "description": "Eigenständiger Windows-Sprachassistent mit Pi, mehreren Modellanbietern und persönlichem Gedächtnis",
   "author": "openHiatus contributors",
@@ -39,7 +39,9 @@
     "test:audio-devices-ui": "node scripts/audio-devices-ui-check.mjs",
     "test:computer-images": "node scripts/computer-images-check.mjs",
     "test:computer-preview": "node scripts/computer-preview-check.mjs",
-    "test:computer-model-ui": "node scripts/computer-model-ui-check.mjs"
+    "test:computer-model-ui": "node scripts/computer-model-ui-check.mjs",
+    "test:responsive-ui": "node scripts/responsive-navigation-check.mjs",
+    "test:activity-overlay": "node scripts/activity-overlay-ui-check.mjs"
   },
   "dependencies": {
     "@earendil-works/pi-ai": "1.3.0",

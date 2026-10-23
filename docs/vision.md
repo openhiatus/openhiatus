@@ -30,6 +30,8 @@ Die Oberfläche passt sich automatisch an Fenstergröße, Seitenverhältnis, Win
 
 Globale Bedienelemente wie Stopp sowie Sprechen und Schreiben bleiben erreichbar. Ein Wechsel des Layouts erhält Entwürfe, Fokus, Aufnahme und laufende Arbeit. Dieses Ziel gilt für die gesamte Anwendung und wird mit unterschiedlichen Fenstergrößen und Skalierungen geprüft.
 
+Der erste umgesetzte Schritt in 0.0.8 ist die automatisch oder manuell einklappbare Navigation mit gespeicherter Wahl und ein anhand der Gesprächsbühne skalierendes Symbol. Eine optionale Arbeitsanzeige erscheint oben rechts auf dem Monitor, wenn openHiatus im Hintergrund arbeitet; ihre Größe lässt sich am rechten Griff ändern. Geprüft sind Fenster bis zu nativen Außenmaßen von 560 × 440 Pixeln. Weitergehende Abnahme mit vergrößerter Schrift und unterschiedlichen Windows-Skalierungen bleibt Teil dieses Ziels.
+
 ## Schnelle, zuverlässige Arbeit
 
 Zeit bis zum nutzbaren Ergebnis ist ein wesentliches Produktkriterium. Weniger Token oder kleinere Dateien allein sind kein Erfolg, wenn zusätzliche Modellrunden den Ablauf verlängern.

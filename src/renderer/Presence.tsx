@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { presenceDiameter } from './presence-size';
 
 export type PresenceState = 'idle' | 'listening' | 'thinking' | 'speaking' | 'working' | 'offline' | 'error';
 
@@ -52,6 +53,24 @@ export function Presence({ state, level, size = 'compact', label }: { state: Pre
   const root = useRef<HTMLDivElement>(null);
   const levelRef = useRef(level);
   levelRef.current = level;
+  useEffect(() => {
+    const element = root.current;
+    const stage = element?.closest<HTMLElement>('.voice-stage');
+    if (!element || !stage || size !== 'large') return;
+    const update = () => {
+      const diameter = presenceDiameter(stage.clientWidth, stage.clientHeight);
+      element.style.setProperty('--size', `${diameter}px`);
+      element.style.setProperty('--presence-mark-scale', String(diameter / 96));
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(stage);
+    return () => {
+      observer.disconnect();
+      element.style.removeProperty('--size');
+      element.style.removeProperty('--presence-mark-scale');
+    };
+  }, [size]);
   useEffect(() => {
     const element = root.current;
     if (!element) return;
