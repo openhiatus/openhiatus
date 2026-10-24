@@ -1,5 +1,8 @@
 import { APP_DISPLAY_NAME } from '../shared/branding';
 import { DEFAULT_ASSISTANT_IDENTITY } from '../shared/assistant-profile';
+import { parseAssistantProfile, type AssistantProfile } from '../shared/assistant-profile';
+import { hasIdentityFiles, initialIdentityFiles, isIdentityFile, IDENTITY_FILES } from '../shared/identity-documents';
+import { IdentityFiles } from './platform/persistence/identity-files';
 import { closeSync, existsSync, fsyncSync, mkdirSync, openSync, readFileSync, renameSync, statSync, writeFileSync } from 'node:fs';
 import { createHash, randomUUID } from 'node:crypto';
 import { join } from 'node:path';
@@ -15,8 +18,8 @@ const MAX_CORE_CONTENT = 8000;
 const MAX_CONTEXT = 24000;
 // Bump when prompts, hierarchy rules or report semantics change so existing reports are regenerated without erasing their provenance.
 const SEMANTIC_PIPELINE_REVISION = 'openhiatus-semantic-v1';
-const kinds: MemoryKind[] = ['identity', 'core', 'day', 'week', 'month'];
-const reasons: MemoryRevisionReason[] = ['created', 'capture', 'rebuild', 'user-edit', 'approved-proposal', 'ai-summary'];
+const kinds: MemoryKind[] = ['identity', 'core', 'soul', 'agent', 'user', 'day', 'week', 'month'];
+const reasons: MemoryRevisionReason[] = ['created', 'capture', 'rebuild', 'user-edit', 'external-edit', 'approved-proposal', 'ai-summary'];
 const berlinDay = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Berlin', year: 'numeric', month: '2-digit', day: '2-digit' });
 const stopWords = new Set('aber als am an auch auf aus bei bin bis bitte das dass dein deine dem den der des die diese du ein eine einen einer er es für hat ich im in ist ja kann mit nach nicht noch oder sie sind so und uns von war was welche wie wir zu zum zur'.split(' '));
 
@@ -89,7 +92,7 @@ function weekKey(day: string): string {
   const week = Math.ceil((((date.getTime() - first.getTime()) / 86400000) + 1) / 7);
   return `${year}-W${String(week).padStart(2, '0')}`;
 }
-function protectedDocument(document: MemoryDocument): boolean { return document.kind === 'identity' || document.kind === 'core'; }
+function protectedDocument(document: MemoryDocument): boolean { return document.kind === 'identity' || isIdentityFile(document.kind); }
 function validDay(year: string, month: string, day: string): string | undefined {
   const result = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
   const parsed = new Date(`${result}T12:00:00Z`);
@@ -128,6 +131,7 @@ export class MemoryStore {
   private state: MemoryState;
   private primaryHash?: string;
   private recovered = false;
+  private readonly identityFiles: IdentityFiles;
 
   constructor(directory: string, options: MemoryOptions = {}) {
     mkdirSync(directory, { recursive: true });
@@ -136,6 +140,7 @@ export class MemoryStore {
     this.sanitize = value => redact(options.sanitize ? options.sanitize(value) : value);
     this.now = options.now || (() => new Date());
     this.state = this.load();
+    this.identityFiles = new IdentityFiles(directory);
   }
 
   private time(): string { return this.now().toISOString(); }
@@ -143,7 +148,7 @@ export class MemoryStore {
   private read(path: string): MemoryState {
     if (statSync(path).size > MAX_BYTES) throw new Error('Das Gedächtnis ist größer als 64 MiB. Die Datei bleibt erhalten.');
     const envelope = object(JSON.parse(readFileSync(path, 'utf8')));
-    if (envelope.version !== 1) throw new UnsupportedMemoryVersion(`Dieses Gedächtnis stammt aus einer nicht unterstützten ${APP_DISPLAY_NAME}-Version. Die Datei bleibt unverändert.`);
+    if (envelope.version !== 1 && envelope.version !== 2) throw new UnsupportedMemoryVersion(`Dieses Gedächtnis stammt aus einer nicht unterstützten ${APP_DISPLAY_NAME}-Version. Die Datei bleibt unverändert.`);
     return this.validate(envelope.state);
   }
   private validate(value: unknown): MemoryState {
@@ -245,10 +250,10 @@ export class MemoryStore {
     this.primaryHash = hash(readFileSync(this.path, 'utf8'));
     return state;
   }
-  private commit(draft: MemoryState): void {
+  private commit(draft: MemoryState, imported: ReadonlySet<string> = new Set()): void {
     draft.generation = this.state.generation + 1;
     const checked = this.validate(draft);
-    const serialized = JSON.stringify({ version: 1, state: checked }, null, 2);
+    const serialized = JSON.stringify({ version: hasIdentityFiles(checked.documents) ? 2 : 1, state: checked }, null, 2);
     if (Buffer.byteLength(serialized) > MAX_BYTES) throw new Error('Das Gedächtnis erreicht die Speichergrenze von 64 MiB. Es wurden keine Quellen gelöscht; diese Änderung wurde nicht gespeichert.');
     const currentHash = existsSync(this.path) ? hash(readFileSync(this.path, 'utf8')) : undefined;
     if (currentHash !== this.primaryHash) throw new Error(`Das Gedächtnis wurde außerhalb dieser Sitzung geändert. Bitte ${APP_DISPLAY_NAME} neu starten; die Datei wird nicht überschrieben.`);
@@ -256,17 +261,44 @@ export class MemoryStore {
       let previous: MemoryState | undefined;
       try { previous = this.read(this.path); }
       catch (error) { if (error instanceof UnsupportedMemoryVersion || !this.recovered) throw error; }
-      if (previous) atomicWrite(this.backup, JSON.stringify({ version: 1, state: previous }, null, 2));
+      if (previous) atomicWrite(this.backup, JSON.stringify({ version: hasIdentityFiles(previous.documents) ? 2 : 1, state: previous }, null, 2));
     }
     atomicWrite(this.path, serialized);
     this.primaryHash = hash(serialized);
     this.state = checked;
+    if (hasIdentityFiles(this.state.documents)) this.identityFiles.publish(this.state.documents, imported);
+  }
+
+  /** One-time migration uses the saved profile; subsequent calls preserve edited files. */
+  initializeProfile(profile: AssistantProfile): MemorySnapshot {
+    if (!hasIdentityFiles(this.state.documents)) {
+      const draft = clone(this.state), defaults = initialIdentityFiles(parseAssistantProfile(profile), draft.documents.find(document => document.id === 'identity')?.content);
+      for (const file of IDENTITY_FILES) if (!draft.documents.some(document => document.id === file.id)) draft.documents.push(this.document(file.id, file.id, file.filename, this.clean(defaults[file.id], MAX_CORE_CONTENT), [], 'created'));
+      // Existing core text and all legacy revisions stay intact.
+      this.identityFiles.changes(draft.documents);
+      this.commit(draft);
+    }
+    return this.snapshot();
+  }
+  private syncIdentityFiles(): void {
+    if (!hasIdentityFiles(this.state.documents)) return;
+    const updates = this.identityFiles.changes(this.state.documents);
+    if (updates.length) {
+      const draft = clone(this.state);
+      for (const update of updates) {
+        const document = draft.documents.find(document => document.id === update.id)!;
+        this.revise(document, this.clean(update.content, MAX_CORE_CONTENT), document.sourceIds, 'external-edit'); document.edited = true; this.stale(draft, document.id);
+      }
+      this.commit(draft, new Set(updates.map(update => update.id)));
+    } else this.identityFiles.publish(this.state.documents);
   }
 
   snapshot(): MemorySnapshot {
+    this.syncIdentityFiles();
     const safe = this.validate(this.state);
     this.markStale(safe);
-    return clone({ documents: safe.documents, proposals: safe.proposals, ...(safe.lastRetrieval ? { lastRetrieval: safe.lastRetrieval } : {}), storagePath: this.path, sourceCount: safe.sources.length, recovered: this.recovered });
+    return clone({ documents: safe.documents, proposals: safe.proposals, ...(safe.lastRetrieval ? { lastRetrieval: safe.lastRetrieval } : {}), storagePath: this.path, sourceCount: safe.sources.length, recovered: this.recovered,
+      ...(hasIdentityFiles(safe.documents) ? { markdownDirectory: this.identityFiles.directory, fileSyncWarnings: this.identityFiles.warnings } : {}) });
   }
   /** A small, detached view for frozen agent context; no archive or revision history is copied. */
   instructionDocuments(): Array<Pick<MemoryDocument, 'id' | 'version' | 'content'>> {
@@ -462,6 +494,7 @@ export class MemoryStore {
   }
   rebuild(): MemorySnapshot { const draft = clone(this.state); this.summaries(draft, 'rebuild'); this.commit(draft); return this.snapshot(); }
   edit(documentId: string, content: string, expectedVersion: number): MemorySnapshot {
+    this.syncIdentityFiles();
     const draft = clone(this.state); const document = draft.documents.find(row => row.id === documentId);
     if (!document) throw new Error('Diese Gedächtnisdatei existiert nicht.');
     if (document.version !== integer(expectedVersion)) throw new Error('Die Gedächtnisdatei wurde inzwischen geändert. Bitte die aktuelle Version laden.');
@@ -473,6 +506,7 @@ export class MemoryStore {
     this.commit(draft); return this.snapshot();
   }
   propose(input: CoreProposalInput): CoreProposal {
+    this.syncIdentityFiles();
     if (input.documentId !== 'identity' && input.documentId !== 'core') throw new Error('Nur für Identität und persönlichen Kern sind Freigabevorschläge möglich.');
     const draft = clone(this.state); const document = draft.documents.find(row => row.id === input.documentId)!;
     if (document.version !== integer(input.baseVersion)) throw new Error('Die Basisversion des Vorschlags ist veraltet. Bitte einen neuen Vorschlag auf aktueller Grundlage erstellen.');
@@ -487,6 +521,7 @@ export class MemoryStore {
     draft.proposals.push(proposal); this.commit(draft); return clone(proposal);
   }
   decide(proposalId: string, decision: 'approve' | 'reject'): MemorySnapshot {
+    this.syncIdentityFiles();
     if (decision !== 'approve' && decision !== 'reject') throw new Error('Ungültige Freigabeentscheidung.');
     const draft = clone(this.state); const proposal = draft.proposals.find(row => row.id === proposalId);
     if (!proposal) throw new Error('Der Kernvorschlag wurde nicht gefunden.');
@@ -511,6 +546,7 @@ export class MemoryStore {
   }
 
   retrieve(query: string, options: { maxChars?: number; maxBytes?: number; includeInstructions?: boolean } = {}): MemoryContext {
+    this.syncIdentityFiles();
     if (options.includeInstructions !== undefined && typeof options.includeInstructions !== 'boolean') throw new Error('Ungültige Auswahl der Gedächtnisvorgaben.');
     const limit = options.maxChars ?? 16000;
     if (!Number.isInteger(limit) || limit < 512 || limit > MAX_CONTEXT) throw new Error('Das Gedächtnis-Kontextbudget muss zwischen 512 und 24000 Zeichen liegen.');

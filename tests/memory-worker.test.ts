@@ -30,6 +30,15 @@ async function fixture(t: { after(callback: () => Promise<void>): void }, wrappe
   } };
 }
 function message(id: string, text: string, at = '2026-10-05T12:00:00Z'): Message { return { id, text, at, role: 'user' }; }
+test('four-file migration and external edits update the acknowledged worker instruction cache', async t => {
+  const f = await fixture(t), store = f.create(); await store.initialize();
+  await store.initializeProfile({ name: 'Juno', personalityId: 'direct', templates: [] });
+  assert.equal(store.instructionDocuments().length, 5);
+  await writeFile(join(f.directory, 'IDENTITY.md'), '# IDENTITY.md\n- **Name:** Kai\n- **Emoji:** 🌙', 'utf8');
+  await store.snapshot();
+  assert.match(store.instructionDocuments().find(document => document.id === 'agent')!.content, /Kai/);
+  await store.flush();
+});
 const instructions = [{ id: 'identity', version: 1, content: 'Synthetic identity' }, { id: 'core', version: 1, content: '' }];
 const fakeWorker = (handler: string) => `const {parentPort,threadId}=require('node:worker_threads');parentPort.on('message',message=>{
   if(message.type==='initialize'){parentPort.postMessage({version:1,type:'ready',threadId,instructions:${JSON.stringify(instructions)}});return;}

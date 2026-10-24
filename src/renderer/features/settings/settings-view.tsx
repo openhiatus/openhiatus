@@ -1,5 +1,4 @@
 import { AudioDeviceSelect } from './audio-device-select';
-import { AssistantProfileCard } from './assistant-profile-card';
 import { isFastModelSelection } from '../../../shared/model-selection';
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import { AudioLines, ChevronDown, Headphones, KeyRound, Keyboard, LoaderCircle, Mic, Monitor, SlidersHorizontal, Square, UserRound, Volume2 } from 'lucide-react';
@@ -28,6 +27,7 @@ export interface SettingsVoicePort {
 export interface SettingsViewProps {
   state?: Snapshot;
   navigationRequest?: { tab: SettingsTab; requestId: number };
+  onOpenIdentity?(): void;
   workBusy: boolean;
   summaryInProgress: boolean;
   voice: SettingsVoicePort;
@@ -51,7 +51,7 @@ const phaseLabels: Record<AudioPhase, string> = {
 function Spinner() { return <LoaderCircle size={15} className="spin" aria-hidden="true" />; }
 
 /** The App keeps this feature mounted: tabs and unsaved access fields belong to this view. */
-export function SettingsView({ state, navigationRequest, workBusy, summaryInProgress, voice, onPreference, onError, onNotice }: SettingsViewProps) {
+export function SettingsView({ state, navigationRequest, onOpenIdentity, workBusy, summaryInProgress, voice, onPreference, onError, onNotice }: SettingsViewProps) {
   const [tab, setTab] = useState<SettingsTab>(navigationRequest?.tab ?? 'models');
   const [speechKey, setSpeechKey] = useState('');
   const [busyAction, setBusyAction] = useState('');
@@ -148,9 +148,9 @@ export function SettingsView({ state, navigationRequest, workBusy, summaryInProg
       </section>
 
       <section id={`${id}-panel-personality`} role="tabpanel" aria-labelledby={`${id}-tab-personality`} hidden={tab !== 'personality'} className="settings-tab-panel">
-        <p className="settings-panel-intro">Hier bestimmst du Rufname und Antwortstil deines Assistenten. Wähle eine Persönlichkeit oder gestalte eigene Vorlagen.</p>
-        <AssistantProfileCard profile={state?.preferences.assistantProfile} ready={ready}
-          onSave={async profile => { await window.openhiatus.savePreferences({ assistantProfile: profile }); }} onError={onError} />
+        <section className="settings-card"><h2>Agent &amp; Nutzer</h2><p>Rufname, Persönlichkeit, deine Angaben und Langzeitwissen findest du gemeinsam unter Gedächtnis → Agent &amp; Nutzer.</p>
+          <p className="billing-note">SOUL.md · IDENTITY.md · USER.md · MEMORY.md. Dort liegen auch deine bisherigen Stilvorlagen.</p>
+          <button className="secondary-button" disabled={!onOpenIdentity} onClick={onOpenIdentity}>Agent &amp; Nutzer öffnen</button></section>
       </section>
 
       <section id={`${id}-panel-behavior`} role="tabpanel" aria-labelledby={`${id}-tab-behavior`} hidden={tab !== 'behavior'} className="settings-tab-panel">

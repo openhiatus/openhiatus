@@ -1,7 +1,7 @@
 import { isMainThread, parentPort, threadId, workerData } from 'node:worker_threads';
 import { MemoryStore } from './memory.js';
 import { redact } from './redact.js';
-import { decodeMemoryBootstrap, decodeMemoryRequest, memoryFailure, mutatesMemory, type MemoryCall, type MemoryMethod, type MemoryResult, type MemoryWorkerResponse } from './platform/persistence/memory-protocol.js';
+import { decodeMemoryBootstrap, decodeMemoryRequest, memoryFailure, updatesInstructionCache, type MemoryCall, type MemoryMethod, type MemoryResult, type MemoryWorkerResponse } from './platform/persistence/memory-protocol.js';
 
 if (isMainThread || !parentPort) throw new Error('Der Gedächtnisspeicher darf nur in seinem eigenen Worker gestartet werden.');
 const port = parentPort;
@@ -12,12 +12,13 @@ const sanitize = (value: string) => redact(value, secrets);
 const send = (response: MemoryWorkerResponse) => port.postMessage(response);
 function respond<M extends MemoryMethod>(request: MemoryCall<M>, result: MemoryResult<M>, memory: MemoryStore): void {
   send({ version: 1, type: 'result', id: request.id, method: request.method, result,
-    ...(mutatesMemory(request.method) ? { instructions: memory.instructionDocuments() } : {}) });
+    ...(updatesInstructionCache(request.method) ? { instructions: memory.instructionDocuments() } : {}) });
 }
 function execute(request: MemoryCall, memory: MemoryStore): void {
   // Each method is synchronous. The worker's event loop is the single FIFO;
   // validation, draft mutation, backup and fsync all finish before the next call.
   switch (request.method) {
+    case 'initializeProfile': return respond(request, memory.initializeProfile(...request.args), memory);
     case 'capture': return respond(request, memory.capture(...request.args), memory);
     case 'snapshot': return respond(request, memory.snapshot(...request.args), memory);
     case 'source': return respond(request, memory.source(...request.args), memory);

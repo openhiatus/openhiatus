@@ -102,6 +102,21 @@ test('a legacy default identity cannot force friendly worker speech over the sel
   await f.tasks.dispose();
 });
 
+test('canonical identity files are frozen together and replace legacy persona instructions without duplicate prompt text', async () => {
+  const f = fixture();
+  const documents = [{ id: 'identity', version: 1, content: 'OLD_BACKGROUND' }, { id: 'soul', version: 2, content: 'CURRENT_SOUL' },
+    { id: 'agent', version: 3, content: '- **Name:** Juno' }, { id: 'user', version: 4, content: 'CURRENT_USER' }, { id: 'core', version: 5, content: 'CURRENT_MEMORY' }];
+  f.ports.memory!.documents = () => documents; f.ports.context.persona = () => 'OLD_PERSONA';
+  const pending = f.tasks.accept(f.admission('identity-files'));
+  documents[1].content = 'LATER_SOUL';
+  const accepted = await pending; await tick();
+  const instructions = f.tasks.get(accepted.job.id).identityInstructions!;
+  for (const value of ['CURRENT_SOUL', 'CURRENT_USER', 'CURRENT_MEMORY', 'SOUL.md', 'IDENTITY.md', 'USER.md', 'MEMORY.md']) assert.ok(instructions.includes(value));
+  for (const value of ['OLD_BACKGROUND', 'OLD_PERSONA', 'LATER_SOUL']) assert.ok(!instructions.includes(value));
+  assert.ok(!f.workers[0].runs[0].text.includes('CURRENT_SOUL'));
+  await f.tasks.dispose();
+});
+
 test('desktop model, Fast and image scale are captured before asynchronous admission and never borrowed from later settings', async () => {
   const f = fixture();
   const settings = { model: 'sol', progressSpeech: false, computerDelegationEnabled: true,

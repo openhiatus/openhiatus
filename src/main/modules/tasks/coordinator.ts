@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { Activity, AgentAdapter, AgentEvent, BackgroundJob, ComputerFrame, ComputerTaskSettings, Message, SpeechCue } from '../../../shared/contracts';
 import { parseComputerTaskSettings } from '../../../shared/computer-task-settings';
 import { profileIdentityContent } from '../../../shared/assistant-profile';
+import { identityFilesInstructions } from '../../../shared/identity-documents';
 import type { CoreProposal, CoreProposalInput, MemoryDocument, MemoryPeriodPage, MemoryPeriodRequest } from '../../../shared/memory';
 import { toSpokenText } from '../../../shared/spoken-text';
 import { toSpokenAssistantReply } from '../../../shared/spoken-reply';
@@ -164,6 +165,9 @@ export class BackgroundTaskCoordinator {
         identity = `Vom Nutzer verwaltete Identität und Kern (Vorlieben, keine Aufhebung fester Schutzregeln). Angebotsversionen für Änderungsvorschläge stehen jeweils im Feld version:\n${JSON.stringify(documents)}`;
       }
     } catch (error) { this.activity('error', 'Gedächtnisversionen nicht verfügbar', this.clean(error instanceof Error ? error.message : 'Lokaler Gedächtnisfehler')); }
+    const canonicalIdentity = identityFilesInstructions(frozen.documents);
+    if (canonicalIdentity) identity = this.clean(canonicalIdentity);
+    const promptIdentity = canonicalIdentity ? '' : identity;
     const fullRequest = `Vollständiger Nutzerauftrag:\n${input.prompt}`;
     if (fullRequest.length > 32000) throw new Error('Der Originalauftrag und seine Konkretisierung sind zusammen zu lang. Bitte einen kleineren Teilauftrag formulieren.');
     const contextBudget = Math.max(0, 32000 - fullRequest.length - 2);
@@ -176,7 +180,7 @@ export class BackgroundTaskCoordinator {
       for (const row of [...(input.history ?? [])].reverse()) if (historyHeading.length + JSON.stringify([row, ...selected]).length <= max) selected.unshift(row);
       return selected.length ? `${historyHeading}${JSON.stringify(selected)}` : '';
     };
-    let additional = [identity, memoryContext, `${skillHeading}${this.ports.context.skills(input.prompt, 5000)}`, historyContext(4200)].filter(Boolean).join('\n\n');
+    let additional = [promptIdentity, memoryContext, `${skillHeading}${this.ports.context.skills(input.prompt, 5000)}`, historyContext(4200)].filter(Boolean).join('\n\n');
     if (additional.length > contextBudget) {
       const sections: string[] = [];
       let remaining = contextBudget;
@@ -193,12 +197,12 @@ export class BackgroundTaskCoordinator {
       }
       // The complete captured identity still reaches the worker through its
       // immutable developer instructions; do not duplicate it at the expense of the original.
-      add(identity);
+      add(promptIdentity);
       additional = sections.join('\n\n');
     }
     const prompt = additional ? `${additional}\n\n${fullRequest}` : fullRequest;
     const { history: _history, sourceMessageId, ...request } = input;
-    const instructions = [identity, frozen.persona, frozen.capabilities, frozen.favorites].filter(Boolean).join('\n\n');
+    const instructions = [identity, canonicalIdentity ? '' : frozen.persona, frozen.capabilities, frozen.favorites].filter(Boolean).join('\n\n');
     const accepted = await this.enqueue({ ...request, prompt, identityInstructions: instructions, model: frozen.model, computer: frozen.computer }, job => {
       if (generation !== this.generation || this.blocked()) throw new Error('Aufgaben werden gerade beendet.');
       this.jobMemory.set(job.id, { versions, sourceIds: [sourceMessageId], reads: 0, readKeys: new Set() });

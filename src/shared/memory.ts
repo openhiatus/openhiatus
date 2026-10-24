@@ -1,7 +1,7 @@
 import type { Message } from './contracts';
 
-export type MemoryKind = 'identity' | 'core' | 'day' | 'week' | 'month';
-export type MemoryRevisionReason = 'created' | 'capture' | 'rebuild' | 'user-edit' | 'approved-proposal' | 'ai-summary';
+export type MemoryKind = 'identity' | 'core' | 'soul' | 'agent' | 'user' | 'day' | 'week' | 'month';
+export type MemoryRevisionReason = 'created' | 'capture' | 'rebuild' | 'user-edit' | 'external-edit' | 'approved-proposal' | 'ai-summary';
 export interface MemorySummaryMetadata {
   method: 'ai';
   model: string;
@@ -128,6 +128,8 @@ export interface MemorySnapshot {
   storagePath: string;
   sourceCount: number;
   recovered: boolean;
+  markdownDirectory?: string;
+  fileSyncWarnings?: string[];
   /** Ephemeral background job, supplied by the controller rather than persisted. */
   summary?: SummaryJobState;
   /** Effective fixed runtime instructions, supplied by the controller, not the memory store. */

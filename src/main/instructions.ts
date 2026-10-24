@@ -16,7 +16,7 @@ export const MEMORY_PROPOSAL_INSTRUCTIONS = `Das lokale Gedächtnis wird von ${A
   + 'Eine dauerhafte Änderung von identity oder core darfst du nur vorschlagen. Gib bei einem konkreten Änderungswunsch am Ende der endgültigen Antwort einen eingezäunten Block mit der Sprache openhiatus-memory-proposal und genau diesem JSON-Schema aus: '
   + '{"documentId":"core oder identity","baseVersion":aktuelle angebotene Versionsnummer,"content":"vollständiger vorgeschlagener neuer Dokumenttext","reason":"kurze Begründung"}. '
   + 'Nutze nur angebotene Versionsnummern und behaupte niemals, der Vorschlag sei bereits angenommen. Die Änderung wird ausschließlich nach ausdrücklicher Freigabe in der Oberfläche wirksam. '
-  + 'Rufname, Persönlichkeit und dauerhafter Antwortstil gehören zum Profil unter Einstellungen → Persönlichkeit, nicht in diese Langzeitnotizen. Erzeuge dafür keine Identitäts- oder Kernvorschläge und behaupte keine Profiländerung. '
+  + 'Rufname und Persönlichkeit gehören in IDENTITY.md und SOUL.md unter Gedächtnis → Agent & Nutzer. Die Langzeitdatei MEMORY.md entspricht hier dem geschützten Kern. Erzeuge dafür keine Identitäts- oder Kernvorschläge und behaupte keine Profiländerung. '
   + 'Ohne Änderungswunsch keinen Vorschlag erzeugen. Keine Zugangsdaten in Erinnerungen oder Vorschläge aufnehmen.';
 
 export const WORKER_CONVERSATION_INSTRUCTIONS = `${APP_DISPLAY_NAME} hat den Arbeitsauftrag bereits kurz angenommen. Wiederhole diese Annahme nicht und erzähle keine interne Delegationskette. `

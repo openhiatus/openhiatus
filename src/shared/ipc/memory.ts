@@ -6,13 +6,14 @@ const id = text(1024), at = text(100), body = text(20000), references = array(id
 const metadata = object({ method: choice(['ai']), model: text(4096), generatedAt: at, inputHash: id,
   inputDocuments: array(object({ id, version: integer }), 15000), citations: references, stale: boolean });
 export const decodeMemorySnapshot: Decoder<MemorySnapshot> = object({
-  documents: array(object({ id, kind: choice(['identity', 'core', 'day', 'week', 'month']), title: text(512), content: body, version: integer, updatedAt: at,
+  documents: array(object({ id, kind: choice(['identity', 'core', 'soul', 'agent', 'user', 'day', 'week', 'month']), title: text(512), content: body, version: integer, updatedAt: at,
     sourceIds: references, edited: boolean, summary: optional(metadata), history: array(object({ version: integer, content: body, updatedAt: at, sourceIds: references,
-      reason: choice(['created', 'capture', 'rebuild', 'user-edit', 'approved-proposal', 'ai-summary']), summary: optional(metadata) }), 10000) }), 15000),
+      reason: choice(['created', 'capture', 'rebuild', 'user-edit', 'external-edit', 'approved-proposal', 'ai-summary']), summary: optional(metadata) }), 10000) }), 15000),
   proposals: array(object({ id, documentId: choice(['identity', 'core']), baseVersion: integer, content: body, reason: body, sourceIds: references,
     status: choice(['pending', 'approved', 'rejected', 'stale']), createdAt: at, decidedAt: optional(at) }), 50000),
   lastRetrieval: optional(object({ query: body, at, documentIds: array(id, 15000), sourceIds: references, text: text(24000) })),
   storagePath: text(4096), sourceCount: integer, recovered: boolean, summary: optional(summary),
+  markdownDirectory: optional(text(4096)), fileSyncWarnings: optional(array(text(1000), 20)),
   runtimeInstructions: optional(array(object({ id, title: text(), content: text(), appliesTo: optional(text()) }), 1000)),
 });
 export const decodeMemorySource: Decoder<MemorySource | undefined> = optional(object({ ...messageFields, conversationId: id }));

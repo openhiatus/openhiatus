@@ -12,6 +12,7 @@ export interface WorkerMemoryStoreOptions {
 export interface AsyncMemoryStore {
   initialize(): Promise<void>;
   instructionDocuments(): InstructionDocuments;
+  initializeProfile?(...args: MemoryArgs<'initializeProfile'>): Promise<MemoryResult<'initializeProfile'>>;
   capture(...args: MemoryArgs<'capture'>): Promise<MemoryResult<'capture'>>;
   snapshot(...args: MemoryArgs<'snapshot'>): Promise<MemoryResult<'snapshot'>>;
   source(...args: MemoryArgs<'source'>): Promise<MemoryResult<'source'>>;
@@ -92,6 +93,7 @@ export class WorkerMemoryStore implements AsyncMemoryStore {
     if (!this.instructions) throw this.fatal || new MemoryWorkerUnavailableError('Das Gedächtnis ist noch nicht initialisiert.');
     return sanitizeInstructions(this.instructions, this.sanitizer());
   }
+  initializeProfile(...args: MemoryArgs<'initializeProfile'>) { return this.call('initializeProfile', args); }
   capture(...args: MemoryArgs<'capture'>) { return this.call('capture', args); }
   snapshot(...args: MemoryArgs<'snapshot'>) { return this.call('snapshot', args); }
   source(...args: MemoryArgs<'source'>) { return this.call('source', args); }

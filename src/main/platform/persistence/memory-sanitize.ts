@@ -32,6 +32,7 @@ function snapshot(value: MemorySnapshot, clean: Clean): MemorySnapshot {
 }
 
 const results: { [M in MemoryMethod]: Sanitize<MemoryResult<M>> } = {
+  initializeProfile: snapshot,
   capture: value => value,
   snapshot,
   source: (value, clean) => value === undefined ? undefined : { ...value, text: clean(value.text) },

@@ -48,10 +48,11 @@ test('a personality navigation request selects the dedicated panel while every o
   const personality = panels.find(panel => panel.startsWith('personality"'))!;
   const behavior = panels.find(panel => panel.startsWith('behavior"'))!;
   assert.doesNotMatch(personality.slice(0, personality.indexOf('>')), /hidden/);
-  assert.match(personality, /Name &amp; Persönlichkeit/);
+  assert.match(personality, /Agent &amp; Nutzer öffnen/);
+  assert.match(personality, /SOUL.md · IDENTITY.md · USER.md · MEMORY.md/);
   assert.doesNotMatch(behavior, /assistant-profile-card|Name &amp; Persönlichkeit/);
   assert.match(behavior.slice(0, behavior.indexOf('>')), /hidden=""/);
-  assert.equal((html.match(/assistant-profile-card/g) ?? []).length, 1);
+  assert.equal((html.match(/assistant-profile-card/g) ?? []).length, 0);
   assert.equal((html.match(/role="tabpanel"/g) ?? []).length, 4);
   assert.deepEqual(f.invoked, []);
 });
