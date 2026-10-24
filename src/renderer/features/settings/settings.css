@@ -1,5 +1,5 @@
 .settings-feature{min-height:0;color:var(--text);font-size:14px}
-.settings-feature .settings-content{max-width:1050px;padding:36px clamp(20px,4vw,48px) 42px}
+.settings-feature .settings-content{max-width:1050px;padding:36px clamp(20px,4vw,48px) 42px;container-type:inline-size;container-name:settings-content}
 .settings-feature-heading .eyebrow{font-size:12px;letter-spacing:1.6px}
 .settings-feature .settings-feature-heading h1{font-size:clamp(30px,3.3vw,38px);margin:10px 0 12px}
 .settings-feature .settings-lead{font-size:14px;line-height:1.75;color:#a7b29e;margin-bottom:26px}
@@ -60,3 +60,5 @@
 .assistant-profile-feedback{min-height:20px;margin-top:12px;font-size:13px;line-height:1.7;color:#b6cba5;overflow-wrap:anywhere}
 .assistant-profile-card .provider-error.assistant-profile-feedback{color:#e3b198}
 @media(max-width:540px){.assistant-profile-actions{align-items:stretch;gap:10px}.assistant-profile-actions>.primary-button,.assistant-profile-actions>.secondary-button{width:100%}.assistant-profile-actions>.text-button{padding:7px 0}}
+/* The actual content width includes a manually expanded sidebar and narrow native windows. */
+@container settings-content (max-width:660px){.settings-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}.settings-tabs>button{flex-direction:row;min-height:46px;padding:10px 6px;font-size:13px;gap:7px}}

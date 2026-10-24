@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { MemorySummaryProgress, ProposalCard, RelatedReports, ReportProvenance, memoryDayIdentifier } from '../src/renderer/MemoryView';
+import { MemorySummaryProgress, MemoryView, ProposalCard, RelatedReports, ReportProvenance, memoryDayIdentifier, memoryDocumentTitle, memoryLongTermDocuments } from '../src/renderer/MemoryView';
 import type { CoreProposal, MemoryDocument, MemorySummaryMetadata, SummaryJobState } from '../src/shared/memory';
 
 const document: MemoryDocument = {
@@ -14,6 +14,37 @@ const proposal: CoreProposal = {
   id: 'proposal-ui-test', documentId: 'core', baseVersion: 3, content: 'Neue Fassung: Antworte in Stichpunkten.',
   reason: 'Du hast kurze Listen bevorzugt.', sourceIds: [], status: 'pending', createdAt: '2026-10-05T12:05:00.000Z',
 };
+
+test('memory distinguishes factual notes from the personality settings and offers navigation only when wired', () => {
+  const render = (onOpenPersonality?: () => void) => renderToStaticMarkup(createElement(MemoryView, { active: false, onOpenPersonality }));
+  const plain = render();
+  assert.match(plain, /<h1>Gedächtnis\.<\/h1>/);
+  assert.match(plain, /Langzeitnotizen/); assert.match(plain, /Technische Vorgaben/);
+  assert.match(plain, /Ton, Rufname und Humor/); assert.match(plain, /Fakten, Kontext und persönliche Arbeitsvorlieben/);
+  assert.doesNotMatch(plain, /Gedächtnis &amp; Identität|Identität &amp; Kern|Persönlichkeit öffnen/);
+  assert.match(render(() => {}), /Persönlichkeit öffnen/);
+});
+
+test('display titles replace legacy identity labels consistently without changing stored documents', () => {
+  const identity = { ...document, id: 'identity', kind: 'identity' as const, title: 'Identität' };
+  assert.equal(memoryDocumentTitle(document), 'Dauerhafte Fakten & Vorlieben');
+  assert.equal(memoryDocumentTitle(identity), 'Erweiterte Hintergrundnotiz');
+  assert.equal(document.title, 'Geschützter Kern'); assert.equal(identity.title, 'Identität');
+  assert.equal(memoryDocumentTitle({ id: 'day:2026-10-05', title: 'Tag · 2026-10-05' }), 'Tag · 2026-10-05');
+  const html = renderToStaticMarkup(createElement(ProposalCard, { proposal: { ...proposal, documentId: 'identity' }, document: identity, busy: false, onDecide: () => {}, onOpenDocument: () => {} }));
+  assert.match(html, /<h2>Erweiterte Hintergrundnotiz<\/h2>/); assert.match(html, /Notiz öffnen/);
+});
+
+test('background notes are hidden by default, explicit opening reveals them, and dirty drafts remain visible', () => {
+  const identity = { ...document, id: 'identity', kind: 'identity' as const };
+  const day = { ...document, id: 'day:2026-10-05', kind: 'day' as const };
+  const documents = [identity, day, document];
+  assert.deepEqual(memoryLongTermDocuments(documents, false).map(item => item.id), ['core']);
+  assert.deepEqual(memoryLongTermDocuments(documents, true).map(item => item.id), ['core', 'identity']);
+  assert.deepEqual(memoryLongTermDocuments(documents, false, { content: 'Geänderter Entwurf', original: 'Bisher' }).map(item => item.id), ['core', 'identity']);
+  assert.deepEqual(memoryLongTermDocuments(documents, false, { content: 'Bisher', original: 'Bisher' }).map(item => item.id), ['core']);
+  assert.deepEqual(documents.map(item => item.id), ['identity', 'day:2026-10-05', 'core']);
+});
 function markup(value: CoreProposal, target: MemoryDocument | undefined = document) {
   return renderToStaticMarkup(createElement(ProposalCard, { proposal: value, document: target, busy: false, onDecide: () => {} }));
 }

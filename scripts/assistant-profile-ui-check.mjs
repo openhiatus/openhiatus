@@ -51,7 +51,7 @@ async function launch() {
 }
 async function openProfile(page) {
   await page.getByRole('navigation', { name: 'Hauptnavigation' }).getByRole('button', { name: 'Einstellungen', exact: true }).click();
-  await page.getByRole('tab', { name: 'Bedienung', exact: true }).click();
+  await page.getByRole('tab', { name: 'Persönlichkeit', exact: true }).click();
   return page.getByRole('region', { name: 'Name & Persönlichkeit', exact: true });
 }
 async function saved(page, name) { await expect.poll(() => page.evaluate(async () => (await window.openhiatus.snapshot()).preferences.assistantProfile.name)).toBe(name); }
@@ -66,6 +66,33 @@ try {
   await card.getByLabel('Rufname', { exact: true }).fill('Unfertiger Entwurf');
   await page.evaluate(() => window.openhiatus.savePreferences({ earcons: false }));
   await expect(card.getByLabel('Rufname', { exact: true })).toHaveValue('Unfertiger Entwurf');
+  await page.getByRole('tab', { name: 'Bedienung', exact: true }).click();
+  await expect(card).toBeHidden();
+  await page.getByRole('navigation', { name: 'Hauptnavigation' }).getByRole('button', { name: 'Gedächtnis', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Gedächtnis.', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Langzeitnotizen', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Dauerhafte Fakten & Vorlieben', exact: true })).toBeVisible();
+  await expect(page.locator('.memory-index-item').filter({ hasText: 'Erweiterte Hintergrundnotiz' })).toHaveCount(0);
+  const advanced = page.getByRole('checkbox', { name: 'Erweiterte Hintergrundnotiz anzeigen', exact: true });
+  await advanced.check();
+  await page.locator('.memory-index-item').filter({ hasText: 'Erweiterte Hintergrundnotiz' }).click();
+  await page.locator('.memory-document').getByRole('button', { name: 'Bearbeiten', exact: true }).click();
+  await page.locator('#memory-document-editor').fill('Synthetische Hintergrundnotiz als ungespeicherter Entwurf.');
+  await expect(advanced).toBeDisabled();
+  await page.getByRole('button', { name: 'Persönlichkeit öffnen', exact: true }).click();
+  await expect(page.getByRole('tab', { name: 'Persönlichkeit', exact: true })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('tab', { name: 'Persönlichkeit', exact: true })).toBeFocused();
+  await expect(card.getByLabel('Rufname', { exact: true })).toHaveValue('Unfertiger Entwurf');
+  // A second link request must work after choosing another settings tab.
+  await page.getByRole('tab', { name: 'Bedienung', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Hauptnavigation' }).getByRole('button', { name: 'Gedächtnis', exact: true }).click();
+  await expect(page.locator('#memory-document-editor')).toHaveValue('Synthetische Hintergrundnotiz als ungespeicherter Entwurf.');
+  await page.locator('.memory-document').getByRole('button', { name: 'Abbrechen', exact: true }).click();
+  await advanced.uncheck();
+  await expect(page.locator('.memory-index-item').filter({ hasText: 'Erweiterte Hintergrundnotiz' })).toHaveCount(0);
+  await page.locator('.memory-content').screenshot({ path: 'artifacts/openhiatus-gedaechtnis-profil-trennung.png' });
+  await page.getByRole('button', { name: 'Persönlichkeit öffnen', exact: true }).click();
+  await expect(card).toBeVisible();
   await card.getByLabel('Rufname', { exact: true }).fill('Mira');
   await card.getByLabel('Vorlagenname', { exact: true }).fill('Büro');
   await card.getByLabel('Stilbeschreibung', { exact: true }).fill(style);
@@ -116,7 +143,7 @@ try {
   await expect(card.getByRole('button', { name: 'Löschen', exact: true })).toBeDisabled();
   assert.deepEqual(errors, []);
   const result = { status: 'passed', profile, dialogCalls, workerCalls,
-    checks: ['name independent of application brand', 'four builtin personalities', 'unsaved draft survives snapshots', 'create and edit custom template', 'durable profile survives restart', 'legacy default tone removed from dialog and worker prompts without editing stored identity',
+    checks: ['name independent of application brand', 'dedicated personality tab', 'memory link opens and focuses the personality tab repeatedly', 'unsaved draft survives memory navigation', 'background note is advanced and protected while dirty', 'background draft survives profile navigation', 'four builtin personalities', 'unsaved draft survives snapshots', 'create and edit custom template', 'durable profile survives restart', 'legacy default tone removed from dialog and worker prompts without editing stored identity',
       'selected name and style in actual dialog and worker instructions', 'assistant author label', 'builtin switch preserves name', 'delete custom with default fallback', 'no cloud or user profile access'] };
   await writeFile('artifacts/openhiatus-persoenlichkeit-pruefung.json', JSON.stringify(result, null, 2), 'utf8'); console.log(JSON.stringify(result, null, 2));
 } finally { if (instance) await instance.close(); server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }

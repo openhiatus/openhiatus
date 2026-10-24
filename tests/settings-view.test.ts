@@ -28,16 +28,32 @@ function fixture() {
 
 test('settings mounts every tab and access form without browser resources, commands or CSS loaders', () => {
   const f = fixture(), html = f.render();
-  assert.equal((html.match(/role="tab"/g) ?? []).length, 3);
-  assert.equal((html.match(/role="tabpanel"/g) ?? []).length, 3);
-  assert.equal((html.match(/hidden=""/g) ?? []).length, 2);
-  assert.match(html, /Modelle &amp; Zugänge/); assert.match(html, /Sprache &amp; Geräte/); assert.match(html, /Bedienung/);
+  assert.equal((html.match(/role="tab"/g) ?? []).length, 4);
+  assert.equal((html.match(/role="tabpanel"/g) ?? []).length, 4);
+  assert.equal((html.match(/hidden=""/g) ?? []).length, 3);
+  assert.match(html, /Modelle &amp; Zugänge/); assert.match(html, /Sprache &amp; Geräte/); assert.match(html, /Persönlichkeit/); assert.match(html, /Bedienung/);
   assert.match(html, /data-provider="openai"/); assert.match(html, /Inworld-Zugang/);
   assert.match(html, /role-model/); assert.match(html, /role-dialogModel/); assert.match(html, /role-memoryModel/);
   assert.match(html, /type="password"[^>]*autoComplete="off"/);
   assert.deepEqual(f.invoked, []);
   assert.match(html, /Größe der Arbeitsanzeige/);
   assert.match(html, /144 px \(Standard\)/);
+});
+
+test('a personality navigation request selects the dedicated panel while every other panel remains mounted', () => {
+  const f = fixture(); f.props.navigationRequest = { tab: 'personality', requestId: 3 };
+  const html = f.render();
+  assert.match(html, /id="[^"]*-tab-personality" role="tab" aria-selected="true"/);
+  const panels = html.split(/<section id="[^"]*-panel-/);
+  const personality = panels.find(panel => panel.startsWith('personality"'))!;
+  const behavior = panels.find(panel => panel.startsWith('behavior"'))!;
+  assert.doesNotMatch(personality.slice(0, personality.indexOf('>')), /hidden/);
+  assert.match(personality, /Name &amp; Persönlichkeit/);
+  assert.doesNotMatch(behavior, /assistant-profile-card|Name &amp; Persönlichkeit/);
+  assert.match(behavior.slice(0, behavior.indexOf('>')), /hidden=""/);
+  assert.equal((html.match(/assistant-profile-card/g) ?? []).length, 1);
+  assert.equal((html.match(/role="tabpanel"/g) ?? []).length, 4);
+  assert.deepEqual(f.invoked, []);
 });
 
 test('settings renders real device choices and keeps the current audio phase visible without starting it', () => {

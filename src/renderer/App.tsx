@@ -19,7 +19,9 @@ export default function App() {
   const [view, setView] = useState<AppView>('chat');
   const [showActivity, setShowActivity] = useState(false);
   const [skillsVisited, setSkillsVisited] = useState(false);
+  const [settingsNavigation, setSettingsNavigation] = useState<{ tab: 'personality'; requestId: number }>();
   const navigate = (next: AppView) => { if (next === 'skills') setSkillsVisited(true); setView(next); };
+  const openPersonality = () => { setSettingsNavigation(current => ({ tab: 'personality', requestId: (current?.requestId ?? 0) + 1 })); navigate('settings'); };
   const session = useAppSession({ conversationVisible: view === 'chat', openConversation: () => navigate('chat'), openSettings: () => navigate('settings') });
   const { state } = session;
 
@@ -57,12 +59,12 @@ export default function App() {
       <TasksView jobs={state?.jobs ?? []} onStop={id => window.openhiatus.stopJob(id)} onError={session.report} onConversation={() => navigate('chat')} />
     </div>
     {view === 'services' && <div className="workspace-view services-view-host"><ServicesView onSettings={() => navigate('settings')} /></div>}
-    <div className="workspace-view memory-view-host" hidden={view !== 'memory'}><MemoryView state={state} active={view === 'memory'} /></div>
+    <div className="workspace-view memory-view-host" hidden={view !== 'memory'}><MemoryView state={state} active={view === 'memory'} onOpenPersonality={openPersonality} /></div>
     {skillsVisited && <div className="workspace-view skills-view-host" hidden={view !== 'skills'}><SkillsView onInsert={session.insertSkill}
       insertDisabledReason={session.skillInsertDisabledReason} favorites={state?.preferences.skillFavorites}
       onFavoriteChange={(path, level) => session.preference({ skillFavorites: withFavoriteLevel(state?.preferences.skillFavorites, path, level) })} /></div>}
     <div className="workspace-view settings-view-host" hidden={view !== 'settings'}>
-      <SettingsView state={state} workBusy={session.workBusy} summaryInProgress={session.summaryInProgress}
+      <SettingsView state={state} workBusy={session.workBusy} summaryInProgress={session.summaryInProgress} navigationRequest={settingsNavigation}
         onPreference={session.preference} onError={session.report} onNotice={session.setNotice}
         voice={{ phase: session.phase, seconds: session.seconds, devices: session.devices, audioBusy: session.audioBusy, speechReady: session.speechReady,
           startRecording: session.startRecording, testSpeech: session.testSpeech, cancelAudio: session.cancelAudio, clearSpeech: session.clearSpeech, stopEarcons: session.stopEarcons,

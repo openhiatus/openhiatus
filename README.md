@@ -5,7 +5,7 @@
 openHiatus is a desktop app that combines your choice of AI models, speech services, and a personal memory. You keep the conversation going while up to two tasks run in the background, and each task returns a result you can trace.
 
 ![Status: alpha](https://img.shields.io/badge/status-alpha-orange)
-![Version 0.0.11](https://img.shields.io/badge/version-0.0.11-blue)
+![Version 0.0.12](https://img.shields.io/badge/version-0.0.12-blue)
 ![Platform: Windows x64](https://img.shields.io/badge/platform-Windows%20x64-0078D6)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green)
 
@@ -55,11 +55,13 @@ Spoken replies include the actual answer. The system prompt asks the model to re
 
 ### Assistant name and personality
 
-Under **Einstellungen → Bedienung → Name & Persönlichkeit** (Settings → Controls → Name & Personality), choose your assistant's call name independently of the app name. openHiatus remains the application and organization name. The selected name appears in the conversation and is passed to both conversation and task models.
+Under **Einstellungen → Persönlichkeit** (Settings → Personality), choose your assistant's call name independently of the app name. This is the single place for the saved name, tone, humor, and response style. openHiatus remains the application and organization name. The selected name appears in the conversation and is passed to both conversation and task models.
 
 Choose **Warm & direkt**, **Knapp & trocken**, **Neugierig & lebendig**, or **Ruhig & analytisch**, then save. You can edit a style description and use **Als neue Vorlage speichern** (Save as a new template) to keep your own personality. Up to twelve custom templates can be selected, edited, and deleted. Builtin styles remain available; switching personality preserves the call name. Settings survive restart. Changes apply from the next message or newly admitted task; already running or queued tasks retain their captured profile. Existing identity and memory documents are preserved.
 
 The selected profile controls tone in both speech and text, including a deliberately curt or sarcastic style. Known old default identity texts are made tone-neutral only when building model instructions; stored documents and manually written identities stay intact. Concrete behavior descriptions and short example replies make a template clearer. Style strength remains model-dependent; the automated UI checks verify prompt delivery and persistence rather than guaranteeing a particular joke or tone.
+
+**Gedächtnis** (Memory) holds reports, original sources, durable facts, and working preferences. Its **Persönlichkeit öffnen** link opens the correct settings tab directly. **Langzeitnotizen** (Long-term notes) shows facts and preferences; the older identity document remains editable behind **Erweiterte Hintergrundnotiz anzeigen** (Show advanced background note). These notes are context, and the selected personality profile governs the saved response style. Existing content, versions, and approval flows are preserved.
 
 ### Window layout and background activity
 

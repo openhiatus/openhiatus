@@ -63,12 +63,12 @@ try {
     await resize(width, height);
     const collapsed = width < 960;
     await expect(page.locator('.sidebar-toggle')).toHaveAttribute('aria-expanded', String(!collapsed));
-    for (const name of ['Aufgaben', 'Dienste', 'Gedächtnis & Identität', 'Skills', 'Einstellungen', 'Gespräch']) {
+    for (const name of ['Aufgaben', 'Dienste', 'Gedächtnis', 'Skills', 'Einstellungen', 'Gespräch']) {
       const destination = rail.getByRole('button', { name, exact: true });
       await destination.click(); await expect(destination).toHaveAttribute('aria-current', 'page');
       await checkViewport(`${width}x${height}/${name}`);
       if (name === 'Einstellungen') {
-        for (const tab of ['Modelle & Zugänge', 'Sprache & Geräte', 'Bedienung']) {
+        for (const tab of ['Modelle & Zugänge', 'Sprache & Geräte', 'Persönlichkeit', 'Bedienung']) {
           await page.getByRole('tab', { name: tab, exact: true }).click();
           await expect(page.getByRole('tab', { name: tab, exact: true })).toHaveAttribute('aria-selected', 'true');
           const settingsWidth = await page.locator('.settings-scroll').evaluate(element => ({ width: element.clientWidth, content: element.scrollWidth }));
@@ -102,7 +102,7 @@ try {
   await settleSidebar();
   await checkViewport('560x440/manual-expanded');
   await rail.getByRole('button', { name: 'Einstellungen', exact: true }).click();
-  for (const tab of ['Modelle & Zugänge', 'Sprache & Geräte', 'Bedienung']) {
+  for (const tab of ['Modelle & Zugänge', 'Sprache & Geräte', 'Persönlichkeit', 'Bedienung']) {
     await page.getByRole('tab', { name: tab, exact: true }).click();
     await checkViewport(`560x440/manual-expanded/${tab}`);
     const settingsWidth = await page.locator('.settings-scroll').evaluate(element => ({ width: element.clientWidth, content: element.scrollWidth }));
@@ -119,7 +119,7 @@ try {
   await mainWindow.evaluate(window => { window.setMinimumSize(560, 440); window.setSize(560, 440); });
   await settleSidebar();
   await rail.getByRole('button', { name: 'Einstellungen', exact: true }).click();
-  for (const tab of ['Modelle & Zugänge', 'Sprache & Geräte', 'Bedienung']) {
+  for (const tab of ['Modelle & Zugänge', 'Sprache & Geräte', 'Persönlichkeit', 'Bedienung']) {
     await page.getByRole('tab', { name: tab, exact: true }).click();
     await checkViewport(`native-560x440/${tab}`);
     const settingsWidth = await page.locator('.settings-scroll').evaluate(element => ({ width: element.clientWidth, content: element.scrollWidth }));
