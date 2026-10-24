@@ -13,6 +13,7 @@ const executablePath = process.env.OPENHIATUS_TEST_APP || path.resolve('node_mod
 const args = [...(fixture ? [fixture.appDirectory] : []), `--data-dir=${profile}`];
 const style = 'Sprich ruhig und präzise. Verwende kurze Sätze und sparsamen trockenen Humor.';
 const editedStyle = 'Sprich ruhig und präzise. Begründe deine Einschätzung kurz. Keine Floskeln.';
+const legacyIdentity = 'Du bist openHiatus, ein hilfreicher deutschsprachiger Assistent. Sprich klar, freundlich und ehrlich. Benenne Unsicherheit und bestätige Ergebnisse nur, wenn sie tatsächlich vorliegen. Respektiere die Entscheidungen des Nutzers.';
 let dialogCalls = 0, workerCalls = 0;
 const server = createServer(async (request, response) => {
   try {
@@ -22,6 +23,7 @@ const server = createServer(async (request, response) => {
     const developer = input.messages.filter(message => ['system', 'developer'].includes(message.role)).map(message => typeof message.content === 'string' ? message.content : JSON.stringify(message.content)).join('\n');
     assert.ok(developer.includes('"rufname":"Juno"'), 'actual model instructions must carry the call name');
     assert.ok(developer.includes(editedStyle), 'actual model instructions must carry the saved custom personality');
+    assert.ok(!developer.includes('Sprich klar, freundlich und ehrlich.'), 'known legacy defaults must not impose a competing tone');
     assert.ok(developer.includes('openHiatus ist der Name der Anwendung und Organisation'));
     const tools = input.tools?.map(tool => tool.function.name) ?? [];
     const backgroundRequest = input.messages.some(message => message.role === 'user' && JSON.stringify(message.content).includes('[background-profile]'));
@@ -76,6 +78,10 @@ try {
   await card.getByRole('button', { name: 'Speichern', exact: true }).click(); await saved(page, 'Juno');
   await expect(card.getByRole('status')).toHaveText('Rufname und Persönlichkeit gespeichert.');
   await card.screenshot({ path: 'artifacts/openhiatus-persoenlichkeit.png' });
+  await page.evaluate(async text => {
+    const memory = await window.openhiatus.memorySnapshot(), identity = memory.documents.find(document => document.id === 'identity');
+    await window.openhiatus.editMemory('identity', text, identity.version);
+  }, legacyIdentity);
   await page.evaluate(async url => {
     await window.openhiatus.saveProvider({ id: 'local', baseUrl: url, models: ['profile-test'] });
     await window.openhiatus.savePreferences({ model: 'local/profile-test', dialogModel: 'local/profile-test', memoryModel: 'local/profile-test', memoryAutoSummarize: false, speakReplies: false });
@@ -96,6 +102,7 @@ try {
   await expect(card.getByLabel('Rufname', { exact: true })).toHaveValue('Juno');
   await expect(card.getByLabel('Persönlichkeit', { exact: true })).toHaveValue(customId);
   await expect(card.getByLabel('Stilbeschreibung', { exact: true })).toHaveValue(editedStyle);
+  assert.equal(await page.evaluate(async () => (await window.openhiatus.memorySnapshot()).documents.find(document => document.id === 'identity').content), legacyIdentity);
   assert.equal(dialogCalls + workerCalls, requestCount, 'restart must not repeat model work');
   await card.getByLabel('Persönlichkeit', { exact: true }).selectOption('analytical');
   await card.getByRole('button', { name: 'Speichern', exact: true }).click();
@@ -109,7 +116,7 @@ try {
   await expect(card.getByRole('button', { name: 'Löschen', exact: true })).toBeDisabled();
   assert.deepEqual(errors, []);
   const result = { status: 'passed', profile, dialogCalls, workerCalls,
-    checks: ['name independent of application brand', 'four builtin personalities', 'unsaved draft survives snapshots', 'create and edit custom template', 'durable profile survives restart',
+    checks: ['name independent of application brand', 'four builtin personalities', 'unsaved draft survives snapshots', 'create and edit custom template', 'durable profile survives restart', 'legacy default tone removed from dialog and worker prompts without editing stored identity',
       'selected name and style in actual dialog and worker instructions', 'assistant author label', 'builtin switch preserves name', 'delete custom with default fallback', 'no cloud or user profile access'] };
   await writeFile('artifacts/openhiatus-persoenlichkeit-pruefung.json', JSON.stringify(result, null, 2), 'utf8'); console.log(JSON.stringify(result, null, 2));
 } finally { if (instance) await instance.close(); server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }

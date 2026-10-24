@@ -112,7 +112,7 @@ export function AssistantProfileCard({ profile, ready, onSave, onError }: Assist
           onChange={event => edit({ instructions: event.target.value })} />
         <p className="billing-note assistant-profile-help" id={`${id}-template-help`}>{builtin
           ? 'Standardvorlagen bleiben erhalten. Speichere einen veränderten Stil als eigene Vorlage.'
-          : 'Speichern aktualisiert diese eigene Vorlage. Für eine weitere Vorlage wähle einen neuen Vorlagennamen.'} Die Beschreibung bestimmt Ton und Arbeitsweise; Zugriffsrechte bleiben gleich.</p>
+          : 'Speichern aktualisiert diese eigene Vorlage. Für eine weitere Vorlage wähle einen neuen Vorlagennamen.'} Beschreibe konkretes Verhalten und ergänze bei Bedarf kurze Beispielantworten. Die Beschreibung bestimmt Ton und Arbeitsweise; Zugriffsrechte bleiben gleich.</p>
         {atLimit && <p className="billing-note">Alle {PERSONALITY_TEMPLATE_LIMIT} Plätze sind belegt. Du kannst eigene Vorlagen bearbeiten oder löschen.</p>}
         <div className="assistant-profile-actions">
           <button className="primary-button" type="submit" disabled={disabled || !dirty || builtinEdited} title={builtinEdited ? 'Stiländerungen als neue Vorlage speichern' : undefined}>

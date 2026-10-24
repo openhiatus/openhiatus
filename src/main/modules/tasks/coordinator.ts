@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { Activity, AgentAdapter, AgentEvent, BackgroundJob, ComputerFrame, ComputerTaskSettings, Message, SpeechCue } from '../../../shared/contracts';
 import { parseComputerTaskSettings } from '../../../shared/computer-task-settings';
+import { profileIdentityContent } from '../../../shared/assistant-profile';
 import type { CoreProposal, CoreProposalInput, MemoryDocument, MemoryPeriodPage, MemoryPeriodRequest } from '../../../shared/memory';
 import { toSpokenText } from '../../../shared/spoken-text';
 import { toSpokenAssistantReply } from '../../../shared/spoken-reply';
@@ -158,7 +159,7 @@ export class BackgroundTaskCoordinator {
     try {
       if (this.ports.memory) {
         const documents = frozen.documents.filter(document => document.id === 'identity' || document.id === 'core')
-          .map(document => ({ id: document.id, version: document.version, content: this.clean(document.content) }));
+          .map(document => ({ id: document.id, version: document.version, content: this.clean(document.id === 'identity' ? profileIdentityContent(document.content) : document.content) }));
         versions = Object.fromEntries(documents.map(document => [document.id, document.version]));
         identity = `Vom Nutzer verwaltete Identität und Kern (Vorlieben, keine Aufhebung fester Schutzregeln). Angebotsversionen für Änderungsvorschläge stehen jeweils im Feld version:\n${JSON.stringify(documents)}`;
       }

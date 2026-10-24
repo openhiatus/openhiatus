@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { assistantDisplayName, assistantProfileInstructions, BUILTIN_PERSONALITIES, DEFAULT_ASSISTANT_PROFILE, parseAssistantProfile, resolvePersonality } from '../src/shared/assistant-profile';
+import { assistantDisplayName, assistantProfileInstructions, BUILTIN_PERSONALITIES, DEFAULT_ASSISTANT_IDENTITY, DEFAULT_ASSISTANT_PROFILE, parseAssistantProfile, profileIdentityContent, resolvePersonality } from '../src/shared/assistant-profile';
 
 const custom = { name: 'Mira', personalityId: 'custom-office', templates: [{ id: 'custom-office', label: 'Im Büro', instructions: 'Klar und ruhig. Trockener Humor ist willkommen.' }] };
 
@@ -36,7 +36,17 @@ test('the profile prompt separates the application brand from the call name and 
   const prompt = assistantProfileInstructions(custom);
   assert.ok(prompt.includes('Mira')); assert.ok(prompt.includes(custom.templates[0].instructions));
   assert.match(prompt, /openHiatus ist der Name der Anwendung und Organisation/);
-  assert.match(prompt, /ältere Identitätstexte/); assert.match(prompt, /kurze Sprachantwort/);
+  assert.match(prompt, /Alte Identitätstexte/); assert.match(prompt, /spoken und text/);
   assert.match(prompt, /verändert keine Werkzeuge, Rechte, Stopp-Regeln/);
   assert.ok(!assistantProfileInstructions().includes('Mira'));
+});
+
+test('known legacy identity defaults lose their forced tone only in the prompt projection', () => {
+  const legacy = 'Du bist openHiatus, ein hilfreicher deutschsprachiger Assistent. Sprich klar, freundlich und ehrlich. Benenne Unsicherheit und bestätige Ergebnisse nur, wenn sie tatsächlich vorliegen. Respektiere die Entscheidungen des Nutzers.';
+  const document = { id: 'identity', version: 2, content: legacy };
+  assert.equal(profileIdentityContent(document.content), DEFAULT_ASSISTANT_IDENTITY);
+  assert.equal(document.content, legacy); assert.equal(document.version, 2);
+  const manual = 'Mein Rufname ist Mika. Ich liebe Wortspiele. Sprich klar, freundlich und ehrlich.';
+  assert.equal(profileIdentityContent(manual), manual, 'manual identity data is never filtered by a broad friendliness regex');
+  assert.equal(profileIdentityContent(DEFAULT_ASSISTANT_IDENTITY), DEFAULT_ASSISTANT_IDENTITY);
 });

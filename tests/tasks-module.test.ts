@@ -89,6 +89,19 @@ test('task admission preserves the complete original and owns all returned and w
   await f.tasks.dispose();
 });
 
+test('a legacy default identity cannot force friendly worker speech over the selected personality', async () => {
+  const f = fixture();
+  const document = { id: 'identity', version: 7, content: 'Du bist openHiatus, ein hilfreicher deutschsprachiger Assistent. Sprich klar, freundlich und ehrlich. Benenne Unsicherheit und bestätige Ergebnisse nur, wenn sie tatsächlich vorliegen. Respektiere die Entscheidungen des Nutzers.' };
+  f.ports.memory!.documents = () => [document];
+  f.ports.context.persona = () => 'Aktueller Gesprächsstil: trocken und schroff.';
+  const accepted = await f.tasks.accept(f.admission('selected-tone')); await tick();
+  const instructions = f.tasks.get(accepted.job.id).identityInstructions!;
+  assert.ok(!instructions.includes('Sprich klar, freundlich und ehrlich.'));
+  assert.ok(instructions.includes('trocken und schroff')); assert.ok(instructions.includes('"version":7'));
+  assert.ok(document.content.includes('Sprich klar, freundlich und ehrlich.'));
+  await f.tasks.dispose();
+});
+
 test('desktop model, Fast and image scale are captured before asynchronous admission and never borrowed from later settings', async () => {
   const f = fixture();
   const settings = { model: 'sol', progressSpeech: false, computerDelegationEnabled: true,

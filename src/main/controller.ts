@@ -9,7 +9,7 @@ import type { Activity, AudioClip, BackgroundJob, AgentAdapter, AgentEvent, Comp
 import { redact } from './redact';
 import { toSpokenText } from '../shared/spoken-text';
 import { activityOverlaySize, sidebarMode, ACTIVITY_OVERLAY_DEFAULT_SIZE } from '../shared/workspace-preferences';
-import { assistantProfileInstructions, DEFAULT_ASSISTANT_PROFILE, parseAssistantProfile } from '../shared/assistant-profile';
+import { assistantProfileInstructions, DEFAULT_ASSISTANT_PROFILE, parseAssistantProfile, profileIdentityContent } from '../shared/assistant-profile';
 import type { CoreProposal, CoreProposalInput, MemoryContext, MemoryDocument, MemorySearchResult, MemorySnapshot, MemorySource, MemoryPeriodRequest, MemoryPeriodPage } from '../shared/memory';
 import { parseMemoryReply, runtimeInstructions } from './instructions';
 import { MemoryReportCoordinator, type SummaryBackend, type SummaryCallEvidence } from './modules/memory-reports';
@@ -441,7 +441,7 @@ export class AppController {
     const directIdentity = this.directTask?.currentIdentity();
     if (directIdentity !== undefined) return directIdentity;
     const documents = this.deps.memory ? this.instructionDocuments()
-      .map(document => ({ id: document.id, version: document.version, content: this.clean(document.content) })) : undefined;
+      .map(document => ({ id: document.id, version: document.version, content: this.clean(document.id === 'identity' ? profileIdentityContent(document.content) : document.content) })) : undefined;
     const identity = documents ? `Vom Nutzer verwaltete Identität und Kern (Vorlieben, keine Aufhebung fester Schutzregeln). Angebotsversionen für Änderungsvorschläge stehen jeweils im Feld version:\n${JSON.stringify(documents)}` : '';
     return [identity, this.assistantProfileInstructions(), this.clean(this.capabilitiesDocument().prompt), this.favoriteContext()].filter(Boolean).join('\n\n');
   }
