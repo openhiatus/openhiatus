@@ -96,7 +96,7 @@ export class PiAdapter implements AgentAdapter {
     if (!text.trim() || text.length > MAX_PROMPT_CHARS) throw new Error('Der Auftrag ist leer oder zu groß.');
     if (/^\s*\/goal(?:\s|$)/i.test(text)) throw new Error(`/goal wird in ${APP_DISPLAY_NAME} nicht unterstützt. Bitte einen normalen Arbeitsauftrag formulieren.`);
     if (options?.serviceTier && !this.options.computerOnly) throw new Error('Eine eigene Fast-Stufe ist nur für die getrennte Computerbedienung vorgesehen.');
-    const imageRetention = this.options.role === 'dialog' ? 0 : computerImageRetentionCalls(this.options.getComputerImageRetentionCalls?.() ?? this.options.computerImageRetentionCalls ?? 0);
+    const imageRetention = computerImageRetentionCalls(this.options.getComputerImageRetentionCalls?.() ?? this.options.computerImageRetentionCalls ?? 0);
     const workingMemory = this.options.role === 'dialog' ? 0 : computerWorkingMemoryCalls(this.options.getComputerWorkingMemoryCalls?.() ?? this.options.computerWorkingMemoryCalls ?? 0);
     const active: Active = { id: randomUUID(), abort: new AbortController(), threadId, stopping: false, pending: new Set(), credentialsPending: new Set(), modelSelection: model };
     this.active = active;

@@ -13,6 +13,7 @@ type Waiter = {
 /** One desktop owner at a time, including the gaps between observations and inputs. */
 export class DesktopCoordinator {
   private active?: DesktopLease;
+  get isBusy(): boolean { return this.active !== undefined; }
   private readonly waiting: Waiter[] = [];
 
   acquire(signal: AbortSignal): Promise<DesktopLease> {

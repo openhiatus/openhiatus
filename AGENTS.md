@@ -18,7 +18,7 @@
 - Vor Änderungen `git status --short` und `git remote -v` prüfen; vorhandene Nutzeränderungen erhalten.
 - Die veröffentlichte Historie mit normalen weiteren Commits fortführen. Keine Neuinitialisierung, Änderung veröffentlichter Commits oder Force-Pushes ohne ausdrücklichen Auftrag.
 - Alle versionierbaren Projektänderungen nach Abschluss der zugehörigen Prüfungen sofort committen und auf GitHub pushen; dafür nicht erneut nachfragen. Teilaufgaben zeitnah einzeln veröffentlichen, statt fertige Änderungen nur lokal zu sammeln. Die Regeln zum Ausschluss privater Daten, Zugangsdaten und generierter Artefakte gelten weiterhin.
-- Das Repository und die Windows-Pakete enthalten keine Skill-Sammlung. Eigene Skills bleiben lokale Profildaten; der lokale Projektordner `/skills/` wird ignoriert und darf nicht versehentlich paketiert werden.
+- Das Repository und die Windows-Pakete enthalten keine persönliche Skill-Sammlung. Der ausdrücklich integrierte Produkt-Skill `resources/bildschirmhilfe/SKILL.md` wird beim ersten Start ins Profil übernommen; vorhandene Nutzeränderungen werden nie überschrieben. Weitere eigene Skills bleiben lokale Profildaten; der lokale Projektordner `/skills/` wird ignoriert und darf nicht versehentlich paketiert werden.
 - Zugangsdaten, persönliche Profile, private Installationsgeschichten und lokale Bestandsangaben gehören nicht in Code oder Dokumentation. Für Beispiele und Tests synthetische Daten verwenden.
 - Generierte Dateien und lokale Sicherungen bleiben in den ignorierten Arbeitsverzeichnissen. Tests mit eigenen Profilen ausführen; bestehende Benutzerprofile nicht verändern.
 - Funktionszusagen und Dokumentation am tatsächlich implementierten Alpha-Stand ausrichten.

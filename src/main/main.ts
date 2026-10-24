@@ -26,6 +26,14 @@ import { createIpcRouter } from './ipc';
 import { decodeComputerFrame, decodeSnapshot, type IpcResponse } from '../shared/ipc';
 import type { AgentEvent, BackgroundJob } from '../shared/contracts';
 import { APP_DISPLAY_NAME, APP_SLUG } from '../shared/branding';
+import { GuidanceOverlay } from './platform/screen-help/overlay';
+import { ScreenHelpService } from './platform/screen-help/service';
+import { ScreenMonitor } from './platform/screen-help/monitor';
+import { captureHelpScreen } from './platform/screen-help/capture';
+import { installHelpSkill, readHelpSkill } from './platform/screen-help/skill';
+import { createScreenHelpTools } from './platform/tools/screen-help-tools';
+import { createComputerImageProcessor } from './computer-images';
+import { sharedDesktopCoordinator } from './desktop-coordinator';
 
 app.setName(APP_DISPLAY_NAME);
 app.setAppUserModelId('local.openhiatus.assistant');
@@ -36,8 +44,9 @@ const locked = app.requestSingleInstanceLock();
 if (!locked) app.quit();
 let window: BrowserWindow | undefined, controller: AppController | undefined;
 let activityOverlay: ActivityOverlay | undefined;
+let guidanceOverlay: GuidanceOverlay | undefined, screenHelp: ScreenHelpService | undefined, screenMonitor: ScreenMonitor | undefined;
 let voicePresence: ActivityPresence = { phase: 'idle' };
-function stopActivityPresence(): void { voicePresence = { phase: 'idle' }; activityOverlay?.stop(); void googleCalendarAuth?.cancelLogin(); }
+function stopActivityPresence(): void { voicePresence = { phase: 'idle' }; activityOverlay?.stop(); screenHelp?.clear(); void googleCalendarAuth?.cancelLogin(); }
 let services: ServiceBroker | undefined;
 let googleCalendarAuth: GoogleCalendarAuth | undefined;
 function syncCalendarConnection(): void {
@@ -55,6 +64,7 @@ let voiceHotkeys: Awaited<ReturnType<typeof startNativeVoiceHotkeys>> | undefine
 async function createApp(): Promise<void> {
   const workspace = path.join(dataDirectory, 'Arbeitsbereich'), home = path.join(dataDirectory, 'pi');
   mkdirSync(workspace, { recursive: true }); mkdirSync(path.join(home, 'skills'), { recursive: true });
+  const helpSkill = await installHelpSkill(home, path.join(__dirname, 'bildschirmhilfe', 'SKILL.md'));
   const demoFile = path.join(workspace, 'projektnotizen.md');
   if (!existsSync(demoFile)) copyFileSync(path.join(__dirname, 'demo', 'projektnotizen.md'), demoFile);
   const initialStore = new StateStore(dataDirectory), credentials = new CredentialStore(dataDirectory, safeStorage);
@@ -89,7 +99,19 @@ async function createApp(): Promise<void> {
   services = new ServiceBroker();
   const serviceBroker = services;
   serviceBroker.register(calendar.adapter()); syncCalendarConnection();
-  const runDesktopOperation = <T>(operation: () => Promise<T>): Promise<T> => activityOverlay?.runHidden(operation) ?? operation();
+  const nativeDirectory = app.isPackaged ? path.join(process.resourcesPath, 'native') : path.join(__dirname, 'native');
+  const monitor = screenMonitor = new ScreenMonitor(path.join(nativeDirectory, 'openhiatus-screen-watch.exe'), () => screenHelp?.clear());
+  const help = screenHelp = new ScreenHelpService({
+    skill: async () => redact(await readHelpSkill(helpSkill), controller?.redactionSecrets() ?? initialSecrets), processor: createComputerImageProcessor, busy: () => sharedDesktopCoordinator.isBusy,
+    currentStamp: () => monitor.current(), clear: () => guidanceOverlay?.clear(),
+    capture: async signal => {
+      guidanceOverlay?.clear();
+      const capture = async () => { await new Promise(resolve => setTimeout(resolve, 45)); signal.throwIfAborted(); return captureHelpScreen(() => monitor.current(), signal); };
+      return activityOverlay ? activityOverlay.runHidden(capture) : capture();
+    },
+    show: async (rect, image, bounds, label) => { if (!guidanceOverlay || quitting) throw Error('Bildschirmhilfe nicht verfügbar.'); await guidanceOverlay.show(rect, image, bounds, label); },
+  });
+  const runDesktopOperation = <T>(operation: () => Promise<T>): Promise<T> => { help.clear(); return activityOverlay?.runHidden(operation) ?? operation(); };
   const computerTools = () => createComputerToolContribution({
     getOverviewScaleDivisor: () => controller?.snapshot().preferences.computerOverviewScaleDivisor ?? 1,
     getDetailScaleDivisor: () => controller?.snapshot().preferences.computerDetailScaleDivisor ?? 1,
@@ -99,13 +121,13 @@ async function createApp(): Promise<void> {
     getComputerImageRetentionCalls: () => controller?.snapshot().preferences.computerImageRetentionCalls ?? 0,
     getComputerWorkingMemoryCalls: () => controller?.snapshot().preferences.computerWorkingMemoryCalls ?? 0,
     getIdentityInstructions: () => controller?.identityInstructions() ?? '', onEvent: event => controller?.handle(event) });
-  const dialogRuntime = new PiAdapter({ ...runtimeOptions, role: 'dialog', getIdentityInstructions: () => controller?.identityInstructions() ?? '',
+  const dialogRuntime = new PiAdapter({ ...runtimeOptions, role: 'dialog', computerImageRetentionCalls: 2, getIdentityInstructions: () => controller?.identityInstructions() ?? '',
     tools: createToolRegistry([{ bind: () => ({ tools: (controller?.dialogTools() ?? []).map(definition => defineTool({
       definition, audience: 'dialog', validate: args => args, execute: async (args, context) => {
         if (!controller) throw new Error(`${APP_DISPLAY_NAME} wird noch vorbereitet.`);
         return controller.dialogTool(definition.name, args, context.signal);
       },
-    })) }) }]), onEvent: event => controller?.handleDialog(event),
+    })) }) }, createScreenHelpTools(help)]), onEvent: event => { if (event.type === 'completed' && event.status !== 'completed') help.clear(); controller?.handleDialog(event); },
   });
   const createWorker = (onEvent: (event: AgentEvent) => void, job: BackgroundJob) => {
     // Admission captured these values before asynchronous memory lookup/queueing.
@@ -141,6 +163,15 @@ async function createApp(): Promise<void> {
   window = new BrowserWindow({ width: 1360, height: 900, minWidth: 560, minHeight: 440, title: APP_DISPLAY_NAME, backgroundColor: '#131714', autoHideMenuBar: true,
     webPreferences: { preload: path.join(__dirname, 'preload.cjs'), nodeIntegration: false, contextIsolation: true, sandbox: true, webSecurity: true, spellcheck: false, backgroundThrottling: false } });
   window.removeMenu();
+  guidanceOverlay = new GuidanceOverlay(() => {
+    const overlay = new BrowserWindow({ title: `${APP_DISPLAY_NAME} · Bildschirmhilfe`, show: false, transparent: true,
+      frame: false, focusable: false, alwaysOnTop: true, skipTaskbar: true, hasShadow: false,
+      resizable: false, movable: false, minimizable: false, maximizable: false, backgroundColor: '#00000000',
+      webPreferences: { nodeIntegration: false, contextIsolation: true, sandbox: true, webSecurity: true, spellcheck: false, backgroundThrottling: false } });
+    overlay.removeMenu(); overlay.setIgnoreMouseEvents(true); overlay.setAlwaysOnTop(true, 'screen-saver');
+    overlay.webContents.setWindowOpenHandler(() => ({ action: 'deny' })); overlay.webContents.on('will-navigate', event => event.preventDefault());
+    return overlay;
+  });
   activityOverlay = new ActivityOverlay({
     canShow: () => !!window && !window.isDestroyed() && !window.webContents.isDestroyed() && !quitting
       && (window.isMinimized() || !window.isVisible() || !window.isFocused()),
@@ -167,7 +198,8 @@ async function createApp(): Promise<void> {
   const refreshActivityOverlay = () => activityOverlay?.refresh();
   window.on('blur', refreshActivityOverlay); window.on('minimize', refreshActivityOverlay); window.on('restore', refreshActivityOverlay);
   window.on('show', refreshActivityOverlay); window.on('hide', refreshActivityOverlay); window.on('move', refreshActivityOverlay); window.on('resize', refreshActivityOverlay);
-  screen.on('display-added', refreshActivityOverlay); screen.on('display-removed', refreshActivityOverlay); screen.on('display-metrics-changed', refreshActivityOverlay);
+  const displayChanged = () => { help.clear(); refreshActivityOverlay(); };
+  screen.on('display-added', displayChanged); screen.on('display-removed', displayChanged); screen.on('display-metrics-changed', displayChanged);
   window.on('closed', () => { activityOverlay?.dispose(); void voiceHotkeys?.dispose().catch(() => {}); });
   session.defaultSession.setPermissionRequestHandler((contents, permission, callback, details) => {
     callback(contents === window?.webContents && contents.getURL() === rendererUrl && permission === 'media' && 'mediaTypes' in details && !!details.mediaTypes?.includes('audio') && !details.mediaTypes.includes('video'));
@@ -197,7 +229,7 @@ async function createApp(): Promise<void> {
   ipcMain.on('openhiatus:activity-presence', (event, value: unknown) => {
     if (!trustedRenderer(event)) return;
     const presence = parseActivityPresence(value);
-    if (presence && controller) { voicePresence = presence; activityOverlay?.update(activityOverlayState(controller.snapshot(), voicePresence)); }
+    if (presence && controller) { if (presence.phase === 'listening') help.clear(); voicePresence = presence; activityOverlay?.update(activityOverlayState(controller.snapshot(), voicePresence)); }
   });
   ipcMain.on(ACTIVITY_OVERLAY_RESIZE_CHANNEL, (event, value: unknown) => {
     if (!quitting && event.senderFrame === event.sender.mainFrame) activityOverlay?.handleResize(event.sender, value);
@@ -235,7 +267,7 @@ app.on('second-instance', () => { window?.restore(); window?.focus(); });
 app.on('window-all-closed', () => app.quit());
 app.on('before-quit', event => {
   if (disposed) return; event.preventDefault(); if (quitting) return; quitting = true; stopActivityPresence();
-  void (controller?.dispose() ?? Promise.resolve()).then(async () => { await googleCalendarAuth?.dispose(); await memoryWriter?.dispose(); await stateWriter?.dispose(); services?.dispose(); activityOverlay?.dispose(); await voiceHotkeys?.dispose(); disposed = true; globalShortcut.unregisterAll(); app.quit(); }).catch(() => {
+  void (controller?.dispose() ?? Promise.resolve()).then(async () => { await googleCalendarAuth?.dispose(); await memoryWriter?.dispose(); await stateWriter?.dispose(); services?.dispose(); guidanceOverlay?.dispose(); activityOverlay?.dispose(); await screenMonitor?.dispose(); await voiceHotkeys?.dispose(); disposed = true; globalShortcut.unregisterAll(); app.quit(); }).catch(() => {
     quitting = false; if (controller) activityOverlay?.update(activityOverlayState(controller.snapshot(), voicePresence));
     void dialog.showMessageBox({ type: 'error', title: `${APP_DISPLAY_NAME} konnte die Arbeit nicht sicher beenden`, message: `Die laufende Arbeit oder das Speichern konnte nicht sicher abgeschlossen werden. ${APP_DISPLAY_NAME} bleibt geöffnet. Bitte erneut versuchen.` });
   });

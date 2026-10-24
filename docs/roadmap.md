@@ -14,7 +14,7 @@ Seit dem 24. Oktober 2026 liegt der Schwerpunkt auf gerätegebundener Computerst
 - Gesprächsagent mit ausschließlich Dialogwerkzeugen, zwei Hintergrundworker und Ressourcenkonfliktprüfung.
 - Native Desktopsteuerung mit aktuellen Bildern, frameId und geordnetem Zugriff.
 - Direkte Gedächtnisberichte mit JSON-Vertrag, Quellen, Versionen und eigenem Abbruch.
-- Eigene lokale Pi-Skills, Fähigkeitenübersicht und Verbrauchsanzeige je Auftrag. Das Repository und die Pakete enthalten keine mitgelieferten Skills.
+- Eigene lokale Pi-Skills, Fähigkeitenübersicht und Verbrauchsanzeige je Auftrag. Der einzelne Produkt-Skill bildschirmhilfe wird ins Profil kopiert und bleibt bearbeitbar; persönliche Skill-Sammlungen werden nicht ausgeliefert.
 - Sichtbare Hinweise bei belegten F8/F9-/Stopp-Hotkeys sowie Unterscheidung zwischen fehlender Kontextmessung und leerem Gespräch.
 - Erster Architekturabschnitt im Quellcode: eigenes Gesprächsmodul mit Zustandsbesitz und Fachports; langlebige Audio-Runtime mit getrenntem Browseradapter und React-Anbindung. Automatische Importregeln werden über `npm run check` zusammen mit Typen und Verhalten geprüft.
 - Desktopbesitz endet mit der interaktiven Arbeit eines Turns, auch wenn dessen verwalteter Hintergrundprozess erhalten bleibt. Gezielte Tests prüfen Freigabe, Stopp-Rennen und unbestätigtes Cleanup.
@@ -28,6 +28,7 @@ Seit dem 24. Oktober 2026 liegt der Schwerpunkt auf gerätegebundener Computerst
 - Einklappbare Navigation, skalierendes Gesprächssymbol und optionale Arbeitsanzeige im Hintergrund.
 - Vier bearbeitbare Identitäts- und Gedächtnisdateien (SOUL.md, IDENTITY.md, USER.md, MEMORY.md) mit Versionen und Vorlagen; Fast-Varianten bei der Modellwahl.
 - Google Kalender über einen selbst eingerichteten Desktop-OAuth-Client: Termine lesen, persönliche Einzeltermine anlegen und ändern.
+- Erste Bildschirmhilfe im Gespräch: Aufnahme und Detailansicht, Kreis mit Pfeil direkt auf dem Hauptbildschirm, ohne Fokuswechsel oder Agenteneingabe. Aktualitätsprüfung vor der Markierung; Eingaben, Fensterwechsel, Zeitlimit und Stopp entfernen den Hinweis. Folgeprüfung und Erprobung bleiben offen.
 
 Der belastbare Prüfstand steht im [Testprotokoll](openhiatus-testprotokoll.md).
 

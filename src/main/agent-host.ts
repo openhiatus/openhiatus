@@ -57,7 +57,7 @@ export function imageContent(response: DynamicToolResponse, toolName?: string): 
     if (bytes.toString('base64') !== match[2] || (match[1] === 'png' && !bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])))) throw new Error('Ungültiges Werkzeugbild.');
     return { type: 'image', mimeType: `image/${match[1]}`, data: match[2] };
   });
-  const computerViews = toolName === 'computer' ? verified.contentItems.flatMap((item, index) => item.type === 'inputImage' && item.computerView ? [index] : []) : [];
+  const computerViews = (toolName === 'computer' || toolName === 'screen_help') ? verified.contentItems.flatMap((item, index) => item.type === 'inputImage' && item.computerView ? [index] : []) : [];
   return { content, details: { success: response.success, ...(computerViews.length ? { computerViews } : {}) }, ...(response.success ? {} : { isError: true }) };
 }
 

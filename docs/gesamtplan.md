@@ -28,7 +28,9 @@ Für Computersteuerung sind wählbare Übersichts- und Detailansichten, lokale �
 
 Google Kalender ist als erster persönlicher Dienst über einen selbst eingerichteten Desktop-OAuth-Client angebunden ([Anleitung](google-calendar.md)). Er bleibt als optionale Ergänzung erhalten.
 
-Skills werden lokal im Benutzerprofil gepflegt. Eine Skill-Sammlung ist nicht Bestandteil des öffentlichen Repositorys oder der Windows-Pakete.
+Skills werden lokal im Benutzerprofil gepflegt. Der integrierte Produkt-Skill bildschirmhilfe wird einmalig ins Profil kopiert und bleibt bearbeitbar; persönliche Skill-Sammlungen sind nicht Bestandteil des öffentlichen Repositorys oder der Windows-Pakete.
+
+Eine erste [Bildschirmhilfe](screen-help.md) ist angeschlossen: Das Gesprächsmodell kann das sichtbare Programm auf dem Hauptbildschirm ansehen und das gesuchte Element mit Kreis und Pfeil direkt darüber markieren. Der Mensch bedient selbst. Eingaben und Fensterwechsel verwerfen die Markierung. Automatische Folgeprüfung und die breitere Erprobung mit Menschen gehören weiterhin zu Abschnitt H.
 
 Bestehende Prüfungen ersetzen keine neue Abnahme der folgenden Änderungen. Anmeldung, Sprache, Auftragsannahme, Stopp, Sitzungsfortsetzung, Gedächtnis und Kalender müssen erhalten bleiben.
 

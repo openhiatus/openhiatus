@@ -5,7 +5,7 @@
 openHiatus is a desktop app that operates visible Windows applications with your choice of AI models. You describe a task by voice or text, keep the conversation going while up to two tasks run in the background, and each task returns a result you can trace. The project focuses on reliable, affordable computer use on your own device; see [Direction](#direction).
 
 ![Status: alpha](https://img.shields.io/badge/status-alpha-orange)
-![Version 0.0.15](https://img.shields.io/badge/version-0.0.15-blue)
+![Version 0.0.16](https://img.shields.io/badge/version-0.0.16-blue)
 ![Platform: Windows x64](https://img.shields.io/badge/platform-Windows%20x64-0078D6)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green)
 
@@ -15,6 +15,7 @@ openHiatus is a desktop app that operates visible Windows applications with your
 ## Features
 
 - 🖥️ **Works in your programs.** Windows desktop control from current screenshots, plus tools for files and the shell and your own local skills.
+- 🎯 **Shows you where to click.** Ask about the visible program; a circle and arrow highlight the target directly on your primary display while you keep control.
 - 🎙️ **Talk or type.** Voice and text conversations, with push-to-talk via global hotkeys and an optional transcript review before sending.
 - ⚙️ **Background tasks.** Up to two tasks run while the conversation stays available. Each task shows its progress, result, and usage.
 - 🧠 **Personal memory.** Memories with sources, reports, and history, along with core instructions you can edit.
@@ -103,6 +104,14 @@ Under **Einstellungen → Bedienung → Bildschirmübersicht**, optionally enabl
 
 The computer runtime has the desktop tool and a bounded result-reporting tool: no shell, file, skill, service or delegation tools. One host executor retains the existing frame, coordinate and Stop checks. Short observation handles reduce identifier copying; stale or misspelled handles are still rejected exactly. Subtasks are limited to 40 desktop calls and four minutes; reaching a limit returns control to the planner. Task details show usage and request timing by model, and distinguish requested Fast from the service tier actually returned by the provider. Fast currently requires an OpenAI Responses model. Availability and charges depend on your connection. End-to-end speed, cost and task accuracy need a fresh comparison; a cheaper model alone does not establish an improvement. See the [computer-model experiment](docs/computer-use-computermodell.md).
 
+### Screen help without switching programs
+
+Keep your program in front and ask by voice using F8, for example: “Where is the bold button?” The conversation model can observe the primary display and show a yellow circle with an arrow directly around the target. The overlay does not take keyboard focus and lets your clicks pass through. You operate the program yourself; a help question does not need an executing background task. Existing voice submission/review settings still apply.
+
+The editable **bildschirmhilfe** skill is installed at `%APPDATA%\openhiatus\pi\skills\bildschirmhilfe\SKILL.md`. Its instructions are loaded with a help observation, rather than repeated in every system prompt. Existing edits survive app upgrades. The read-only tool supports observation, original-resolution detail inspection, marking and clearing; it has no desktop input operations. Screen images go to your selected conversation model and are omitted after two model requests. They are not added to the chat view.
+
+A local comparison checks the target before drawing. Keyboard input, mouse clicks or scrolling, foreground-window/geometry changes and Stop invalidate the marker; it also expires after 30 seconds. Automatic changes within a program after the marker appears are not continuously verified. Recognition accuracy depends on the selected image-capable model. See the [screen-help guide](docs/screen-help.md).
+
 ### Google Calendar
 
 Under **Dienste → Google Kalender** (Services → Google Calendar), follow the setup guide to register a Google OAuth **Desktop app**, save its client ID and optional client secret, and sign in through your normal browser. Enable the Google Calendar API in that Cloud project first. You can then choose a calendar, preview the next seven days, and ask openHiatus to read, create or change events in conversation. Your chosen calendar and connection survive restart; tokens are kept in the local encrypted credential store.
@@ -118,7 +127,7 @@ This first version creates and changes personal single events without attendees.
 - **Clipboard:** Text input through the clipboard replaces the clipboard's contents.
 - **Cloud services:** When you use cloud models or speech services, the data a task needs is sent to the selected provider. Local storage alone does not make the assistant offline.
 - **Local data:** Settings, history, and memory are stored in `%APPDATA%\openhiatus`. Credentials are protected with Electron safeStorage and Windows DPAPI.
-- **Skills:** Your own skills are local folders containing a `SKILL.md` file, stored in `%APPDATA%\openhiatus\pi\skills`. New profiles start without skills, and neither the repository nor the Windows package includes a skill collection.
+- **Skills:** Your own skills are local folders containing a `SKILL.md` file, stored in `%APPDATA%\openhiatus\pi\skills`. The app seeds the editable screen-help skill; no personal skill collection is bundled.
 
 ## Known limitations
 
@@ -139,7 +148,7 @@ Planned next steps, in order:
 3. Approval before critical actions, fixed limits around payments, passwords and remote-access tools, allowed applications, and a per-task action log.
 4. Sharing the screen safely: user input pauses the agent, with explicit hand-over and resumption.
 5. Saving successful workflows as reusable recipes.
-6. Guidance mode that highlights the next step on screen.
+6. Extend screen guidance with step verification and real-user trials.
 7. Multi-monitor support and a signed, easy-to-install Windows package.
 
 The existing [planning issues](https://github.com/openhiatus/openhiatus/issues?q=is%3Aissue+is%3Aopen+label%3Aplanning) predate this direction and will be realigned. For details, see the [vision](docs/vision.md), the [roadmap](docs/roadmap.md), and the [implementation plan](docs/gesamtplan.md). These documents are written in German.
