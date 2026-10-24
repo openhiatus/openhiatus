@@ -14,7 +14,7 @@ function message(id: string, text: string, at = '2026-10-05T12:00:00Z', role: Me
 test('fresh protected identity and empty personal core survive restart without any conversation import', () => {
   const { path, store } = setup(); const snapshot = store.snapshot();
   assert.equal(snapshot.sourceCount, 0); assert.equal(snapshot.documents.length, 2);
-  assert.match(snapshot.documents.find(doc => doc.id === 'identity')!.content, /Du bist openHiatus/);
+  assert.match(snapshot.documents.find(doc => doc.id === 'identity')!.content, /Rufname und Gesprächsstil werden im Assistentenprofil/);
   assert.equal(snapshot.documents.find(doc => doc.id === 'core')!.content, '');
   assert.ok(snapshot.documents.every(doc => doc.version === 1));
   assert.equal(snapshot.storagePath, join(path, 'memory.json'));

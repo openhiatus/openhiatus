@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Activity as ActivityIcon, ArrowRight, AudioLines, Check, CheckCheck, ChevronRight, CircleHelp, FileText, MessageSquare, Mic, ShieldCheck, Square, Terminal, Volume2, VolumeX } from 'lucide-react';
 import type { Activity, TaskStatus } from '../../../shared/contracts';
+import { assistantDisplayName } from '../../../shared/assistant-profile';
 import type { AppSession } from '../session';
 import { OpenhiatusMark as Mark } from '../../components/OpenhiatusMark';
 import { Spinner } from '../../components/Spinner';
@@ -29,6 +30,7 @@ export function ConversationView({ session, active, showActivity, onOpenTasks, o
   const { state, acknowledged, isRecording, level, speechReady, manualSummaryBusy, audioBusy, phase, startRecording,
     cancelAudio, setNotice, ready, report, taskBusy, speak, transcript, composerRef, voiceConversation, draft, setDraft,
     pendingSend, send, preference, clearSpeech, stopEarcons, currentModel, activeJobs, seconds, taskStatus, error, summaryInProgress, microphoneLevel, playbackLevel } = session;
+  const assistantName = assistantDisplayName(state?.preferences.assistantProfile);
   const presence: { state: PresenceState; label: string; detail: string } = !state ? { state: 'offline', label: 'Verbinde …', detail: 'openHiatus wird vorbereitet.' }
     : phase === 'opening' ? { state: 'listening', label: 'Mikrofon öffnet …', detail: 'Gleich kannst du sprechen.' }
     : phase === 'recording' ? { state: 'listening', label: 'Ich höre zu', detail: `${duration(seconds)} · F8 ${voiceConversation ? 'beendet und sendet' : 'beendet die Aufnahme'}` }
@@ -57,8 +59,8 @@ export function ConversationView({ session, active, showActivity, onOpenTasks, o
   return <div className={`conversation-layout ${showActivity ? '' : 'without-activity'}`}>
         <main className={`conversation voice-first ${showHistory ? 'history-open' : ''}`}>
           {(state?.jobs?.length ?? 0) > 0 && <button className="conversation-work-hint" onClick={onOpenTasks}><span>{activeJobs ? activeJobs === 1 ? 'Ein Auftrag aktiv' : `${activeJobs} Aufträge aktiv` : 'Letzte Aufgaben und Ergebnisse'}</span><span>Aufgaben ansehen <ArrowRight size={14} /></span></button>}
-          <section className={`voice-stage ${presence.state}`} aria-label="Sprachgespräch mit openHiatus">
-            <Presence size={showHistory ? 'compact' : 'large'} state={presence.state} level={presenceLevel} label={`openHiatus: ${presence.label}`} />
+          <section className={`voice-stage ${presence.state}`} aria-label={`Sprachgespräch mit ${assistantName}`}>
+            <Presence size={showHistory ? 'compact' : 'large'} state={presence.state} level={presenceLevel} label={`${assistantName}: ${presence.label}`} />
             <div className="stage-text" role="status" aria-live="polite"><strong>{presence.label}</strong>{presence.detail && <span>{presence.detail}</span>}</div>
             <div className="stage-actions">
               {isRecording && <div className="level-bars" aria-label="Mikrofonpegel">{Array.from({ length: 12 }, (_, i) => <i key={i} style={{ opacity: level * 12 > i ? 1 : .15 }} />)}</div>}
@@ -73,7 +75,7 @@ export function ConversationView({ session, active, showActivity, onOpenTasks, o
               </div>}
           </section>
           {showHistory && <div className={`messages ${state?.messages.length ? '' : 'empty'}`}>
-            {!state ? <div className="loading"><Spinner /> openHiatus wird verbunden …</div> : state.messages.length === 0 ? <div className="history-empty">Noch kein Gespräch. Sprich einfach los oder schreib unten.</div> : <div className="message-list">{state.messages.map(message => <article className={`message ${message.role}`} key={message.id}><div className="message-avatar">{message.role === 'assistant' ? <Mark small /> : 'DU'}</div><div className="message-content"><div className="message-meta"><strong>{message.role === 'assistant' ? 'openHiatus' : 'Du'}</strong><time>{time(message.at)}</time>{message.role === 'assistant' && <span>AGENT</span>}</div><MessageBody text={message.text || (message.role === 'assistant' && (!taskBusy || message.id !== state.messages.at(-1)?.id) ? 'Für diesen Auftrag liegt keine Antwort vor.' : '')} onError={report} />{message.role === 'assistant' && !!message.text && <button className="read-reply" disabled={!speechReady || audioBusy} onClick={() => void speak(message.text)}><Volume2 size={13} /> Vorlesen</button>}</div></article>)}<div ref={messagesEnd} /></div>}
+            {!state ? <div className="loading"><Spinner /> openHiatus wird verbunden …</div> : state.messages.length === 0 ? <div className="history-empty">Noch kein Gespräch. Sprich einfach los oder schreib unten.</div> : <div className="message-list">{state.messages.map(message => <article className={`message ${message.role}`} key={message.id}><div className="message-avatar">{message.role === 'assistant' ? <Mark small /> : 'DU'}</div><div className="message-content"><div className="message-meta"><strong>{message.role === 'assistant' ? assistantName : 'Du'}</strong><time>{time(message.at)}</time>{message.role === 'assistant' && <span>AGENT</span>}</div><MessageBody text={message.text || (message.role === 'assistant' && (!taskBusy || message.id !== state.messages.at(-1)?.id) ? 'Für diesen Auftrag liegt keine Antwort vor.' : '')} onError={report} />{message.role === 'assistant' && !!message.text && <button className="read-reply" disabled={!speechReady || audioBusy} onClick={() => void speak(message.text)}><Volume2 size={13} /> Vorlesen</button>}</div></article>)}<div ref={messagesEnd} /></div>}
           </div>}
           <div className="composer-area">
             {transcript && <div className="transcript-label"><CheckCheck size={14} /> Sprache erkannt — du kannst den Text vor dem Senden ändern.</div>}

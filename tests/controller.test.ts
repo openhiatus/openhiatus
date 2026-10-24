@@ -57,6 +57,32 @@ test('workspace preference validation is atomic and persists valid manual overri
   assert.equal(f.saved().preferences.sidebarMode, 'expanded'); assert.equal(f.saved().preferences.activityOverlaySize, 224);
 });
 
+test('assistant profile is durable, invalid choices are atomic, and a running turn retains its original personality', async () => {
+  const f = fixture();
+  await f.app.savePreferences({ assistantProfile: { name: 'Mira', personalityId: 'direct', templates: [] } });
+  assert.equal(f.saved().preferences.assistantProfile?.name, 'Mira');
+  const old = f.app.identityInstructions(); assert.ok(old.includes('Mira')); assert.ok(old.includes('Knapp & trocken'));
+  await f.app.send('Ein Auftrag', 'old-personality');
+  f.app.handle({ type: 'started', threadId: 'old-profile-thread', turnId: 'old-profile-turn' });
+  await f.app.savePreferences({ assistantProfile: { name: 'Juno', personalityId: 'curious', templates: [] } });
+  assert.equal(f.app.identityInstructions(), old);
+  f.app.handle({ type: 'completed', status: 'completed', text: 'Erledigt.' });
+  assert.ok(f.app.identityInstructions().includes('Juno')); assert.ok(f.app.identityInstructions().includes('Neugierig & lebendig'));
+  assert.equal(f.app.snapshot().task.threadId, undefined);
+  const before = f.app.snapshot().preferences;
+  await assert.rejects(f.app.savePreferences({ assistantProfile: { name: 'Invalid', personalityId: 'missing', templates: [] } }));
+  assert.deepEqual(f.app.snapshot().preferences, before); await f.app.dispose();
+});
+
+test('failed profile persistence reports failure and restores the previous active profile', async () => {
+  const f = fixture(); await f.app.savePreferences({ assistantProfile: { name: 'Mira', personalityId: 'balanced', templates: [] } });
+  const save = f.options.store.save;
+  f.options.store.save = () => { throw new Error('Synthetic profile write failure'); };
+  await assert.rejects(f.app.savePreferences({ assistantProfile: { name: 'Lost', personalityId: 'direct', templates: [] } }), /write failure/);
+  assert.equal(f.app.snapshot().preferences.assistantProfile?.name, 'Mira');
+  f.options.store.save = save; await new Promise(resolve => setImmediate(resolve)); await f.app.dispose();
+});
+
 test('legacy direct-task completion scrubs secrets revealed by structured reply decoding', async () => {
   const f = fixture(); await f.app.saveSpeechKey('synthetic-secret');
   await f.app.send('Antworte auf die Frage.', 'encoded-direct');

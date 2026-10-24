@@ -8,6 +8,18 @@ import { CredentialStore, StateStore, defaultState, type CredentialCrypto } from
 
 function directory() { return mkdtempSync(join(tmpdir(), 'openhiatus-storage-test-')); }
 
+test('personalities migrate old profiles and roundtrip custom Unicode templates without overwriting invalid state', () => {
+  const path = directory(), state = defaultState(); delete state.preferences.assistantProfile;
+  writeFileSync(join(path, 'state.json'), JSON.stringify({ version: 1, state }), 'utf8');
+  const store = new StateStore(path), restored = store.load();
+  assert.deepEqual(restored.preferences.assistantProfile, { name: '', personalityId: 'balanced', templates: [] });
+  restored.preferences.assistantProfile = { name: 'Mira', personalityId: 'custom-office', templates: [{ id: 'custom-office', label: 'Büro', instructions: 'Präzise Grüße. Ruhig, freundlich und direkt.' }] };
+  store.save(restored); assert.deepEqual(new StateStore(path).load().preferences.assistantProfile, restored.preferences.assistantProfile);
+  const original = readFileSync(join(path, 'state.json'), 'utf8');
+  const invalid = structuredClone(restored); invalid.preferences.assistantProfile!.personalityId = 'unknown';
+  assert.throws(() => store.save(invalid)); assert.equal(readFileSync(join(path, 'state.json'), 'utf8'), original);
+});
+
 test('workspace appearance preferences migrate and survive restart without overwriting invalid profiles', () => {
   const path = directory(), state = defaultState();
   delete state.preferences.sidebarMode; delete state.preferences.activityOverlayEnabled; delete state.preferences.activityOverlaySize;

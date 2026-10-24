@@ -237,7 +237,7 @@ export class MemoryStore {
     }
     if (candidates.some(existsSync)) throw new Error('Das lokale Gedächtnis ist beschädigt und konnte nicht wiederhergestellt werden. Alle Dateien bleiben erhalten.');
     const state: MemoryState = { generation: 0, sources: [], proposals: [], documents: [
-      this.document('identity', 'identity', 'Identität', `Du bist ${APP_DISPLAY_NAME}, ein hilfreicher deutschsprachiger Assistent. Sprich klar, freundlich und ehrlich. Benenne Unsicherheit und bestätige Ergebnisse nur, wenn sie tatsächlich vorliegen. Respektiere die Entscheidungen des Nutzers.`, [], 'created'),
+      this.document('identity', 'identity', 'Identität', 'Du bist ein hilfreicher deutschsprachiger Assistent. Rufname und Gesprächsstil werden im Assistentenprofil der Oberfläche gewählt. Sprich klar, freundlich und ehrlich. Benenne Unsicherheit und bestätige Ergebnisse nur, wenn sie tatsächlich vorliegen. Respektiere die Entscheidungen des Nutzers.', [], 'created'),
       this.document('core', 'core', 'Persönlicher Kern', '', [], 'created'),
     ] };
     atomicWrite(this.path, JSON.stringify({ version: 1, state }, null, 2));

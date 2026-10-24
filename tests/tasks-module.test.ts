@@ -459,6 +459,39 @@ test('asynchronous context admission deduplicates requests and freezes confirmed
   assert.ok(f.workers[0].createdJob.identityInstructions?.includes('Vorliebe vor Annahme.')); await f.tasks.dispose();
 });
 
+test('queued jobs freeze the sanitized persona before asynchronous memory lookup and later jobs use the new profile', async () => {
+  const f = fixture();
+  let persona = 'Rufname Mira. Stil: ruhig. synthetic-secret';
+  f.ports.context.persona = () => persona;
+  await f.tasks.accept(f.admission('blocker', ['shared-project'])); await tick();
+  let release!: (text: string) => void;
+  f.ports.memory!.retrieve = () => new Promise<string>(resolve => { release = resolve; });
+  const pending = f.tasks.accept(f.admission('old-profile', ['shared-project']));
+  persona = 'Rufname Juno. Stil: sachlich.';
+  await tick();
+  assert.equal(f.workers.length, 1, 'memory lookup has not admitted the waiting job');
+  release('Historischer Kontext.'); const waiting = await pending; await tick();
+  const frozenPersona = 'Rufname Mira. Stil: ruhig. [entfernt]';
+  const queued = f.tasks.get(waiting.job.id);
+  assert.equal(queued.status, 'queued');
+  assert.ok(queued.identityInstructions?.includes(frozenPersona));
+  assert.ok(!queued.identityInstructions?.includes('Juno') && !queued.identityInstructions?.includes('synthetic-secret'));
+  assert.ok(!queued.prompt.includes('Rufname'), 'persona is a developer instruction, not a duplicated user task');
+  f.ports.memory!.retrieve = () => 'Historischer Kontext.';
+  const next = await f.tasks.accept(f.admission('new-profile', ['shared-project'])); await tick();
+  assert.equal(f.tasks.get(next.job.id).status, 'queued');
+  assert.ok(f.tasks.get(next.job.id).identityInstructions?.includes(persona));
+  assert.ok(!f.tasks.get(next.job.id).identityInstructions?.includes('Mira'));
+  f.workers[0].finish(); await tick();
+  assert.equal(f.workers[1].createdJob.id, waiting.job.id);
+  assert.ok(f.workers[1].createdJob.identityInstructions?.includes(frozenPersona));
+  f.workers[1].finish(); await tick();
+  assert.equal(f.workers[2].createdJob.id, next.job.id);
+  assert.ok(f.workers[2].createdJob.identityInstructions?.includes(persona));
+  assert.ok(f.workers[0].createdJob.identityInstructions?.includes(frozenPersona), 'already running work keeps its captured profile');
+  await f.tasks.dispose();
+});
+
 test('Stop invalidates context preparation before any durable job or worker is admitted', async () => {
   const f = fixture(); let release!: (text: string) => void;
   f.ports.memory!.retrieve = () => new Promise<string>(resolve => { release = resolve; });

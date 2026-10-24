@@ -22,6 +22,7 @@ export interface BackgroundTaskPorts {
     computerDetailScaleDivisor?: number; computerImageRetentionCalls?: number; computerWorkingMemoryCalls?: number };
   context: {
     skills(query: string, maxBytes: number): string;
+    persona?(): string;
     capabilities(): string;
     favorites(): string;
   };
@@ -57,6 +58,7 @@ interface JobContext {
 }
 interface AdmissionContext {
   documents: readonly Pick<MemoryDocument, 'id' | 'version' | 'content'>[];
+  readonly persona: string;
   model: string;
   computer: ComputerTaskSettings;
   capabilities: string;
@@ -138,6 +140,7 @@ export class BackgroundTaskCoordinator {
         detailScaleDivisor: settings.computerDetailScaleDivisor ?? 1, imageRetentionCalls: settings.computerImageRetentionCalls ?? 0,
         workingMemoryCalls: settings.computerWorkingMemoryCalls ?? 0 });
       const frozen: AdmissionContext = { documents: structuredClone(this.ports.memory?.documents() ?? []), model: settings.model, computer,
+        persona: this.clean(this.ports.context.persona?.() ?? ''),
         capabilities: this.clean(this.ports.context.capabilities()), favorites: this.ports.context.favorites() };
       const generation = this.generation, request = structuredClone(input);
       const accepted = this.admissionTail.then(() => this.admit(request, frozen, generation, onAdmitted));
@@ -194,7 +197,7 @@ export class BackgroundTaskCoordinator {
     }
     const prompt = additional ? `${additional}\n\n${fullRequest}` : fullRequest;
     const { history: _history, sourceMessageId, ...request } = input;
-    const instructions = [identity, frozen.capabilities, frozen.favorites].filter(Boolean).join('\n\n');
+    const instructions = [identity, frozen.persona, frozen.capabilities, frozen.favorites].filter(Boolean).join('\n\n');
     const accepted = await this.enqueue({ ...request, prompt, identityInstructions: instructions, model: frozen.model, computer: frozen.computer }, job => {
       if (generation !== this.generation || this.blocked()) throw new Error('Aufgaben werden gerade beendet.');
       this.jobMemory.set(job.id, { versions, sourceIds: [sourceMessageId], reads: 0, readKeys: new Set() });

@@ -1,4 +1,5 @@
 import { AudioDeviceSelect } from './audio-device-select';
+import { AssistantProfileCard } from './assistant-profile-card';
 import { useId, useRef, useState, type KeyboardEvent } from 'react';
 import { AudioLines, ChevronDown, Headphones, KeyRound, Keyboard, LoaderCircle, Mic, Monitor, SlidersHorizontal, Square, Volume2 } from 'lucide-react';
 import type { PreferencesPatch, Snapshot } from '../../../shared/contracts';
@@ -139,6 +140,8 @@ export function SettingsView({ state, workBusy, summaryInProgress, voice, onPref
 
       <section id={`${id}-panel-behavior`} role="tabpanel" aria-labelledby={`${id}-tab-behavior`} hidden={tab !== 'behavior'} className="settings-tab-panel">
         <p className="settings-panel-intro">So hörst du Antworten und übergibst neue Aufträge.</p>
+        <AssistantProfileCard profile={state?.preferences.assistantProfile} ready={ready}
+          onSave={async profile => { await window.openhiatus.savePreferences({ assistantProfile: profile }); }} onError={onError} />
         <section className="settings-card settings-workspace">
           <div className="settings-card-head"><span className="service-icon"><Monitor size={22} aria-hidden="true" /></span><div><h2>Oberfläche & Arbeitsanzeige</h2><p>Navigation und sichtbare Arbeit im Hintergrund</p></div></div>
           <label className="field-label" htmlFor={`${id}-sidebar-mode`}>Linke Navigation</label>
