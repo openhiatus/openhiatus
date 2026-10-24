@@ -3,6 +3,7 @@ import type { Activity, AgentAdapter, AgentEvent, BackgroundJob, ComputerFrame, 
 import { parseComputerTaskSettings } from '../../../shared/computer-task-settings';
 import type { CoreProposal, CoreProposalInput, MemoryDocument, MemoryPeriodPage, MemoryPeriodRequest } from '../../../shared/memory';
 import { toSpokenText } from '../../../shared/spoken-text';
+import { toSpokenAssistantReply } from '../../../shared/spoken-reply';
 import { JobManager, type JobRequest } from './manager';
 
 export interface TaskAdmission {
@@ -13,7 +14,7 @@ export interface TaskAdmission {
   sourceMessageId: string;
   history?: Array<Record<string, unknown>>;
 }
-export interface ParsedTaskReply { text: string; proposals: CoreProposalInput[]; errors: string[]; }
+export interface ParsedTaskReply { text: string; spoken?: string; unreadable?: boolean; proposals: CoreProposalInput[]; errors: string[]; }
 export interface BackgroundTaskPorts {
   createWorker(onEvent: (event: AgentEvent) => void, job: BackgroundJob): AgentAdapter;
   access: { assertFullAccess(): void; blocked(): boolean; };
@@ -239,7 +240,9 @@ export class BackgroundTaskCoordinator {
   }
   private finishJob(job: BackgroundJob): void {
     this.jobProgress.delete(job.id);
-    const text = job.result ? this.ports.parseReply(this.clean(job.result)) : undefined;
+    const parsed = job.result ? this.ports.parseReply(this.clean(job.result)) : undefined;
+    const text = parsed ? { ...parsed, text: this.clean(parsed.text),
+      ...(parsed.spoken === undefined ? {} : { spoken: this.clean(parsed.spoken) }) } : undefined;
     const result = text?.text || job.error || (job.status === 'completed'
       ? 'Die Bearbeitung ist beendet. Es wurde kein Ergebnistext geliefert.' : 'Die Aufgabe wurde nicht abgeschlossen.');
     const answer: Message = { id: randomUUID(), role: 'assistant', source: 'agent', jobId: job.id,
@@ -269,10 +272,15 @@ export class BackgroundTaskCoordinator {
     for (const error of text?.errors ?? []) this.activity('error', error);
     if (text) job.result = result;
     this.jobMemory.delete(job.id);
-    const cue = job.status === 'completed'
-      ? (toSpokenText(result).length <= 450 ? `${job.title}: ${result}` : `${job.title}: Die Antwort liegt vor. Das ausführliche Ergebnis steht im Gespräch.`)
-      : `${job.title}: ${job.error && toSpokenText(job.error).length <= 450 ? job.error : 'Die Aufgabe wurde nicht abgeschlossen. Details stehen im Gespräch.'}`;
-    this.speechCue(cue, job.id);
+    const speechReply = job.status === 'completed'
+      ? { text: result, spoken: text?.spoken, unreadable: text?.unreadable }
+      : { text: `Die Aufgabe wurde nicht abgeschlossen. ${this.clean(job.error || (text?.unreadable
+        ? 'Die Antwort konnte nicht vollständig aufbereitet werden.' : result))}` };
+    const spoken = toSpokenAssistantReply(speechReply);
+    const titled = `${toSpokenText(job.title)}: ${spoken}`;
+    // A structured answer already names its subject; a legacy title is optional
+    // and never pushes the complete spoken cue above the 500-character cap.
+    this.speechCue(!speechReply.spoken && titled.length <= 500 ? titled : spoken, job.id);
     this.activity(job.status === 'completed' ? 'system' : 'error', job.status === 'completed' ? 'Bearbeitung beendet' : 'Aufgabe unterbrochen', job.title);
     this.changed(); this.ports.effects.idle();
   }

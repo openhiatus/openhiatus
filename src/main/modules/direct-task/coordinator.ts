@@ -157,7 +157,7 @@ export class DirectTaskCoordinator {
         let proposals: CoreProposalInput[] = [];
         if (answer && event.text) {
           const parsed = this.ports.parseReply(this.clean(event.text));
-          answer.text = parsed.text;
+          answer.text = this.clean(parsed.text);
           if (this.state.task.status === 'completed') proposals = parsed.proposals;
           for (const error of parsed.errors) this.activity('error', error);
           if (!answer.text && parsed.proposals.length) answer.text = 'Ein Gedächtnisvorschlag liegt zur Prüfung bereit.';

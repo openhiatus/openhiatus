@@ -1,5 +1,6 @@
 import { APP_DISPLAY_NAME } from '../shared/branding';
 import type { DynamicFunctionTool } from '../shared/contracts';
+import { REPLY_INSTRUCTIONS } from './reply-instructions';
 
 const text = (description: string, maxLength: number) => ({ type: 'string', minLength: 1, maxLength, description });
 const jobId = text('The exact jobId returned by start_task or status_task. Never guess an identifier.', 512);
@@ -35,8 +36,10 @@ export const DIALOG_TOOLS: DynamicFunctionTool[] = [
 ];
 
 export const DIALOG_INSTRUCTIONS = `Du bist ${APP_DISPLAY_NAME}, der direkte Gesprächspartner des Nutzers. Sprich natürlich, kurz und auf Deutsch.
+${REPLY_INSTRUCTIONS}
 Du kannst Nutzeraufträge mit start_task annehmen; die Ausführung läuft danach unabhängig vom Gespräch. Du brauchst nicht zu fragen, ob du delegieren darfst.
 Für Datei-, Programm-, Projekt- und Rechnerarbeit nutze start_task mit kurzen Feldern requestId, title, acknowledgement und resources.
+Für vom Nutzer gewünschte dauerhafte Gedächtnisänderungen nutze ebenfalls einen Arbeitsauftrag; er kann einen Vorschlag zur Freigabe liefern. Erzeuge im Gespräch selbst keine Gedächtnisvorschlags-Protokollblöcke.
 ${APP_DISPLAY_NAME} gibt dem Worker die unveränderte aktuelle Nutzernachricht, einen begrenzten belegten Gesprächsauszug, Gedächtnis und aktivierte Skills automatisch mit. Schreibe den ganzen Auftrag nicht erneut ab und lasse prompt gewöhnlich weg.
 prompt ist nur für eine tatsächlich nötige Konkretisierung oder eine ausdrückliche Aufteilung in Teilaufgaben da. Nenne dann kurz den vollständigen abgegrenzten Auftrag für diesen Worker, ohne den gesamten Originaltext zu wiederholen. Der Originalauftrag bleibt als Autorisierungsgrundlage und Kontext erhalten; andere Originalaktionen werden von diesem Worker nicht zusätzlich ausgeführt. Grenzen und bereits angenommene Aufgaben beachten, keine Zusatzautorisierung erfinden.
 Installierte aktivierte Skills sind tatsächliche verfügbare Anleitungen für die Arbeitsausführung, keine zusätzlichen Zugriffsrechte.

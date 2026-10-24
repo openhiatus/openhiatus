@@ -57,6 +57,71 @@ function fixture() {
 
 const task = { requestId: 'subtask', title: 'Projekt prüfen', resources: ['C:\\project'], acknowledgement: 'Ich prüfe das Projekt.' };
 
+test('dialogue measures the spoken text after link cleanup instead of replacing a short answer with a pointer', async () => {
+  const f = fixture(); await f.conversation.send('Ist die Installation aktuell?', 'spoken-answer');
+  const target = `https://example.org/reference/${'very-long-reference-'.repeat(100)}`;
+  const answer = `Die CLI 1.2.3 ist nicht aktuell. Die App-Version ist ungeprüft. Siehe [Dokumentation](${target}).`;
+  assert.ok(answer.length > 1600);
+  f.conversation.handle({ type: 'completed', status: 'completed', text: answer });
+  assert.equal(f.spoken.at(-1), 'Die CLI 1.2.3 ist nicht aktuell. Die App-Version ist ungeprüft. Siehe Dokumentation.');
+  assert.equal(f.conversation.snapshot().messages.at(-1)?.text, answer.trim());
+  await f.conversation.stop();
+});
+
+test('long dialogue answers retain the result and its limitation in speech and the full transcript', async () => {
+  const f = fixture(); await f.conversation.send('Was ist das Ergebnis?', 'long-spoken-answer');
+  const lead = 'Der Abgleich ist abgeschlossen. Zwei Einträge sind weiterhin ungeklärt.';
+  const answer = `${lead}\n\n${'Ein nachvollziehbarer zusätzlicher Detailpunkt. '.repeat(90)}`;
+  f.conversation.handle({ type: 'completed', status: 'completed', text: answer });
+  assert.ok(f.spoken.at(-1)?.startsWith(lead));
+  assert.ok(f.spoken.at(-1)!.length <= 500 && f.spoken.at(-1)!.length < answer.length);
+  assert.equal(f.conversation.snapshot().messages.at(-1)?.text, answer.trim());
+  await f.conversation.stop();
+});
+
+test('dialogue delivers the model-authored speech field and stores only the full written answer', async () => {
+  const f = fixture(); await f.conversation.send('Was ist das Prüfergebnis?', 'structured-dialogue');
+  const spoken = 'Der geprüfte CLI-Stand ist veraltet. Die App-Version ist weiterhin ungeprüft.';
+  const text = `## Prüfdetails\n\n${'Ein technischer Nachweis. '.repeat(90)}\n\n${spoken}`;
+  f.conversation.handle({ type: 'completed', status: 'completed', text: '```openhiatus-reply\n' + JSON.stringify({ spoken, text }) + '\n```' });
+  assert.equal(f.spoken.at(-1), spoken);
+  assert.equal(f.conversation.snapshot().messages.at(-1)?.text, text);
+  assert.equal(f.runs.length, 1, 'No summary model request is required');
+  await f.conversation.stop();
+});
+
+test('dialogue preserves malformed envelope data without speaking its raw protocol', async () => {
+  const f = fixture(); await f.conversation.send('Was ist das Ergebnis?', 'invalid-dialogue');
+  const answer = '```openhiatus-reply\n{"spoken":INVALID,"text":"Prüfergebnis"}\n```';
+  f.conversation.handle({ type: 'completed', status: 'completed', text: answer });
+  assert.equal(f.conversation.snapshot().messages.at(-1)?.text, answer);
+  assert.ok(f.spoken.at(-1)?.includes('nicht vollständig aufbereitet'));
+  assert.ok(!f.spoken.at(-1)?.includes('INVALID') && !f.spoken.at(-1)?.includes('openhiatus-reply'));
+  assert.equal(f.conversation.snapshot().task.status, 'completed');
+  await f.conversation.stop();
+});
+
+test('decoded dialogue fields cannot reintroduce an encoded secret after whole-message redaction', async () => {
+  const f = fixture(); f.ports.effects.clean = text => text.replaceAll('synthetic-secret', '[entfernt]');
+  await f.conversation.send('Was ist das Ergebnis?', 'encoded-dialogue');
+  const encoded = [...'synthetic-secret'].map(c => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0')).join('');
+  const raw = '```openhiatus-reply\n' + JSON.stringify({ spoken: 'Ergebnis synthetic-secret.', text: 'Geprüfter Text synthetic-secret.' }).replaceAll('synthetic-secret', encoded) + '\n```';
+  f.conversation.handle({ type: 'completed', status: 'completed', text: raw });
+  assert.equal(f.spoken.at(-1), 'Ergebnis [entfernt].');
+  assert.equal(f.conversation.snapshot().messages.at(-1)?.text, 'Geprüfter Text [entfernt].');
+  await f.conversation.stop();
+});
+
+test('a spoken answer with an accidentally empty written field remains visible and audible', async () => {
+  const f = fixture(); await f.conversation.send('Was ist das Ergebnis?', 'speech-only-dialogue');
+  const spoken = 'Die Prüfung ist abgeschlossen, ein Detail bleibt ungeklärt.';
+  f.conversation.handle({ type: 'completed', status: 'completed', text: '```openhiatus-reply\n' + JSON.stringify({ spoken, text: '' }) + '\n```' });
+  assert.equal(f.spoken.at(-1), spoken);
+  assert.equal(f.conversation.snapshot().messages.at(-1)?.text, spoken);
+  assert.equal(f.conversation.snapshot().task.status, 'completed');
+  await f.conversation.stop();
+});
+
 test('conversation admission remains exactly once when preparation yields to a duplicate request', async () => {
   const f = fixture();
   await Promise.all([f.conversation.send('Prüfe das Projekt', 'same'), f.conversation.send('Prüfe das Projekt', 'same')]);

@@ -2,6 +2,8 @@ import { APP_DISPLAY_NAME } from '../shared/branding';
 import { MEMORY_SUMMARY_INSTRUCTIONS } from './modules/memory-reports';
 export { MEMORY_SUMMARY_INSTRUCTIONS, MEMORY_SUMMARY_SCHEMA, memorySummaryOutputSchema } from './modules/memory-reports';
 import { DIALOG_INSTRUCTIONS } from './dialog';
+import { REPLY_INSTRUCTIONS } from './reply-instructions';
+import { parseAssistantReply } from '../shared/assistant-reply';
 import type { CoreProposalInput } from '../shared/memory';
 
 export const MEMORY_READ_INSTRUCTIONS = `Wenn du einen vollständigen bestimmten Tages-, Wochen- oder Monatsbericht oder weitere Originalquellen brauchst, lies das lokale Archiv über ${APP_DISPLAY_NAME}: `
@@ -17,6 +19,8 @@ export const MEMORY_PROPOSAL_INSTRUCTIONS = `Das lokale Gedächtnis wird von ${A
   + 'Ohne Änderungswunsch keinen Vorschlag erzeugen. Keine Zugangsdaten in Erinnerungen oder Vorschläge aufnehmen.';
 
 export const WORKER_CONVERSATION_INSTRUCTIONS = `${APP_DISPLAY_NAME} hat den Arbeitsauftrag bereits kurz angenommen. Wiederhole diese Annahme nicht und erzähle keine interne Delegationskette. `
+  + REPLY_INSTRUCTIONS
+  + 'Wenn dieser Arbeitsauftrag einen zulässigen Gedächtnisvorschlag erfordert, steht dessen eigener Protokollblock getrennt nach dem openhiatus-reply-Block. '
   + 'Arbeite nach der kurzen Annahme zügig weiter. Keine regelmäßigen Fortschrittsmeldungen oder Meldungen nur wegen verstrichener Zeit. Sprich bei einer nötigen Rückfrage, einem relevanten Problem oder einem für den Nutzer wichtigen geprüften Zwischenstand kurz im commentary-Kanal, gewöhnlich ein bis zwei Sätze und höchstens 280 Zeichen. '
   + 'Diese Mitteilungen werden dem Nutzer auch gesprochen; keine Werkzeugdetails, Skillpfade, Inventare, JSON oder Gedankengänge vorlesen. Keine Meldung für jeden Werkzeugaufruf. '
   + 'Nenne abgeschlossene Zwischenschritte nur nach belegter Prüfung; eine Planung oder ein gestarteter Prozess beweist keinen Erfolg. Bei Rechner-Eingaben kurz ankündigen, dass du Maus und Tastatur verwendest. '
@@ -64,7 +68,7 @@ export function runtimeInstructions() {
 }
 
 /** Only a completed model reply may create pending proposals; parsing never approves anything. */
-export function parseMemoryReply(text: string): { text: string; proposals: CoreProposalInput[]; errors: string[] } {
+export function parseMemoryReply(text: string): { text: string; spoken?: string; unreadable?: boolean; proposals: CoreProposalInput[]; errors: string[] } {
   const proposals: CoreProposalInput[] = [];
   const errors: string[] = [];
   const pattern = /```openhiatus-memory-proposal\s*\r?\n([\s\S]*?)(?:```|$)/g;
@@ -87,5 +91,8 @@ export function parseMemoryReply(text: string): { text: string; proposals: CoreP
       proposals.push({ documentId: value.documentId, baseVersion: value.baseVersion, content: value.content.trim(), reason: value.reason.trim() });
     } catch { errors.push('Ein Gedächtnisvorschlag hatte ein ungültiges Format und wurde nicht übernommen.'); }
   }
-  return { text: visible.trim(), proposals, errors };
+  const reply = parseAssistantReply(visible);
+  if (reply.invalid) errors.push('Die Antwort hatte ein ungültiges Ausgabeformat. Verfügbare Antwortdaten bleiben erhalten.');
+  return { text: reply.text, ...(reply.spoken === undefined ? {} : { spoken: reply.spoken }),
+    ...(reply.unreadable ? { unreadable: true } : {}), proposals, errors };
 }
