@@ -9,7 +9,7 @@ export type IpcControllerPort = {
   [Name in Exclude<CommandName, PlatformCommand>]: (...args: PublicArgs<Name>) => MaybePromise<CommandResult<Name>>;
 };
 export interface IpcPlatformPort {
-  stopVoiceOverlay(): void;
+  stopActivityPresence(): void;
   openWorkspace(): Promise<void>;
   openSkillsFolder(): Promise<void>;
   openChatGPTUsage(): Promise<void>;

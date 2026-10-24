@@ -36,6 +36,8 @@ test('settings mounts every tab and access form without browser resources, comma
   assert.match(html, /role-model/); assert.match(html, /role-dialogModel/); assert.match(html, /role-memoryModel/);
   assert.match(html, /type="password"[^>]*autoComplete="off"/);
   assert.deepEqual(f.invoked, []);
+  assert.match(html, /Größe der Arbeitsanzeige/);
+  assert.match(html, /144 px \(Standard\)/);
 });
 
 test('settings renders real device choices and keeps the current audio phase visible without starting it', () => {

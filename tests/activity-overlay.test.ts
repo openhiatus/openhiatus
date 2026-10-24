@@ -87,10 +87,44 @@ test('window is lazy, passive, and visible only for enabled background work', as
   assert.match(html, /script-src 'none'/); assert.match(html, /base-uri 'none'/);
   assert.match(html, /Overlay-Größe/); assert.doesNotMatch(html, /<script|https?:\/\//);
   f.overlay.update({ ...active, stopping: true }); await flush();
-  assert.ok(window.scripts.at(-1)?.includes('"stopping":true'));
+  assert.ok(window.scripts.at(-1)?.includes('"phase":"stopping"'));
   f.focus(true); assert.equal(window.visible, false);
   f.focus(false); await flush(); assert.equal(window.visible, true);
   f.overlay.update({ ...active, working: false }); assert.equal(window.visible, false);
+  f.overlay.dispose();
+});
+
+test('speech and listening phase changes update a round presence without changing working', async () => {
+  const f = fixture(); f.overlay.update({ ...active, phase: 'speaking' }); await flush();
+  const window = f.windows[0];
+  const display = () => JSON.parse(window.scripts.at(-1)!.match(/const state=(\{.*?\});/)![1]) as { phase: string; status: string };
+  assert.equal(display().phase, 'speaking'); assert.equal(display().status, 'Ich spreche');
+  const before = window.scripts.length;
+  f.overlay.update({ ...active, phase: 'listening' }); await flush();
+  assert.equal(window.scripts.length, before + 1); assert.equal(display().phase, 'listening'); assert.equal(display().status, 'Ich höre zu');
+  assert.equal(f.windows.length, 1); assert.equal(window.visible, true);
+  f.overlay.update({ ...active, phase: 'listening' }); await flush(); assert.equal(window.scripts.length, before + 1);
+  for (const [phase, status] of [['idle', 'Bereit'], ['transcribing', 'Verstehe'], ['thinking', 'Denke nach'], ['working', 'Arbeitet'],
+    ['ready', 'Bereit'], ['error', 'Hinweis'], ['stopping', 'Stopp']] as const) {
+    f.overlay.update({ ...active, phase }); await flush(); assert.deepEqual({ phase: display().phase, status: display().status }, { phase, status });
+  }
+  const html = decodeURIComponent(window.url.split(',').slice(1).join(','));
+  assert.match(html, /aspect-ratio:1/); assert.match(html, /prefers-reduced-motion:reduce/);
+  assert.match(html, /<span id="status"/); assert.doesNotMatch(html, /<textarea|<p|id="(?:panel|text|detail)"/);
+  f.overlay.dispose();
+});
+
+test('presence content is restricted to known phases and fixed short status text', async () => {
+  const f = fixture();
+  for (const invalid of [undefined, null, '__proto__', 'constructor', '<img src=x onerror=alert(1)>', { toString: () => { throw new Error('must not coerce'); } }]) {
+    f.overlay.update({ ...active, phase: invalid } as ActivityOverlayState); await flush();
+    const source = f.windows[0].scripts.at(-1)!;
+    assert.ok(source.includes('"phase":"working","status":"Arbeitet"')); assert.ok(!source.includes('<img'));
+  }
+  f.overlay.update({ ...active, stopping: true }); await flush();
+  assert.ok(f.windows[0].scripts.at(-1)!.includes('"phase":"stopping","status":"Stopp"'));
+  f.overlay.update({ ...active, stopping: true, phase: 'speaking' }); await flush();
+  assert.ok(f.windows[0].scripts.at(-1)!.includes('"phase":"speaking","status":"Ich spreche"'));
   f.overlay.dispose();
 });
 

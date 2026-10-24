@@ -5,7 +5,7 @@
 openHiatus is a desktop app that combines your choice of AI models, speech services, and a personal memory. You keep the conversation going while up to two tasks run in the background, and each task returns a result you can trace.
 
 ![Status: alpha](https://img.shields.io/badge/status-alpha-orange)
-![Version 0.0.8](https://img.shields.io/badge/version-0.0.8-blue)
+![Version 0.0.9](https://img.shields.io/badge/version-0.0.9-blue)
 ![Platform: Windows x64](https://img.shields.io/badge/platform-Windows%20x64-0078D6)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green)
 
@@ -57,7 +57,9 @@ Spoken replies include the actual answer. The system prompt asks the model to re
 
 The left navigation automatically collapses to icons below 960 pixels of content width and expands in wider windows. Use the button at its bottom-right edge to choose either layout manually; your choice survives restart. The small reset button or **Einstellungen → Bedienung → Linke Navigation → Automatisch** restores automatic behavior. The central symbol scales with the space available in the conversation view.
 
-Enable **Arbeitsanzeige im Hintergrund** (Background activity indicator) under **Einstellungen → Bedienung** to see an optional symbol at the top-right of the app's monitor while work continues in the background. It appears only during active conversation, task, or memory work, and hides when the app returns to the foreground or work ends. Drag its right-hand bar down to enlarge it or up to shrink it; the size is saved. The indicator stays out of keyboard focus, and desktop operations temporarily hide it before input and capture.
+Enable **Arbeitsanzeige im Hintergrund** (Background activity indicator) under **Einstellungen → Bedienung** to see a round symbol with a short status at the top-right of the app's monitor. It stays visible throughout listening, transcription, thinking, work, speech synthesis, and playback while the main window is in the background. Transcript review keeps a ready indicator; idle hides it. The former rectangular transcript overlay is replaced by this same optional symbol. Full transcripts and replies stay in the main window.
+
+Choose **Größe der Arbeitsanzeige** (Indicator size) in the same settings card, or drag the symbol's right-hand grip down to enlarge it and up to shrink it. The size is saved. The indicator stays out of keyboard focus, and desktop operations temporarily hide it before input and capture.
 
 ### Keyboard shortcuts
 

@@ -47,7 +47,7 @@ test('the public client keeps the existing wire shape and event subscriptions ex
   const transport: IpcClientTransport = {
     invoke: async (name, args) => { invocations.push({ name, args }); return { ok: true, value: name === 'snapshot' ? snapshotFixture() : name === 'editMemory' ? memoryFixture() : undefined }; },
     subscribe: (channel, listener) => { listeners.set(channel, listener); return () => { unsubscriptions++; listeners.delete(channel); }; },
-    publishVoiceOverlay: () => {},
+    publishActivityPresence: () => {},
   };
   const api = createOpenhiatusApi(transport); await api.snapshot(); await api.send('Hallo', 'request'); await api.editMemory('core', 'Neue Fassung', 1);
   assert.deepEqual(invocations.map(call => call.name), ['snapshot', 'send', 'editMemory']);

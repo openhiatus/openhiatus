@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { SkillEntry, Snapshot, VoiceOverlayState } from '../../../shared/contracts';
+import type { SkillEntry, Snapshot } from '../../../shared/contracts';
 import { friendlyAudioError } from '../../audio';
-import { useVoiceSession } from '../voice';
+import { useVoiceSession, voicePresence } from '../voice';
 import { SessionOperations } from './session-operations';
 
 const NOTICE_MS = 7000;
@@ -20,8 +20,6 @@ export function useAppSession(navigation: SessionNavigation) {
   const [error, setError] = useState('');
   const [busyAction, setBusyAction] = useState('');
   const [pendingSend, setPendingSend] = useState(false);
-  const [voiceFeedback, setVoiceFeedback] = useState<{ kind: 'blocked' | 'sent'; detail: string }>();
-  const [dialogOpen, setDialogOpen] = useState(false);
   const operations = useRef<SessionOperations | undefined>(undefined);
   const [, refreshOperations] = useState(0);
   useEffect(() => {
@@ -38,8 +36,8 @@ export function useAppSession(navigation: SessionNavigation) {
   } = useVoiceSession(state, {
     error: report,
     notice: setNotice,
-    inputStarted: () => { setVoiceFeedback(undefined); setError(''); setNotice(''); },
-    transcribing: () => setVoiceFeedback(undefined),
+    inputStarted: () => { setError(''); setNotice(''); },
+    transcribing: () => {},
     connectionsRequired: () => navigation.openSettings(),
     transcript: async (text, automatic) => {
       if (text && automatic) { setNotice('Sprache erkannt. openHiatus übernimmt.'); await send(false, text); }
@@ -69,7 +67,7 @@ export function useAppSession(navigation: SessionNavigation) {
 
   const stopAll = useCallback(async () => {
     await operations.current?.stop(() => window.openhiatus.stop(), {
-      started: () => { stopVoice(); setVoiceFeedback(undefined); setNotice('Stopp angefordert. Es werden keine weiteren Sprachaktionen gestartet.'); },
+      started: () => { stopVoice(); setNotice('Stopp angefordert. Es werden keine weiteren Sprachaktionen gestartet.'); },
       failed: report, settled: () => refreshOperations(current => current + 1),
     });
   }, [stopVoice, report]);
@@ -109,16 +107,15 @@ export function useAppSession(navigation: SessionNavigation) {
     const blocked = sendBlockedReason(globalShortcut, submittedText);
     if (blocked) {
       if (submittedText !== draft) { setDraft(current => current ? `${current}\n${submittedText}` : submittedText); setTranscript(true); setNotice(blocked); }
-      if (globalShortcut) { setVoiceFeedback({ kind: 'blocked', detail: blocked }); setNotice(blocked); }
+      if (globalShortcut) setNotice(blocked);
       return;
     }
     const text = submittedText.trim();
     const retainTranscript = () => { if (submittedText !== draft) { setDraft(current => current ? `${current}\n${text}` : text); setTranscript(true); } };
     await lifetime.send(text, requestId => window.openhiatus.send(text, requestId), {
-      started: () => { setVoiceFeedback(undefined); setPendingSend(true); setError(''); setNotice(''); cancelAudio(); },
+      started: () => { setPendingSend(true); setError(''); setNotice(''); cancelAudio(); },
       succeeded: () => {
         setDraft(current => current.trim() === text ? '' : current); setTranscript(false);
-        setVoiceFeedback({ kind: 'sent', detail: 'Gesendet. Du kannst weiter sprechen.' });
         if (submittedText === draft) cue('sent');
       },
       failed: err => { retainTranscript(); report(err); },
@@ -157,35 +154,11 @@ export function useAppSession(navigation: SessionNavigation) {
   const voiceStatus = { idle: 'Sprachgespräch', opening: 'Mikrofon wird geöffnet', recording: 'Ich höre zu', 'mic-test': 'Mikrofontest', transcribing: 'Sprache wird erkannt', synthesizing: 'Antwort wird vertont', playing: 'Antwort wird vorgelesen' }[phase];
   const activeJobs = state?.jobs?.filter(job => ['queued', 'running', 'stopping'].includes(job.status)).length ?? 0;
   const skillInsertDisabledReason = busyAction === 'new' ? 'Das neue Gespräch wird vorbereitet. Danach kannst du einen Skill ergänzen.' : ['opening', 'recording', 'mic-test', 'transcribing'].includes(phase) ? 'Beende zuerst die Sprachaufnahme und warte auf das Transkript. Danach kannst du einen Skill ergänzen.' : undefined;
-  const globalSendBlockedReason = sendBlockedReason(true);
-  const overlayPhase: VoiceOverlayState['phase'] = pendingSend ? 'sending' : phase === 'opening' ? 'opening' : isRecording ? 'recording' : phase === 'transcribing' ? 'transcribing'
-    : voiceFeedback?.kind === 'sent' && !draft.trim() ? 'sent' : error || voiceFeedback?.kind === 'blocked' ? 'error' : draft.trim() ? 'ready' : 'idle';
-  const overlayDetail = voiceFeedback?.detail || error || (overlayPhase === 'sending' ? 'Auftrag wird gesendet.'
-    : overlayPhase === 'opening' ? 'Das Mikrofon wird geöffnet.'
-    : overlayPhase === 'recording' ? voiceConversation ? 'F8 beendet die Aufnahme. openHiatus antwortet danach.' : 'F8 beendet die Aufnahme. Sende danach mit F9.'
-    : overlayPhase === 'transcribing' ? voiceConversation ? 'Sprache wird erkannt und automatisch gesendet.' : 'Sprache wird erkannt. Prüfe danach den Text und drücke F9.'
-    : draft.trim() ? globalSendBlockedReason || 'F9 senden · F8 weitere Aufnahme'
-    : notice || (voiceConversation ? 'F8 sprechen · erneut F8 für die Antwort' : 'F8 sprechen · F9 senden'));
-
+  const overlayPhase = voicePresence(phase, pendingSend, transcript && !!draft.trim()).phase;
   useEffect(() => {
-    const update = () => setDialogOpen(hasOpenDialog());
-    update();
-    const observer = new MutationObserver(update);
-    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['open', 'role', 'aria-modal'] });
-    return () => observer.disconnect();
-  }, []);
-  useEffect(() => {
-    if (voiceFeedback?.kind !== 'sent') return;
-    const timeout = setTimeout(() => setVoiceFeedback(undefined), 3000);
-    return () => clearTimeout(timeout);
-  }, [voiceFeedback]);
-  useEffect(() => {
-    // Readiness changes clear a stale blocked hint.
-    setVoiceFeedback(current => current?.kind === 'blocked' ? undefined : current);
-  }, [globalSendBlockedReason, dialogOpen]);
-  useEffect(() => {
-    window.openhiatus?.publishVoiceOverlay({ phase: overlayPhase, text: draft, detail: overlayDetail, canSend: !globalSendBlockedReason && !dialogOpen });
-  }, [overlayPhase, draft, overlayDetail, globalSendBlockedReason, dialogOpen]);
+    window.openhiatus?.publishActivityPresence({ phase: overlayPhase });
+  }, [overlayPhase]);
+  useEffect(() => () => window.openhiatus?.publishActivityPresence({ phase: 'idle' }), []);
 
   useEffect(() => {
     if (!navigation.conversationVisible || !focusDraft.current || !textarea.current || textarea.current.disabled) return;

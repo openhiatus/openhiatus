@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { AudioClip, BackgroundJob, Snapshot, SpeechCue } from '../src/shared/contracts';
 import { VoiceSession, type VoiceEnvironment, type VoiceEvents, type VoicePlayer, type VoiceRecorder, type VoiceState } from '../src/renderer/features/voice';
+import { voicePresence } from '../src/renderer/features/voice/voice-presence';
+import { activityOverlayState } from '../src/main/activity-overlay-state';
 
 const clip: AudioClip = { base64: 'synthetic-wav', mimeType: 'audio/wav' };
 function deferred<T>() {
@@ -93,6 +95,29 @@ function fixture() {
     counts: () => ({ unwatch, transcriptions, meterAttached, meterDetached, meterDisposed, earconsStopped, earconsDisposed }),
   };
 }
+
+test('completed model work retains the round activity status through synthesis and playback until audio ends or stops', async () => {
+  const f = fixture(), finished = snapshot({ task: { id: 'finished', status: 'completed' } });
+  const synthesis = deferred<AudioClip>(); f.environment.api.synthesize = () => synthesis.promise;
+  let current = activityOverlayState(finished);
+  f.events.changed = voice => { current = activityOverlayState(finished, voicePresence(voice.phase, false, false)); };
+  const speech = f.session.speak('The model has finished; audio is still active.');
+  assert.equal(current.working, true); assert.equal(current.phase, 'thinking');
+  synthesis.resolve(clip); await flush();
+  assert.equal(f.session.phase, 'playing'); assert.equal(current.working, true); assert.equal(current.phase, 'speaking');
+  f.session.updateSnapshot(finished); await flush();
+  assert.equal(current.phase, 'speaking', 'a completed-turn snapshot must not hide active speech');
+  f.players[0].end(); await speech;
+  assert.equal(current.working, false); assert.equal(current.phase, 'idle');
+  const second = f.session.speak('Stop this playback.'); await flush();
+  assert.equal(current.phase, 'speaking');
+  f.session.stop(); await second; f.players.at(-1)!.end();
+  assert.equal(current.working, false); assert.equal(current.phase, 'idle');
+  await f.session.startRecording();
+  assert.equal(current.working, true); assert.equal(current.phase, 'listening');
+  f.session.stop(); f.session.dispose();
+  assert.equal(current.working, false);
+});
 
 test('Stop invalidates a pending TTS result and permits future speech without replaying it', async () => {
   const f = fixture(), result = deferred<AudioClip>();

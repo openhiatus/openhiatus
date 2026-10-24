@@ -1,10 +1,11 @@
 import type { BrowserWindow, Rectangle, WebContents } from 'electron';
+import type { ActivityPresencePhase } from '../shared/activity-presence';
 import { ACTIVITY_OVERLAY_MIN_SIZE, ACTIVITY_OVERLAY_MAX_SIZE, ACTIVITY_OVERLAY_DEFAULT_SIZE } from '../shared/workspace-preferences';
 
 export { ACTIVITY_OVERLAY_MIN_SIZE, ACTIVITY_OVERLAY_MAX_SIZE, ACTIVITY_OVERLAY_DEFAULT_SIZE } from '../shared/workspace-preferences';
 export const ACTIVITY_OVERLAY_RESIZE_CHANNEL = 'openhiatus:activity-overlay-resize';
 
-export interface ActivityOverlayState { enabled: boolean; working: boolean; stopping?: boolean; size: number; }
+export interface ActivityOverlayState { enabled: boolean; working: boolean; stopping?: boolean; phase?: ActivityPresencePhase; size: number; }
 export type ActivityOverlayCommand = { phase: 'hover'; over: boolean }
   | { phase: 'start' | 'move' | 'end' | 'cancel'; pointerId: number; y: number }
   | { phase: 'key'; key: 'ArrowUp' | 'ArrowDown' | 'Home' | 'End' };
@@ -36,6 +37,14 @@ function size(value: number): number {
   return Number.isFinite(value) ? Math.max(ACTIVITY_OVERLAY_MIN_SIZE, Math.min(ACTIVITY_OVERLAY_MAX_SIZE, Math.round(value))) : ACTIVITY_OVERLAY_DEFAULT_SIZE;
 }
 
+const status: Record<ActivityPresencePhase, string> = {
+  idle: 'Bereit', listening: 'Ich höre zu', transcribing: 'Verstehe', thinking: 'Denke nach', working: 'Arbeitet',
+  speaking: 'Ich spreche', ready: 'Bereit', error: 'Hinweis', stopping: 'Stopp'
+};
+function phase(value: unknown, stopping: boolean): ActivityPresencePhase {
+  return typeof value === 'string' && Object.hasOwn(status, value) ? value as ActivityPresencePhase : stopping ? 'stopping' : 'working';
+}
+
 /** Electron coordinates are DIP; a small/removed monitor cannot leave the overlay off-screen. */
 export function activityOverlayBounds(workArea: Rectangle, requestedSize: number): Rectangle {
   const width = Math.max(1, Math.floor(Number.isFinite(workArea.width) ? workArea.width : 1));
@@ -50,18 +59,19 @@ const document = `<!doctype html><html lang="de"><head><meta charset="UTF-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'none'; base-uri 'none'; form-action 'none'">
 <style>
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:transparent;color:#dce9cd;font-family:system-ui,"Segoe UI",sans-serif;user-select:none}
-body{--tint:176,201,131;display:flex;align-items:center;justify-content:center;padding:12px 23px 25px 12px}body.stopping{--tint:232,175,119}
-#symbol{position:relative;width:100%;height:100%;max-width:100%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,rgba(var(--tint),.14),transparent 70%);display:grid;place-items:center}
-.core{position:relative;width:76%;aspect-ratio:1;border:1px solid rgba(var(--tint),.6);border-radius:50%;background:radial-gradient(circle at 36% 30%,#3f4c2df2,#273120f2 48%,#1a2116f2);box-shadow:0 0 18px rgba(var(--tint),.2);animation:breathe 3.2s ease-in-out infinite;display:grid;place-items:center}
+body{--tint:176,201,131}body[data-phase=listening]{--tint:135,213,207}body[data-phase=transcribing],body[data-phase=thinking]{--tint:218,201,131}body[data-phase=speaking]{--tint:160,196,235}body[data-phase=error]{--tint:234,148,136}body[data-phase=stopping]{--tint:232,175,119}
+#symbol{position:absolute;left:5px;top:5px;width:calc(100% - 25px);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,rgba(var(--tint),.12),transparent 70%);display:grid;place-items:center}
+.core{position:relative;width:78%;aspect-ratio:1;border:1px solid rgba(var(--tint),.6);border-radius:50%;background:radial-gradient(circle at 36% 30%,rgba(var(--tint),.25),#192117f5 70%);box-shadow:0 0 15px rgba(var(--tint),.18);animation:breathe 3.2s ease-in-out infinite;display:grid;place-items:center}
 .ring{position:absolute;inset:2%;border:1px solid rgba(var(--tint),.25);border-radius:50%;animation:spin 3.2s linear infinite}.ring:before{content:'';position:absolute;top:-3px;left:50%;width:5px;height:5px;border-radius:50%;background:rgb(var(--tint));box-shadow:0 0 8px rgba(var(--tint),.8)}
-svg{width:76%;height:76%;fill:none;stroke:rgb(var(--tint));stroke-width:1.8}svg .point{fill:rgb(var(--tint));stroke:none}svg .satellite{fill:#273120}
-#status{position:absolute;bottom:7px;left:5px;right:20px;margin:0;text-align:center;font-size:clamp(9px,8vw,12px);font-weight:600;line-height:1.2;text-shadow:0 1px 4px #000,0 0 5px #000}
-#resize{position:absolute;right:1px;top:8px;bottom:8px;width:15px;display:grid;place-items:center;border:1px solid #778b5b80;background:#182014aa;border-radius:6px;cursor:ns-resize;touch-action:none;opacity:.7;outline-offset:-2px}
-#resize:hover,#resize:focus-visible,#resize[data-dragging=true]{opacity:1;background:#344329ee;border-color:#a5bc7b}
-#resize:before{content:'';width:3px;height:24px;border-left:1px solid #b4c99a;border-right:1px solid #b4c99a;border-radius:1px}
-@keyframes breathe{50%{transform:scale(1.035)}}@keyframes spin{to{transform:rotate(360deg)}}
+svg{width:62%;height:62%;transform:translateY(-14%);fill:none;stroke:rgb(var(--tint));stroke-width:1.8}svg .point{fill:rgb(var(--tint));stroke:none}svg .satellite{fill:#273120}
+#status{position:absolute;bottom:13%;left:4%;right:4%;margin:0;text-align:center;font-size:clamp(8px,6vw,12px);font-weight:600;line-height:1.2;white-space:nowrap;text-shadow:0 1px 4px #000}
+#resize{position:absolute;right:0;top:25%;bottom:25%;width:16px;display:grid;place-items:center;border:0;background:transparent;cursor:ns-resize;touch-action:none;outline-offset:-3px}
+#resize:before{content:'';width:2px;height:100%;max-height:60px;background:rgba(var(--tint),.55);border-radius:2px}
+#resize:hover:before,#resize:focus-visible:before,#resize[data-dragging=true]:before{width:3px;background:rgb(var(--tint))}
+body[data-phase=listening] .core{animation:listen 1.5s ease-in-out infinite}body[data-phase=speaking] .core{animation:voice .85s ease-in-out infinite}body[data-phase=thinking] .ring,body[data-phase=transcribing] .ring{animation-duration:1.8s}body[data-phase=ready] .ring,body[data-phase=idle] .ring,body[data-phase=error] .ring{animation-play-state:paused}
+@keyframes breathe{50%{transform:scale(1.035)}}@keyframes listen{50%{transform:scale(1.055);box-shadow:0 0 20px rgba(var(--tint),.35)}}@keyframes voice{50%{transform:scale(1.045);border-color:rgb(var(--tint))}}@keyframes spin{to{transform:rotate(360deg)}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important}}
-</style></head><body><div id="symbol" aria-hidden="true"><span class="ring"></span><span class="core"><svg viewBox="0 0 100 100"><ellipse cx="50" cy="50" rx="21" ry="36" transform="rotate(29 50 50)"/><ellipse cx="50" cy="50" rx="21" ry="36" transform="rotate(-29 50 50)"/><circle class="point" cx="50" cy="50" r="3"/><circle class="satellite" cx="75" cy="32" r="4"/></svg></span></div><p id="status" role="status" aria-live="polite">Arbeitet</p><div id="resize" role="slider" aria-orientation="vertical" aria-label="Overlay-Größe" aria-valuemin="96" aria-valuemax="320" aria-valuenow="144" tabindex="0" title="Größe ändern: nach unten größer, nach oben kleiner"></div></body></html>`;
+</style></head><body data-phase="working"><div id="symbol"><span class="ring" aria-hidden="true"></span><span class="core"><svg aria-hidden="true" viewBox="0 0 100 100"><ellipse cx="50" cy="50" rx="21" ry="36" transform="rotate(29 50 50)"/><ellipse cx="50" cy="50" rx="21" ry="36" transform="rotate(-29 50 50)"/><circle class="point" cx="50" cy="50" r="3"/><circle class="satellite" cx="75" cy="32" r="4"/></svg><span id="status" role="status" aria-live="polite">Arbeitet</span></span></div><div id="resize" role="slider" aria-orientation="vertical" aria-label="Overlay-Größe" aria-valuemin="96" aria-valuemax="320" aria-valuenow="144" tabindex="0" title="Größe ändern: nach unten größer, nach oben kleiner"></div></body></html>`;
 
 /** A separate, passive background indicator; only its own size handle accepts mouse input. */
 export class ActivityOverlay {
@@ -85,8 +95,8 @@ export class ActivityOverlay {
 
   update(state: ActivityOverlayState): void {
     if (this.disposed) return;
-    const next = { enabled: state.enabled === true, working: state.working === true, stopping: state.stopping === true, size: size(state.size) };
-    const changed = next.enabled !== this.state.enabled || next.working !== this.state.working || next.stopping !== this.state.stopping || next.size !== this.state.size;
+    const next = { enabled: state.enabled === true, working: state.working === true, stopping: state.stopping === true, phase: phase(state.phase, state.stopping === true), size: size(state.size) };
+    const changed = next.enabled !== this.state.enabled || next.working !== this.state.working || next.stopping !== this.state.stopping || next.phase !== this.state.phase || next.size !== this.state.size;
     this.state = next;
     const acknowledged = this.expectedSize === next.size;
     if (acknowledged) this.expectedSize = undefined;
@@ -186,8 +196,9 @@ export class ActivityOverlay {
     void this.loaded!.then(async () => {
       if (!this.current(revision, overlay)) return;
       overlay.setBounds(activityOverlayBounds(this.options.workArea(), this.localSize));
-      const state = JSON.stringify({ stopping: !!this.state.stopping, size: this.localSize, dragging: !!this.drag });
-      await overlay.webContents.executeJavaScript(`(() => { const state=${state}; document.body.classList.toggle('stopping',state.stopping); document.getElementById('status').textContent=state.stopping?'Wird gestoppt':'Arbeitet'; const handle=document.getElementById('resize'); handle.setAttribute('aria-valuenow',String(state.size)); handle.dataset.dragging=String(state.dragging); if(!state.dragging)document.dispatchEvent(new Event('openhiatus:activity-overlay-reset')); })()`);
+      const currentPhase = phase(this.state.phase, !!this.state.stopping);
+      const state = JSON.stringify({ phase: currentPhase, status: status[currentPhase], size: this.localSize, dragging: !!this.drag });
+      await overlay.webContents.executeJavaScript(`(() => { const state=${state}; document.body.dataset.phase=state.phase; document.getElementById('status').textContent=state.status; const handle=document.getElementById('resize'); handle.setAttribute('aria-valuenow',String(state.size)); handle.dataset.dragging=String(state.dragging); if(!state.dragging)document.dispatchEvent(new Event('openhiatus:activity-overlay-reset')); })()`);
       if (!this.current(revision, overlay)) return;
       this.visible = true; this.mousePolicy(); overlay.showInactive();
     }).catch(() => {

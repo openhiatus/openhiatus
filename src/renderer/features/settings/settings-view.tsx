@@ -147,8 +147,14 @@ export function SettingsView({ state, workBusy, summaryInProgress, voice, onPref
             <option value="auto">Automatisch nach Fensterbreite</option><option value="expanded">Ausgeklappt</option><option value="collapsed">Eingeklappt</option>
           </select><ChevronDown size={15} aria-hidden="true" /></div>
           <p className="billing-note" id={`${id}-sidebar-mode-description`}>Die Automatik zeigt bei wenig Platz nur die Symbole. Unten rechts an der Leiste kannst du die Navigation auch selbst ein- und ausklappen.</p>
-          <label className="settings-toggle"><span><strong>Arbeitsanzeige im Hintergrund</strong><small>Zeigt das Symbol oben rechts, wenn openHiatus arbeitet und ein anderes Fenster aktiv ist.</small></span>
+          <label className="settings-toggle"><span><strong>Arbeitsanzeige im Hintergrund</strong><small>Zeigt das runde Symbol mit Status beim Zuhören, Denken, Arbeiten und Sprechen, solange ein anderes Fenster aktiv ist.</small></span>
             <input type="checkbox" checked={state?.preferences.activityOverlayEnabled === true} disabled={!ready} onChange={event => preference({ activityOverlayEnabled: event.target.checked })} /></label>
+          <label className="field-label" htmlFor={`${id}-overlay-size`}>Größe der Arbeitsanzeige</label>
+          <div className="select-wrap"><select id={`${id}-overlay-size`} value={state?.preferences.activityOverlaySize ?? ACTIVITY_OVERLAY_DEFAULT_SIZE} disabled={!ready}
+            onChange={event => preference({ activityOverlaySize: Number(event.target.value) })}>
+            {[...new Set([96, ACTIVITY_OVERLAY_DEFAULT_SIZE, 224, 320, state?.preferences.activityOverlaySize ?? ACTIVITY_OVERLAY_DEFAULT_SIZE])].sort((a, b) => a - b)
+              .map(size => <option key={size} value={size}>{size} px{size === ACTIVITY_OVERLAY_DEFAULT_SIZE ? ' (Standard)' : ''}</option>)}
+          </select><ChevronDown size={15} aria-hidden="true" /></div>
           <p className="billing-note">Ziehe die Griffleiste rechts am Symbol nach unten zum Vergrößern und nach oben zum Verkleinern. Die Größe bleibt gespeichert.</p>
           <div className="button-row"><span className="billing-note">Größe: {state?.preferences.activityOverlaySize ?? ACTIVITY_OVERLAY_DEFAULT_SIZE} px</span>
             <button className="secondary-button" disabled={!ready || (state?.preferences.activityOverlaySize ?? ACTIVITY_OVERLAY_DEFAULT_SIZE) === ACTIVITY_OVERLAY_DEFAULT_SIZE}

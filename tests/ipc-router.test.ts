@@ -20,7 +20,7 @@ function fixture() {
     editMemory: (id, content, expectedVersion) => { calls.push({ name: 'editMemory', args: [id, content, expectedVersion] }); return memory; }, decideMemoryProposal: () => memory,
   };
   const ports: IpcPorts = { controller, reportError: error => { errors.push(error); return 'Bereinigte Meldung'; }, platform: {
-    stopVoiceOverlay: () => { calls.push({ name: 'stopVoiceOverlay', args: [] }); },
+    stopActivityPresence: () => { calls.push({ name: 'stopActivityPresence', args: [] }); },
     openWorkspace: capture('openWorkspace'), openSkillsFolder: capture('openSkillsFolder'), openChatGPTUsage: capture('openChatGPTUsage'), revealFile: capture('revealFile'),
   } };
   return { ports, controller, calls, errors, snapshot, memory, router: createIpcRouter(ports) };
@@ -65,7 +65,7 @@ test('every known command validates and produces its declared result through the
     const result = await f.router.dispatch(name, validArgs[name]); assert.equal(result.ok, true, name);
     assert.doesNotThrow(() => decodeResponse(name, result), name);
   }
-  const api = createOpenhiatusApi({ invoke: (name, args) => f.router.dispatch(name, args), subscribe: () => () => {}, publishVoiceOverlay: () => {} });
+  const api = createOpenhiatusApi({ invoke: (name, args) => f.router.dispatch(name, args), subscribe: () => () => {}, publishActivityPresence: () => {} });
   assert.deepEqual(await api.snapshot(), f.snapshot); assert.deepEqual(await api.memorySnapshot(), f.memory);
   assert.equal(await api.transcribe({ base64: '', mimeType: 'audio/wav' }), 'Präzise Grüße');
   await api.editMemory('core', 'Geändert', 1); assert.deepEqual(f.calls.at(-1), { name: 'editMemory', args: ['core', 'Geändert', 1] });
@@ -103,7 +103,7 @@ test('validated handlers preserve normalization, explicit acknowledgement and St
   assert.deepEqual(f.calls.at(-1), { name: 'send', args: ['Grüße', 'request'] });
   await f.router.dispatch('saveProvider', [{ id: ' local ', apiKey: ' key ', baseUrl: ' http://localhost ', models: [' model '] }]);
   assert.deepEqual(f.calls.at(-1), { name: 'saveProvider', args: [{ id: 'local', apiKey: 'key', baseUrl: 'http://localhost', models: ['model'] }] });
-  await f.router.dispatch('stop', []); assert.deepEqual(f.calls.slice(-2).map(call => call.name), ['stopVoiceOverlay', 'stop']);
+  await f.router.dispatch('stop', []); assert.deepEqual(f.calls.slice(-2).map(call => call.name), ['stopActivityPresence', 'stop']);
   await f.router.dispatch('acknowledgeFullAccess', []); assert.equal(f.calls.at(-1)?.name, 'acknowledgeFullAccess');
 });
 

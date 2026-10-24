@@ -50,6 +50,11 @@ try {
   const navigation = page.getByRole('navigation', { name: 'Hauptnavigation' });
   await navigation.getByRole('button', { name: 'Einstellungen', exact: true }).click();
   await page.getByRole('tab', { name: 'Bedienung', exact: true }).click();
+  const sizeSetting = page.getByRole('combobox', { name: 'Größe der Arbeitsanzeige', exact: true });
+  await sizeSetting.selectOption('224');
+  await expect.poll(() => page.evaluate(async () => (await window.openhiatus.snapshot()).preferences.activityOverlaySize)).toBe(224);
+  await sizeSetting.selectOption('144');
+  await expect.poll(() => page.evaluate(async () => (await window.openhiatus.snapshot()).preferences.activityOverlaySize)).toBe(144);
   const overlayToggle = page.getByRole('checkbox', { name: /^Arbeitsanzeige im Hintergrund/ });
   await overlayToggle.click();
   await expect(overlayToggle).toBeChecked();
@@ -67,6 +72,10 @@ try {
   assert.ok(overlay, 'background activity must create a separate surface');
   overlay.on('pageerror', error => errors.push(error.message));
   const overlayWindow = await instance.browserWindow(overlay);
+  const symbol = await overlay.locator('#symbol').boundingBox();
+  assert.ok(symbol && Math.abs(symbol.width - symbol.height) < 1, 'symbol must remain round');
+  assert.equal(await overlay.locator('body').evaluate(element => getComputedStyle(element).backgroundColor), 'rgba(0, 0, 0, 0)');
+  assert.equal(await overlay.locator('#status').evaluate(element => element.closest('.core') !== null), true, 'short status stays inside the round core');
   assert.deepEqual(await overlay.evaluate(() => [typeof window.openhiatus, typeof require]), ['undefined', 'undefined']);
   assert.equal(await overlayWindow.evaluate(window => window.isFocusable()), false);
   assert.equal(await overlayWindow.evaluate(window => window.isAlwaysOnTop()), true);
@@ -97,8 +106,20 @@ try {
   await expect.poll(visibleOverlay).toBe(0);
   await page.evaluate(() => window.openhiatus.savePreferences({ activityOverlayEnabled: true }));
   await expect.poll(visibleOverlay).toBe(1);
+  // Exercise the compact renderer->Main channel; the voice-session test separately drives actual audio phases.
+  for (const [phase, label] of [['listening', 'Ich höre zu'], ['transcribing', 'Verstehe'], ['thinking', 'Denke nach'], ['speaking', 'Ich spreche']]) {
+    await page.evaluate(phase => window.openhiatus.publishActivityPresence({ phase }), phase);
+    await expect(overlay.locator('#status')).toHaveText(label);
+  }
+  await page.evaluate(() => window.openhiatus.publishActivityPresence({ phase: 'listening', text: 'must never enter the overlay' }));
+  await expect(overlay.locator('#status')).toHaveText('Ich spreche');
   release();
   await expect.poll(() => page.evaluate(async () => (await window.openhiatus.snapshot()).task.status), { timeout: 30000 }).toBe('completed');
+  await expect.poll(visibleOverlay).toBe(1);
+  await expect(overlay.locator('#status')).toHaveText('Ich spreche');
+  assert.equal(await instance.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().some(window => window.getTitle().includes('· Sprache'))), false);
+  await overlay.screenshot({ path: 'artifacts/openhiatus-arbeitsanzeige-spricht.png' });
+  await page.evaluate(() => window.openhiatus.publishActivityPresence({ phase: 'idle' }));
   await expect.poll(visibleOverlay).toBe(0);
   await instance.close(); instance = undefined;
   instance = await electron.launch({ executablePath, args, env, timeout: 30000 });
@@ -108,9 +129,10 @@ try {
   assert.equal(await visibleOverlay(), 0); assert.equal(requests, 1);
   assert.deepEqual(errors, []);
   const evidence = { status: 'passed', profile, initial, resized, requests,
-    checked: ['opt-in default and settings control', 'foreground hidden', 'background and minimized activity', 'top-right work area bounds', 'no focus theft',
+    checked: ['opt-in default and settings control', 'size selectable from settings', 'round symbol and in-circle short status', 'transparent background without text panel', 'foreground hidden', 'background and minimized activity', 'top-right work area bounds', 'no focus theft',
       'isolated preload without app API', 'right handle pointer drag', 'fixed top-right anchor', 'disable and enable while running',
-      'completion hides overlay', 'size and enabled state survive restart', 'no idle overlay or replay', 'local model only'] };
+      'listening, transcribing, thinking and speaking through compact IPC', 'text-bearing status payload rejected', 'speech remains visible after model completion', 'no rectangular voice overlay',
+      'audio idle hides overlay', 'size and enabled state survive restart', 'no idle overlay or replay', 'local model only'] };
   await writeFile('artifacts/openhiatus-arbeitsanzeige-pruefung.json', JSON.stringify(evidence, null, 2), 'utf8');
   console.log(JSON.stringify(evidence, null, 2));
 } finally {
