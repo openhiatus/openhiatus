@@ -155,6 +155,12 @@ export function SettingsView({ state, navigationRequest, onOpenIdentity, workBus
 
       <section id={`${id}-panel-behavior`} role="tabpanel" aria-labelledby={`${id}-tab-behavior`} hidden={tab !== 'behavior'} className="settings-tab-panel">
         <p className="settings-panel-intro">So hörst du Antworten und übergibst neue Aufträge.</p>
+        <section className="settings-card settings-supporter">
+          <div className="settings-card-head"><span className="service-icon"><Monitor size={22} aria-hidden="true" /></span><div><h2>Hilfe bei der PC-Bedienung</h2><p>Du bedienst den PC, dein Assistent leitet dich an.</p></div></div>
+          <label className="settings-toggle"><span><strong>IT-Supporter</strong><small>Versteht Wünsche vorrangig als Bedarf an Anleitung. Zeigt passende Stellen auf dem Bildschirm und erklärt den nächsten Schritt.</small></span>
+            <input type="checkbox" checked={state?.preferences.itSupporter === true} disabled={!ready} onChange={event => preference({ itSupporter: event.target.checked })} /></label>
+          <p className="billing-note">Die Rolle gilt ab der nächsten Nachricht für die gesamte Unterstützung, unabhängig von bestimmten Wörtern. Ausführen übernimmt er erst auf ausdrücklichen Wunsch. Antworten kommen über Sprache und Desktop-Markierungen; das Protokoll hält den Ablauf zum Nachlesen fest. Mikrofon und Sprachausgabe richtest du unter Sprache &amp; Geräte ein.</p>
+        </section>
         <section className="settings-card settings-workspace">
           <div className="settings-card-head"><span className="service-icon"><Monitor size={22} aria-hidden="true" /></span><div><h2>Oberfläche & Arbeitsanzeige</h2><p>Navigation und sichtbare Arbeit im Hintergrund</p></div></div>
           <label className="field-label" htmlFor={`${id}-sidebar-mode`}>Linke Navigation</label>

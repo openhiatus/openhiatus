@@ -63,20 +63,22 @@ export function WorkspaceShell({ view, onNavigate, state, ready, speechReady, ne
   };
   const active = state?.jobs?.filter(job => ['queued', 'running', 'stopping'].includes(job.status) || job.runtimeRetained).length ?? 0;
   const connected = state?.connections.agent === 'ready';
-  const label = destinations.find(destination => destination.id === view)!.label;
+  const support = state?.preferences.itSupporter === true;
+  const destinationTitle = (id: string, title: string) => support && id === 'chat' ? 'Protokoll' : title;
+  const label = destinationTitle(view, destinations.find(destination => destination.id === view)!.label);
   return <div className={`app-shell workspace-shell${collapsed ? ' sidebar-collapsed' : ''}`} data-sidebar-mode={mode}>
     <button className="skip-navigation" onClick={() => content.current?.focus()}>Zum Inhalt</button>
     <div className="sidebar-region">
     <aside className="sidebar" id="workspace-sidebar" aria-label="Arbeitsplatz">
-      <div className="brand"><OpenhiatusMark /><div className="brand-wordmark"><span className="brand-name">{APP_DISPLAY_NAME}</span><span className="brand-tagline">Dein persönlicher Agent</span></div></div>
-      <button className="new-chat" disabled={newConversationDisabled} onClick={onNewConversation} aria-label="Neues Gespräch" title="Neues Gespräch"><Plus size={17} /><span className="sidebar-label">Neues Gespräch</span></button>
+      <div className="brand"><OpenhiatusMark /><div className="brand-wordmark"><span className="brand-name">{APP_DISPLAY_NAME}</span><span className="brand-tagline">{support ? 'Dein IT-Supporter' : 'Dein persönlicher Agent'}</span></div></div>
+      <button className="new-chat" disabled={newConversationDisabled} onClick={onNewConversation} aria-label={support ? 'Neues Protokoll' : 'Neues Gespräch'} title={support ? 'Neues Protokoll' : 'Neues Gespräch'}><Plus size={17} /><span className="sidebar-label">{support ? 'Neues Protokoll' : 'Neues Gespräch'}</span></button>
       <div className="nav-label">DEIN ARBEITSPLATZ</div>
-      <nav aria-label="Hauptnavigation">{destinations.map(({ id, label: title, icon: Icon }) =>
+      <nav aria-label="Hauptnavigation">{destinations.map(({ id, label: originalTitle, icon: Icon }) => { const title = destinationTitle(id, originalTitle); return (
         <button key={id} className={view === id ? 'active' : ''} aria-label={title} title={title} aria-current={view === id ? 'page' : undefined} onClick={() => onNavigate(id)}>
           <Icon size={18} /><span className="sidebar-label">{title}</span>
           {id === 'tasks' && active > 0 && <span className="nav-count" aria-label={`${active} aktive Aufgaben`}>{active}</span>}
           {id === 'settings' && !ready && <span className="setup-dot" aria-hidden="true" />}
-        </button>)}</nav>
+        </button>); })}</nav>
       <div className="sidebar-bottom">
         <button className="workspace-link" aria-label="Arbeitsordner öffnen" title="Arbeitsordner öffnen" onClick={() => void window.openhiatus.openWorkspace().catch(onError)}><FolderOpen size={16} /><span className="sidebar-label">Arbeitsordner</span><ArrowRight size={13} /></button>
         <button className="connection-summary" onClick={() => onNavigate('settings')} aria-label="Modell- und Sprachzugänge verwalten" title={`${connected ? 'Modell verbunden' : 'Einrichtung öffnen'} · ${speechReady ? 'Sprache verbunden' : 'Sprache einrichten'}`}>

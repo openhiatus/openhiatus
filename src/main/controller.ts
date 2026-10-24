@@ -15,6 +15,7 @@ import type { CoreProposal, CoreProposalInput, MemoryContext, MemoryDocument, Me
 import { parseMemoryReply, runtimeInstructions } from './instructions';
 import { MemoryReportCoordinator, type SummaryBackend, type SummaryCallEvidence } from './modules/memory-reports';
 import { DIALOG_TOOLS } from './dialog';
+import { itSupporterInstructions } from './it-supporter-instructions';
 import { BackgroundTaskCoordinator, recoverBackgroundJobs, validateUsage } from './modules/tasks';
 import { ConversationCoordinator } from './modules/conversation';
 import { ModelManagementCoordinator } from './modules/models';
@@ -204,7 +205,7 @@ export class AppController {
           prepare: () => this.stateJournal.ready(), persist: () => this.stateJournal.durableCommit(), changed: save => this.changed(save),
         },
         context: {
-          identity: () => this.identityInstructions(), memory: (query, max) => this.retrieveMemory(query, max),
+          identity: () => [this.identityInstructions(), itSupporterInstructions(this.state.preferences.itSupporter === true)].filter(Boolean).join('\n\n'), memory: (query, max) => this.retrieveMemory(query, max),
           skills: (query, max) => this.skillContext(query, max), capture: () => this.captureMemory(),
           started: () => { this.workEpoch++; delete this.state.usage; },
           finished: () => this.captureMemory(), idle: () => this.memoryReports.queueAutomatic(),
@@ -605,6 +606,7 @@ export class AppController {
     } finally { this.stopDeferrals--; this.flushAfterStop(); }
   }
   async savePreferences(patch: Partial<Preferences>): Promise<void> {
+    if (Object.hasOwn(patch, 'itSupporter') && typeof patch.itSupporter !== 'boolean') throw new Error('Ungültiger IT-Supporter-Modus.');
     if (Object.hasOwn(patch, 'assistantProfile')) patch = { ...patch, assistantProfile: parseAssistantProfile(patch.assistantProfile) };
     if (patch.chatgptBackgroundUsage !== undefined && typeof patch.chatgptBackgroundUsage !== 'boolean') throw new Error('Ungültige Einstellung für automatische ChatGPT-Nutzung.');
     if ('fullAccessAcknowledged' in patch) throw new Error('Den Vollzugriff bitte ausdrücklich in Verbindungen bestätigen.');
@@ -626,6 +628,7 @@ export class AppController {
     const computerModel = patch.computerModel ?? this.state.preferences.computerModel;
     if ((patch.computerDelegationEnabled ?? this.state.preferences.computerDelegationEnabled) && !this.state.models.some(model => model.id === computerModel)) throw new Error('Bitte zuerst ein verfügbares Computer-Modell auswählen.');
     const dialogChanged = patch.dialogModel !== undefined && patch.dialogModel !== this.state.preferences.dialogModel;
+    const supportChanged = patch.itSupporter !== undefined && patch.itSupporter !== this.state.preferences.itSupporter;
     const workChanged = !this.deps.dialogAgent && patch.model !== undefined && patch.model !== this.state.preferences.model;
     if (patch.voiceConversation !== undefined && typeof patch.voiceConversation !== 'boolean') throw new Error('Ungültige Einstellung für den Sprachdialog.');
     if (patch.earcons !== undefined && typeof patch.earcons !== 'boolean') throw new Error('Ungültige Einstellung für Signaltöne.');
@@ -638,7 +641,7 @@ export class AppController {
       await this.memoryReports.preferencesChanged({ automatic: patch.memoryAutoSummarize, chatgptBackgroundUsage: patch.chatgptBackgroundUsage });
     }
     if (patch.voiceId !== undefined) this.prewarmReceipts();
-    if (favoritesChanged || dialogChanged || workChanged || profileChanged) {
+    if (favoritesChanged || dialogChanged || workChanged || profileChanged || supportChanged) {
       // The dialogue keeps its developer context per thread; a fresh thread picks up the new favourites.
       this.invalidateThread();
       this.activity('system', 'Gesprächseinstellungen gelten ab der nächsten Nachricht', 'Laufende Aufgaben behalten ihren bisherigen Kontext.'); this.changed();

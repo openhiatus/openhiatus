@@ -58,6 +58,23 @@ const args = (resources = ['C:\\repo-a'], prompt = 'Öffne das ausdrücklich ang
 });
 function shortArgs(resources?: string[]) { const { prompt: _prompt, ...short } = args(resources); return short; }
 function response(result: Awaited<ReturnType<AppController['dialogTool']>>) { return JSON.parse(result.contentItems[0].type === 'inputText' ? result.contentItems[0].text : 'null'); }
+test('IT supporter is a frozen interaction role and mode changes replace the next dialog thread', async () => {
+  const f = fixture(); await f.app.start(); await f.app.savePreferences({ itSupporter: true });
+  await f.app.send('Ich komme hier gerade nicht weiter.', 'supporter-role');
+  const frozen = f.app.identityInstructions(); assert.match(frozen, /Aktiver Betriebsmodus: IT-Supporter/);
+  await f.app.savePreferences({ itSupporter: false }); assert.equal(f.app.identityInstructions(), frozen);
+  f.dialog.finish('Ich zeige dir den nächsten Schritt.'); await tick();
+  await f.app.send('Eine allgemeine Frage.', 'ordinary-role'); assert.doesNotMatch(f.app.identityInstructions(), /Aktiver Betriebsmodus: IT-Supporter/);
+  assert.equal(f.dialog.runs.at(-1)?.threadId, undefined); f.dialog.finish(); await tick();
+  await assert.rejects(f.app.savePreferences({ itSupporter: 'yes' as never })); assert.equal(f.app.snapshot().preferences.itSupporter, false);
+});
+test('explicit work remains executable and does not inherit the dialog-only supporter role', async () => {
+  const f = fixture(); await f.app.start(); await f.app.savePreferences({ itSupporter: true });
+  await f.app.send('Übernimm die ausdrücklich beauftragte Arbeit für mich.', 'supporter-execution');
+  const result = await f.app.dialogTool('start_task', args(), new AbortController().signal); assert.equal(result.success, true);
+  await tick(); assert.equal(f.workers.length, 1); assert.doesNotMatch(f.workers[0].jobAtCreation?.identityInstructions ?? '', /Aktiver Betriebsmodus: IT-Supporter/);
+  f.dialog.finish(); f.workers[0].finish(); await tick();
+});
 async function accept(f: ReturnType<typeof fixture>, requestId: string, resources?: string[]) {
   await f.app.send('Öffne das Projekt', requestId);
   const result = await f.app.dialogTool('start_task', args(resources), new AbortController().signal);

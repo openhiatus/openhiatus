@@ -46,7 +46,7 @@ export default function App() {
     </div>
     {view !== 'chat' && session.phase !== 'idle' && <div className="session-audio-bar" role="status">
       <AudioLines size={15} /><span>{session.voiceStatus}{session.isRecording ? ` · ${session.seconds}s` : ''}</span>
-      <button onClick={() => navigate('chat')}>Zum Gespräch</button><button onClick={session.cancelAudio}>Audio beenden</button>
+      <button onClick={() => navigate('chat')}>{state?.preferences.itSupporter ? 'Zum Protokoll' : 'Zum Gespräch'}</button><button onClick={session.cancelAudio}>Audio beenden</button>
     </div>}
     {session.summaryInProgress && view !== 'memory' && <div className="summary-work-bar" role="status"><BookOpen size={14} />
       <span>{state?.summary?.status === 'stopping' ? 'Gedächtnisberichte werden gestoppt' : 'openHiatus erstellt Gedächtnisberichte'}<small>{state?.summary?.completed} / {state?.summary?.total} gespeichert · {state?.summary?.calls} Modellaufrufe</small></span>

@@ -31,6 +31,7 @@ export function ConversationView({ session, active, showActivity, onOpenTasks, o
     cancelAudio, setNotice, ready, report, taskBusy, speak, transcript, composerRef, voiceConversation, draft, setDraft,
     pendingSend, send, preference, clearSpeech, stopEarcons, currentModel, currentDialogModel, activeJobs, seconds, taskStatus, error, summaryInProgress, microphoneLevel, playbackLevel } = session;
   const assistantName = assistantDisplayName(state?.preferences.assistantProfile);
+  const support = state?.preferences.itSupporter === true;
   const presence: { state: PresenceState; label: string; detail: string } = !state ? { state: 'offline', label: 'Verbinde …', detail: 'openHiatus wird vorbereitet.' }
     : phase === 'opening' ? { state: 'listening', label: 'Mikrofon öffnet …', detail: 'Gleich kannst du sprechen.' }
     : phase === 'recording' ? { state: 'listening', label: 'Ich höre zu', detail: `${duration(seconds)} · F8 ${voiceConversation ? 'beendet und sendet' : 'beendet die Aufnahme'}` }
@@ -45,7 +46,7 @@ export function ConversationView({ session, active, showActivity, onOpenTasks, o
     : activeJobs ? { state: 'working', label: 'Arbeite im Hintergrund', detail: `${activeJobs === 1 ? 'Ein Auftrag' : `${activeJobs} Aufträge`} aktiv · du kannst weiter sprechen.` }
     : error ? { state: 'error', label: 'Da hakt etwas', detail: 'Details stehen oben im Hinweis.' }
     : !ready ? { state: 'offline', label: 'Noch nicht eingerichtet', detail: 'Vollzugriff bestätigen und einen Modellanbieter verbinden.' }
-    : { state: 'idle', label: 'Bereit', detail: taskDetails[taskStatus] ?? (summaryInProgress ? 'Gedächtnis wird im Hintergrund aufbereitet.' : speechReady ? '' : 'Schreib mir oder verbinde die Sprache.') };
+    : { state: 'idle', label: 'Bereit', detail: taskDetails[taskStatus] ?? (summaryInProgress ? 'Gedächtnis wird im Hintergrund aufbereitet.' : speechReady ? '' : support ? 'Verbinde die Sprache unter Einstellungen → Sprache & Geräte.' : 'Schreib mir oder verbinde die Sprache.') };
   const messages = state?.messages ?? [];
   const lastUserIndex = messages.map(message => message.role).lastIndexOf('user');
   const lastUser = lastUserIndex >= 0 ? messages[lastUserIndex] : undefined;
@@ -53,14 +54,16 @@ export function ConversationView({ session, active, showActivity, onOpenTasks, o
   const lastReply = messages.slice(lastUserIndex + 1).filter(message => message.role === 'assistant' && !!message.text).at(-1);
   const presenceLevel = presence.state === 'listening' ? microphoneLevel : presence.state === 'speaking' ? playbackLevel : undefined;
   const [showHistory, setShowHistory] = useState(() => { try { return localStorage.getItem('openhiatus.showHistory') === '1'; } catch { return false; } });
+  const historyOpen = support || showHistory;
   const toggleHistory = () => setShowHistory(current => { try { localStorage.setItem('openhiatus.showHistory', current ? '0' : '1'); } catch { /* viewer preference only */ } return !current; });
   const messagesEnd = useRef<HTMLDivElement>(null);
-  useEffect(() => { if (active) messagesEnd.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }); }, [active, state?.messages.length, state?.messages.at(-1)?.text, showHistory]);
+  useEffect(() => { if (active) messagesEnd.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }); }, [active, state?.messages.length, state?.messages.at(-1)?.text, historyOpen]);
   return <div className={`conversation-layout ${showActivity ? '' : 'without-activity'}`}>
-        <main className={`conversation voice-first ${showHistory ? 'history-open' : ''}`}>
+        <main className={`conversation voice-first ${historyOpen ? 'history-open' : ''} ${support ? 'it-supporter' : ''}`}>
+          {support && <p className="supporter-log-intro">IT-Supporter · Sprich mit F8. Hinweise erscheinen direkt auf deinem Bildschirm. Dieses Protokoll hält Fragen, Antworten und Ergebnisse zum späteren Nachlesen fest.</p>}
           {(state?.jobs?.length ?? 0) > 0 && <button className="conversation-work-hint" onClick={onOpenTasks}><span>{activeJobs ? activeJobs === 1 ? 'Ein Auftrag aktiv' : `${activeJobs} Aufträge aktiv` : 'Letzte Aufgaben und Ergebnisse'}</span><span>Aufgaben ansehen <ArrowRight size={14} /></span></button>}
           <section className={`voice-stage ${presence.state}`} aria-label={`Sprachgespräch mit ${assistantName}`}>
-            <Presence size={showHistory ? 'compact' : 'large'} state={presence.state} level={presenceLevel} label={`${assistantName}: ${presence.label}`} />
+            <Presence size={historyOpen ? 'compact' : 'large'} state={presence.state} level={presenceLevel} label={`${assistantName}: ${presence.label}`} />
             <div className="stage-text" role="status" aria-live="polite"><strong>{presence.label}</strong>{presence.detail && <span>{presence.detail}</span>}</div>
             <div className="stage-actions">
               {isRecording && <div className="level-bars" aria-label="Mikrofonpegel">{Array.from({ length: 12 }, (_, i) => <i key={i} style={{ opacity: level * 12 > i ? 1 : .15 }} />)}</div>}
@@ -69,22 +72,22 @@ export function ConversationView({ session, active, showActivity, onOpenTasks, o
             </div>
             {!!state && ready && <ContextMeter context={state.context} threadId={state.task.threadId} hasConversation={state.messages.length > 0} />}
             {!state ? null : !ready ? <button className="setup-inline" onClick={() => onOpenSettings()}><span className="setup-number">1</span><span>Einmal verbinden, dann loslegen<small>Modellanbieter und deine Sprachverbindung einrichten</small></span><ArrowRight size={17} /></button>
-              : !showHistory && (lastUser || lastReply) && <div className="stage-captions">
+              : !historyOpen && (lastUser || lastReply) && <div className="stage-captions">
                 {lastUser && <p className="stage-caption user"><span>Du</span>{lastUser.text}</p>}
                 {lastReply && <div className="stage-caption openhiatus"><span>openHiatus</span><MessageBody text={lastReply.text} onError={report} /></div>}
               </div>}
           </section>
-          {showHistory && <div className={`messages ${state?.messages.length ? '' : 'empty'}`}>
-            {!state ? <div className="loading"><Spinner /> openHiatus wird verbunden …</div> : state.messages.length === 0 ? <div className="history-empty">Noch kein Gespräch. Sprich einfach los oder schreib unten.</div> : <div className="message-list">{state.messages.map(message => <article className={`message ${message.role}`} key={message.id}><div className="message-avatar">{message.role === 'assistant' ? <Mark small /> : 'DU'}</div><div className="message-content"><div className="message-meta"><strong>{message.role === 'assistant' ? assistantName : 'Du'}</strong><time>{time(message.at)}</time>{message.role === 'assistant' && <span>AGENT</span>}</div><MessageBody text={message.text || (message.role === 'assistant' && (!taskBusy || message.id !== state.messages.at(-1)?.id) ? 'Für diesen Auftrag liegt keine Antwort vor.' : '')} onError={report} />{message.role === 'assistant' && !!message.text && <button className="read-reply" disabled={!speechReady || audioBusy} onClick={() => void speak(message.text)}><Volume2 size={13} /> Vorlesen</button>}</div></article>)}<div ref={messagesEnd} /></div>}
+          {historyOpen && <div className={`messages ${state?.messages.length ? '' : 'empty'}`} role={support ? 'log' : undefined} aria-label={support ? 'Support-Protokoll' : undefined} aria-live={support ? 'off' : undefined}>
+            {!state ? <div className="loading"><Spinner /> openHiatus wird verbunden …</div> : state.messages.length === 0 ? <div className="history-empty">{support ? 'Noch keine Einträge. Stelle deine Frage mit F8 oder der Sprechtaste.' : 'Noch kein Gespräch. Sprich einfach los oder schreib unten.'}</div> : <div className="message-list">{state.messages.map(message => <article className={`message ${message.role}`} key={message.id}><div className="message-avatar">{message.role === 'assistant' ? <Mark small /> : 'DU'}</div><div className="message-content"><div className="message-meta"><strong>{message.role === 'assistant' ? assistantName : 'Du'}</strong><time>{time(message.at)}</time>{message.role === 'assistant' && <span>{support ? 'IT-SUPPORT' : 'AGENT'}</span>}</div><MessageBody text={message.text || (message.role === 'assistant' && (!taskBusy || message.id !== state.messages.at(-1)?.id) ? 'Für diesen Auftrag liegt keine Antwort vor.' : '')} onError={report} />{message.role === 'assistant' && !!message.text && <button className="read-reply" disabled={!speechReady || audioBusy} onClick={() => void speak(message.text)}><Volume2 size={13} /> Vorlesen</button>}</div></article>)}<div ref={messagesEnd} /></div>}
           </div>}
           <div className="composer-area">
             {transcript && <div className="transcript-label"><CheckCheck size={14} /> Sprache erkannt — du kannst den Text vor dem Senden ändern.</div>}
-            <div className={`composer slim ${isRecording ? 'recording' : ''}`}>
-              <button className={`history-toggle ${showHistory ? 'selected' : ''}`} aria-pressed={showHistory} onClick={() => toggleHistory()} title={showHistory ? 'Verlauf ausblenden' : 'Ganzen Verlauf zeigen'}><MessageSquare size={15} /> Verlauf{state?.messages.length ? <span>{state.messages.length}</span> : null}</button>
-              <textarea ref={composerRef} aria-label="Dein Auftrag" aria-keyshortcuts="Control+Enter Meta+Enter" disabled={manualSummaryBusy} placeholder={voiceConversation ? 'Lieber schreiben? Hier tippen …' : 'Transkript prüfen oder schreiben …'} value={draft} rows={draft.includes('\n') || draft.length > 90 ? 3 : 1} onChange={event => setDraft(event.target.value)} />
+            {(!support || transcript) && <div className={`composer slim ${isRecording ? 'recording' : ''}`}>
+              {!support && <button className={`history-toggle ${showHistory ? 'selected' : ''}`} aria-pressed={showHistory} onClick={() => toggleHistory()} title={showHistory ? 'Verlauf ausblenden' : 'Ganzen Verlauf zeigen'}><MessageSquare size={15} /> Verlauf{state?.messages.length ? <span>{state.messages.length}</span> : null}</button>}
+              <textarea ref={composerRef} aria-label={support ? 'Sprachtranskript prüfen' : 'Dein Auftrag'} aria-keyshortcuts="Control+Enter Meta+Enter" disabled={manualSummaryBusy} placeholder={voiceConversation ? 'Lieber schreiben? Hier tippen …' : 'Transkript prüfen oder schreiben …'} value={draft} rows={draft.includes('\n') || draft.length > 90 ? 3 : 1} onChange={event => setDraft(event.target.value)} />
               {!voiceConversation && <span className="composer-tip"><kbd>F9</kbd> senden</span>}
               <button className="send-button" aria-label="Auftrag senden" aria-keyshortcuts="F9 Control+Enter Meta+Enter" disabled={!draft.trim() || manualSummaryBusy || (pendingSend || !ready) || isRecording || phase === 'opening' || phase === 'transcribing'} onClick={() => void send()} title="Auftrag senden (F9 oder Strg + Enter)">{pendingSend ? <Spinner /> : <ArrowRight size={18} />}</button>
-            </div>
+            </div>}
             <div className="composer-footer"><button className={state?.preferences.speakReplies ? 'speech-enabled' : ''} onClick={() => { if (state?.preferences.speakReplies) { clearSpeech(); cancelAudio(); } preference({ speakReplies: !state?.preferences.speakReplies }); }} aria-pressed={!!state?.preferences.speakReplies}>{state?.preferences.speakReplies ? <Volume2 size={13} /> : <VolumeX size={13} />} {`Antworten vorlesen ${state?.preferences.speakReplies ? 'an' : 'aus'}`}</button><button className={state?.preferences.earcons !== false ? 'speech-enabled' : ''} onClick={() => { if (state?.preferences.earcons !== false) stopEarcons(); preference({ earcons: state?.preferences.earcons === false }); }} aria-pressed={state?.preferences.earcons !== false}><AudioLines size={13} /> Signaltöne {state?.preferences.earcons !== false ? 'an' : 'aus'}</button><span>Gespräch{currentDialogModel ? ` · ${currentDialogModel}` : ''}<br />Arbeit{currentModel ? ` · ${currentModel}` : ''}</span></div>
           </div>
         </main>

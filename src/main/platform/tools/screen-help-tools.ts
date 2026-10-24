@@ -12,6 +12,7 @@ export function createScreenHelpTools(help: ScreenHelpService): ToolContribution
           action: { type: 'string', enum: ['observe', 'inspect', 'mark', 'clear'] }, resolution: { type: 'string', enum: ['original'] },
           frameId: { type: 'string' }, viewId: { type: 'string' }, x: { type: 'integer', minimum: 0 }, y: { type: 'integer', minimum: 0 },
           width: { type: 'integer', minimum: 1 }, height: { type: 'integer', minimum: 1 }, label: { type: 'string', maxLength: 100 },
+          color: { type: 'string', enum: ['red', 'black', 'white'], description: 'Required for mark. Choose the color with best visibility against the observed background around the target. Red is prominent on many backgrounds; black on light areas, white on dark areas. The host adds a contrasting halo.' },
         }, required: ['action'] } },
       execute: (args, context) => help.execute(args, context.signal),
     })] };
