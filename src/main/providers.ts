@@ -2,10 +2,12 @@ import { mkdirSync, readFileSync, writeFileSync, renameSync } from 'node:fs';
 import { join } from 'node:path';
 import type { ProviderInput, ProviderView, ModelOption } from '../shared/contracts.js';
 import type { ChatGPTAuth } from './chatgpt-auth.js';
+import { baseModelSelection, isFastModelSelection, supportsFastSelection, withFastModelOptions } from '../shared/model-selection';
+import { applyRequestedServiceTier } from './model-request-diagnostics';
 
 export interface CredentialStore { get(name: string): string | undefined; set(name: string, value: string): void; remove(name: string): void; }
 interface ProviderConfig { baseUrl?: string; models?: string[]; verified?: boolean; error?: string; }
-export interface ResolvedModel { provider: string; modelId: string; apiKey: string; baseUrl?: string; api: string; authType?: 'chatgpt'; }
+export interface ResolvedModel { provider: string; modelId: string; apiKey: string; baseUrl?: string; api: string; authType?: 'chatgpt'; serviceTier?: 'fast'; }
 const PRESETS: Record<string, { label: string; api: string; baseUrl: string; models: string[] }> = {
   openai: { label: 'OpenAI', api: 'openai-responses', baseUrl: 'https://api.openai.com/v1', models: ['gpt-5.4', 'gpt-5.4-mini'] },
   anthropic: { label: 'Anthropic', api: 'anthropic-messages', baseUrl: 'https://api.anthropic.com', models: ['claude-sonnet-4-6', 'claude-opus-4-6'] },
@@ -34,12 +36,12 @@ export class ProviderStore {
       const config = this.config[id] ?? {};
       let key: string | undefined, keyError: string | undefined;
       try { key = this.readKey(id); } catch (error) { keyError = (error as Error).message; }
-      const models: ModelOption[] = (config.models ?? preset.models).map(model => ({ id: `${id}/${model}`, label: `${preset.label} · ${model}`, provider: id }));
+      const models = withFastModelOptions((config.models ?? preset.models).map(model => ({ id: `${id}/${model}`, label: `${preset.label} · ${model}`, provider: id })));
       return { id, label: preset.label, configured: !keyError && (id === 'local' || Boolean(key)) && models.length > 0,
         verified: !keyError && Boolean(config.verified), models, ...(config.baseUrl ? { baseUrl: config.baseUrl } : {}), ...(keyError || config.error ? { error: keyError || config.error } : {}) };
     });
     if (this.chatgpt) {
-      const state = this.chatgpt.snapshot(), models = this.chatgpt.listModels(), configured = state.planUsage && models.length > 0;
+      const state = this.chatgpt.snapshot(), models = withFastModelOptions(this.chatgpt.listModels()), configured = state.planUsage && models.length > 0;
       providers.push({ id: 'chatgpt', label: 'ChatGPT', authType: 'chatgpt', configured, verified: configured && Boolean(this.config.chatgpt?.verified), models,
         ...(state.account ? { account: state.account } : {}), ...(state.error ? { error: state.error } : {}) });
     }
@@ -77,6 +79,11 @@ export class ProviderStore {
     const fallback = available.flatMap(provider => provider.models)[0]?.id;
     const selected = selection || fallback;
     if (!selected) throw new Error('Bitte zuerst einen Modellanbieter einrichten.');
+    if (isFastModelSelection(selected)) {
+      const base = baseModelSelection(selected);
+      if (!supportsFastSelection(base) || !available.some(provider => provider.models.some(model => model.id === selected))) throw new Error('Diese Fast-Modellvariante ist nicht verfügbar.');
+      return { ...this.resolve(base), serviceTier: 'fast' };
+    }
     const separator = selected.indexOf('/');
     let id = separator > 0 ? selected.slice(0, separator) : '';
     let modelId = separator > 0 ? selected.slice(separator + 1) : selected;
@@ -156,6 +163,7 @@ export class ModelClient {
       let completed = false;
       const response = await ai.complete(model, { messages: [{ role: 'user', content, timestamp: Date.now() }] }, {
         apiKey: resolved.apiKey, signal, maxTokens: 16384, maxRetries: 0, ...(this.options.fetch ? { fetch: this.options.fetch } : {}),
+        ...(resolved.serviceTier ? { onPayload: (payload: unknown) => applyRequestedServiceTier(payload, model, resolved.serviceTier) } : {}),
         ...(resolved.authType === 'chatgpt' ? { onProviderStreamEvent: (event: unknown) => {
           const packet = event as { type?: string; response?: { status?: string } };
           if (packet?.type === 'response.incomplete') throw new Error('Die ChatGPT-Antwort ist unvollständig. Es wurde kein fertiges Ergebnis übernommen.');

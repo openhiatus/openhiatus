@@ -113,7 +113,7 @@ export class PiAdapter implements AgentAdapter {
       // A ChatGPT host receives fresh access tokens only for the currently bound request.
       // Refresh credentials remain exclusively in the protected main-process store.
       const input: HostRun = { runId: active.id, text, model: resolved.authType === 'chatgpt' ? { ...resolved, apiKey: '' } : resolved, threadId, home: this.options.home, workspace: this.options.workspace,
-        dialog, ...(this.options.computerOnly ? { computerOnly: true } : {}), ...(options?.serviceTier ? { serviceTier: options.serviceTier } : {}),
+        dialog, ...(this.options.computerOnly ? { computerOnly: true } : {}), ...((options?.serviceTier ?? resolved.serviceTier) ? { serviceTier: options?.serviceTier ?? resolved.serviceTier } : {}),
         ...(this.options.computerImageRetentionCalls === undefined && !this.options.getComputerImageRetentionCalls ? {} : { computerImageRetentionCalls: imageRetention }),
         ...(this.options.computerWorkingMemoryCalls === undefined && !this.options.getComputerWorkingMemoryCalls ? {} : { computerWorkingMemoryCalls: workingMemory }),
         tools: [...active.tools.definitions], instructions: `${this.options.instructions ?? (dialog ? DIALOG_INSTRUCTIONS : this.options.computerOnly ? 'Complete only the assigned bounded UI task using the supplied computer tools. Report observed results and uncertainties.' : AGENT_INSTRUCTIONS)}\n\n${this.options.getIdentityInstructions?.() ?? ''}`,

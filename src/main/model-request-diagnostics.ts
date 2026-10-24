@@ -13,7 +13,7 @@ export function safeServiceTier(value: unknown): string | undefined {
 
 export function assertFastModel(model: RequestModel): void {
   if (model.api !== 'openai-responses' || model.provider !== 'openai') {
-    throw new Error('Fast ist für die Computerbedienung nur mit OpenAI Responses verfügbar.');
+    throw new Error('Fast ist nur mit OpenAI Responses verfügbar.');
   }
 }
 

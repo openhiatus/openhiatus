@@ -1,5 +1,6 @@
 import { AudioDeviceSelect } from './audio-device-select';
 import { AssistantProfileCard } from './assistant-profile-card';
+import { isFastModelSelection } from '../../../shared/model-selection';
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import { AudioLines, ChevronDown, Headphones, KeyRound, Keyboard, LoaderCircle, Mic, Monitor, SlidersHorizontal, Square, UserRound, Volume2 } from 'lucide-react';
 import type { PreferencesPatch, Snapshot } from '../../../shared/contracts';
@@ -69,7 +70,8 @@ export function SettingsView({ state, navigationRequest, workBusy, summaryInProg
   const imageRetention = state?.preferences.computerImageRetentionCalls ?? 0;
   const workingMemory = state?.preferences.computerWorkingMemoryCalls ?? 0;
   const computerModel = state?.preferences.computerModel ?? '';
-  const computerModels = state?.models ?? [];
+  // This experimental role keeps its existing independent Fast switch.
+  const computerModels = (state?.models ?? []).filter(model => !isFastModelSelection(model.id));
   const computerConfigured = computerModels.some(model => model.id === computerModel);
   const computerSettingsBusy = !ready || workBusy || summaryInProgress;
 

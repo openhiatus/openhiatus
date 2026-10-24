@@ -1,6 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, CheckCheck, ChevronDown, CircleAlert, ClipboardList, Clock3, LoaderCircle, Square } from 'lucide-react';
 import type { BackgroundJobView } from '../../../shared/contracts';
+import { modelSelectionLabel } from '../../../shared/model-selection';
 import { MessageBody } from '../conversation';
 import { formatTaskNumber, formatTaskTime, taskFilters, taskIsActive, taskMatches, taskStatusDescription, taskStatusLabel, tasksForFilter, taskUsageLabel, type TaskFilter } from './presentation';
 import { TaskStopActions } from './stop-actions';
@@ -36,7 +37,7 @@ function TaskDetails({ job, busy, onStop, onError }: { job: BackgroundJobView; b
     <section className="tasks-section"><h3>Auftragsdetails</h3><dl className="tasks-metadata">
       <div><dt>Erstellt</dt><dd><time dateTime={job.createdAt}>{formatTaskTime(job.createdAt)}</time></dd></div>
       <div><dt>Aktualisiert</dt><dd><time dateTime={job.updatedAt}>{formatTaskTime(job.updatedAt)}</time></dd></div>
-      <div className="tasks-meta-wide"><dt>Modell</dt><dd>{job.model || 'Kein Modell gemeldet'}</dd></div>
+      <div className="tasks-meta-wide"><dt>Modell</dt><dd>{modelSelectionLabel(job.model) || 'Kein Modell gemeldet'}</dd></div>
       <div className="tasks-meta-wide"><dt>Ressourcen</dt><dd>{job.resources.length ? <ul className="tasks-resources">{job.resources.map(resource => <li key={resource}>{resource}</li>)}</ul> : 'Keine Ressourcen gemeldet'}</dd></div>
     </dl></section>
     <section className="tasks-section tasks-usage"><h3>Verbrauch</h3><p>{taskUsageLabel(job)}</p>

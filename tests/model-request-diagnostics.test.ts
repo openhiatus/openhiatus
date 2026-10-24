@@ -79,11 +79,13 @@ test('restricted computer sessions expose only registered tools and cannot resum
     { file: reference.file, dialog: false, workspace });
 });
 
-test('host descriptors reject dialog computer mode and prevent unrequested Fast on ordinary workers', () => {
+test('host descriptors accept explicit Fast for each role but reject invalid tiers and mixed roles', () => {
   const input = { runId: '00000000-0000-0000-0000-000000000001', text: 'Synthetic UI task', workspace: 'work', home: 'home',
     model: { provider: 'openai', api: 'openai-responses', modelId: 'gpt-6-luna', apiKey: 'synthetic' }, tools: [], instructions: 'Synthetic', dialog: false };
   assert.equal(decodeRun({ ...input, computerOnly: true, serviceTier: 'fast' }).serviceTier, 'fast');
-  for (const patch of [{ computerOnly: true, dialog: true }, { serviceTier: 'fast' }, { computerOnly: 'true' }, { computerOnly: true, serviceTier: 'priority' }]) {
+  assert.equal(decodeRun({ ...input, serviceTier: 'fast' }).serviceTier, 'fast');
+  assert.equal(decodeRun({ ...input, dialog: true, serviceTier: 'fast' }).serviceTier, 'fast');
+  for (const patch of [{ computerOnly: true, dialog: true }, { computerOnly: 'true' }, { computerOnly: true, serviceTier: 'priority' }]) {
     assert.throws(() => decodeRun({ ...input, ...patch }), ProtocolError);
   }
 });
