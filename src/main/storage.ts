@@ -218,14 +218,14 @@ function validName(name: unknown): name is string {
   return typeof name === 'string' && /^[a-zA-Z][a-zA-Z0-9:_.-]{0,127}$/.test(name) && !['__proto__', 'prototype', 'constructor', 'version'].includes(name);
 }
 function validKey(name: string, key: unknown): key is string {
-  if (name === 'provider:chatgpt') {
+  if (name === 'provider:chatgpt' || name === 'service:google-calendar') {
     if (typeof key !== 'string' || !key || Buffer.byteLength(key, 'utf8') > 64 * 1024 || /[\u0000-\u001f\u007f]/u.test(key)) return false;
     try { const value = JSON.parse(key); return !!value && typeof value === 'object' && !Array.isArray(value); } catch { return false; }
   }
   return typeof key === 'string' && key.length > 0 && key.length <= 8192 && !/[\u0000-\u001f\u007f]/u.test(key)
     && (name !== 'inworld' || /^[A-Za-z0-9+/]+={0,2}$/.test(key));
 }
-function credentialLabel(name: string): string { return name === 'inworld' ? 'Inworld-Schlüssel' : name === 'provider:chatgpt' ? 'ChatGPT-Zugang' : 'API-Schlüssel'; }
+function credentialLabel(name: string): string { return name === 'inworld' ? 'Inworld-Schlüssel' : name === 'provider:chatgpt' ? 'ChatGPT-Zugang' : name === 'service:google-calendar' ? 'Google-Kalender-Zugang' : 'API-Schlüssel'; }
 
 /** Main process only. Electron safeStorage supplies Windows DPAPI; never plaintext fallback. */
 export class CredentialStore {
@@ -273,7 +273,7 @@ export class CredentialStore {
     this.name(name);
     const envelope = this.read();
     this.ensureAvailable();
-    if (typeof key !== 'string' || !validKey(name, name === 'provider:chatgpt' ? key : key.trim())) {
+    if (typeof key !== 'string' || !validKey(name, name === 'provider:chatgpt' || name === 'service:google-calendar' ? key : key.trim())) {
       throw new Error(name === 'inworld' ? 'Bitte die Base64-Zugangsdaten aus dem Inworld-Portal verwenden.' : 'Bitte einen gültigen API-Schlüssel eingeben.');
     }
     try {

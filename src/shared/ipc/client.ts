@@ -25,6 +25,9 @@ export function createOpenhiatusApi(transport: IpcClientTransport): OpenhiatusAp
     });
   }
   return {
+    googleCalendarSnapshot: () => call('googleCalendarSnapshot'), saveGoogleCalendarClient: client => call('saveGoogleCalendarClient', client), connectGoogleCalendar: () => call('connectGoogleCalendar'),
+    cancelGoogleCalendarLogin: () => call('cancelGoogleCalendarLogin'), disconnectGoogleCalendar: () => call('disconnectGoogleCalendar'), selectGoogleCalendar: id => call('selectGoogleCalendar', id),
+    googleCalendarEvents: query => call('googleCalendarEvents', query), openGoogleCalendarSetup: () => call('openGoogleCalendarSetup'),
     snapshot: () => call('snapshot'), subscribe: listener => subscribe('openhiatus:state', listener),
     onStop: listener => subscribe('openhiatus:emergency-stop', () => listener()),
     onToggleRecording: listener => subscribe('openhiatus:toggle-recording', () => listener()),
