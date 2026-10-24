@@ -5,7 +5,7 @@
 openHiatus is a desktop app that combines your choice of AI models, speech services, and a personal memory. You keep the conversation going while up to two tasks run in the background, and each task returns a result you can trace.
 
 ![Status: alpha](https://img.shields.io/badge/status-alpha-orange)
-![Version 0.0.14](https://img.shields.io/badge/version-0.0.14-blue)
+![Version 0.0.15](https://img.shields.io/badge/version-0.0.15-blue)
 ![Platform: Windows x64](https://img.shields.io/badge/platform-Windows%20x64-0078D6)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green)
 
@@ -102,6 +102,12 @@ Under **Einstellungen → Bedienung → Bildschirmübersicht**, optionally enabl
 
 The computer runtime has the desktop tool and a bounded result-reporting tool: no shell, file, skill, service or delegation tools. One host executor retains the existing frame, coordinate and Stop checks. Short observation handles reduce identifier copying; stale or misspelled handles are still rejected exactly. Subtasks are limited to 40 desktop calls and four minutes; reaching a limit returns control to the planner. Task details show usage and request timing by model, and distinguish requested Fast from the service tier actually returned by the provider. Fast currently requires an OpenAI Responses model. Availability and charges depend on your connection. End-to-end speed, cost and task accuracy need a fresh comparison; a cheaper model alone does not establish an improvement. See the [computer-model experiment](docs/computer-use-computermodell.md).
 
+### Google Calendar
+
+Under **Dienste → Google Kalender** (Services → Google Calendar), follow the setup guide to register a Google OAuth **Desktop app**, save its client ID and optional client secret, and sign in through your normal browser. Enable the Google Calendar API in that Cloud project first. You can then choose a calendar, preview the next seven days, and ask openHiatus to read, create or change events in conversation. Your chosen calendar and connection survive restart; tokens are kept in the local encrypted credential store.
+
+This first version creates and changes personal single events without attendees. It reads recurring instances and supports timed and all-day events. Invitations, attendee management, deletion and series-wide changes remain outside the exposed tools. Read-only calendars stay read-only. Updates require the version previously read, and uncertain write outcomes are reported for inspection rather than silently retried. Your Google account is connected only after you supply a Desktop client and approve Google's consent screen. See the [Google Calendar setup guide](docs/google-calendar.md).
+
 ## Privacy and safety
 
 > [!IMPORTANT]
@@ -115,7 +121,7 @@ The computer runtime has the desktop tool and a bounded result-reporting tool: n
 
 ## Known limitations
 
-- Gmail and other personal services aren't connected yet. The services view is a placeholder for future integrations.
+- Gmail and other services are still planned. Google Calendar is available through a user-configured Desktop OAuth client; a shared verified openHiatus Google client is not bundled.
 - Live audio is not available yet.
 - How reliably desktop control works depends partly on the selected model and the application being controlled.
 - Window layouts adapt down to a 560 × 440 outer window; broader display-scaling and enlarged-text coverage is still planned.
@@ -152,6 +158,8 @@ npm run test:chatgpt-ui
 npm run test:conversation
 node scripts/fast-model-ui-check.mjs
 npm run test:workflow
+node scripts/google-calendar-ui-check.mjs
+node scripts/google-calendar-setup-ui-check.mjs
 npm run test:ipc
 npm run test:storage-ui
 npm run test:memory-storage-ui

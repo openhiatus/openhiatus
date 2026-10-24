@@ -5,11 +5,12 @@ import { memoryHandlers } from './memory';
 import { settingsHandlers } from './settings';
 import { speechHandlers } from './speech';
 import { workspaceHandlers } from './workspace';
+import { calendarHandlers } from './calendar';
 import type { IpcPorts } from './ports';
 
 export function createIpcRouter(ports: IpcPorts) {
   // Static, exhaustive allowlist. No renderer-controlled property is invoked on an application object.
-  const handlers: HandlerMap = Object.freeze({ ...conversationHandlers(ports), ...settingsHandlers(ports), ...speechHandlers(ports), ...memoryHandlers(ports), ...workspaceHandlers(ports) });
+  const handlers: HandlerMap = Object.freeze({ ...conversationHandlers(ports), ...settingsHandlers(ports), ...speechHandlers(ports), ...memoryHandlers(ports), ...workspaceHandlers(ports), ...calendarHandlers(ports) });
   return {
     async dispatch(method: unknown, args: unknown): Promise<IpcResponse> {
       try {

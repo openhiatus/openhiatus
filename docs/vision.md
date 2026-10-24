@@ -71,7 +71,7 @@ Die vier bearbeitbaren Dateien SOUL.md, IDENTITY.md, USER.md und MEMORY.md bleib
 
 ## Was zurücktritt
 
-- **Persönliche Dienste:** Neue Anbindungen wie E-Mail, Kalender oder Chatdienste werden nicht vorrangig ausgebaut. Bereits vorhandene oder begonnene Anbindungen können als optionale Ergänzung bestehen bleiben; die gemeinsame Dienstgrenze bleibt im Code erhalten.
+- **Persönliche Dienste:** Neue Anbindungen wie E-Mail, Kalender oder Chatdienste werden nicht vorrangig ausgebaut. Die vorhandene Google-Kalender-Anbindung bleibt als optionale Ergänzung erhalten und wird gepflegt; die gemeinsame Dienstgrenze bleibt im Code bestehen. Gmail wird vorerst nicht weiterverfolgt.
 - **Ständige Eigeninitiative:** Regelmäßige Meldungen, Tagesübersichten und Hintergrundüberwachung sind kein Ziel. Ein Start mit Windows dient der schnellen Erreichbarkeit, nicht einem dauerhaft aktiven Agenten.
 - **Live-Sprache und Freisprechen** werden später neu bewertet; die Sprechtaste bleibt der Hauptweg.
 

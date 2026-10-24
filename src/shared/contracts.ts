@@ -2,6 +2,7 @@ import type { SkillFavorites } from './skill-favorites';
 import type { SidebarMode } from './workspace-preferences';
 import type { ActivityPresence } from './activity-presence';
 import type { AssistantProfile } from './assistant-profile';
+import type { GoogleCalendarApi } from './calendar';
 import type { MemorySnapshot, MemorySource, MemorySearchResult, MemoryPeriodRequest, MemoryPeriodPage, SummaryJobState } from './memory';
 
 export interface Usage { inputTokens: number; outputTokens: number; cacheReadTokens: number; cacheWriteTokens: number; costUsd?: number; }
@@ -55,7 +56,7 @@ export interface Snapshot { messages: Message[]; activity: Activity[]; task: Tas
 export interface ContextUsage { threadId: string; usedTokens: number; windowTokens?: number; at: string; }
 export interface AudioClip { base64: string; mimeType: string; }
 export interface ComputerFrame { dataUrl: string; frameId: string; width: number; height: number; at: string; observation?: import('./computer-views').ComputerObservation; }
-export interface OpenhiatusApi {
+export interface OpenhiatusApi extends GoogleCalendarApi {
   snapshot(): Promise<Snapshot>;
   subscribe(listener: (state: Snapshot) => void): () => void;
   onStop(listener: () => void): () => void;

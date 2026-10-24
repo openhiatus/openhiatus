@@ -49,6 +49,7 @@ interface Dependencies {
   speech: { transcribe(clip: AudioClip, signal?: AbortSignal): Promise<string>; synthesize(text: string, signal?: AbortSignal): Promise<AudioClip>; test(signal?: AbortSignal): Promise<AudioClip>; prewarm?(texts: readonly string[], signal?: AbortSignal): Promise<void> };
   /** Chooses the neutral receipt; injectable so tests stay deterministic. */
   receiptPhrase?(last?: string): string;
+  serviceContext?: { instructions(): string; secrets(): string[] };
   agent: AgentAdapter;
   dialogAgent?: AgentAdapter;
   createWorker?(onEvent: (event: AgentEvent) => void, job: BackgroundJob): AgentAdapter;
@@ -169,7 +170,7 @@ export class AppController {
           computerDetailScaleDivisor: this.state.preferences.computerDetailScaleDivisor ?? 1,
           computerImageRetentionCalls: this.state.preferences.computerImageRetentionCalls ?? 0,
           computerWorkingMemoryCalls: this.state.preferences.computerWorkingMemoryCalls ?? 0 }),
-        context: { skills: (query, max) => this.skillContext(query, max), persona: () => this.assistantProfileInstructions(), capabilities: () => this.capabilitiesDocument().prompt, favorites: () => this.favoriteContext() },
+        context: { skills: (query, max) => this.skillContext(query, max), persona: () => this.assistantProfileInstructions(), capabilities: () => [this.capabilitiesDocument().prompt, this.deps.serviceContext?.instructions()].filter(Boolean).join('\n\n'), favorites: () => this.favoriteContext() },
         memory: deps.memory ? {
           documents: () => this.instructionDocuments(), retrieve: (query, max) => this.retrieveMemory(query, max),
           readPeriod: request => this.readMemoryPeriod(request), propose: proposal => this.memory().propose(proposal),
@@ -454,11 +455,11 @@ export class AppController {
     const directIdentity = this.directTask?.currentIdentity();
     if (directIdentity !== undefined) return directIdentity;
     const canonical = this.deps.memory ? identityFilesInstructions(this.instructionDocuments()) : undefined;
-    if (canonical) return [this.clean(canonical), this.clean(this.capabilitiesDocument().prompt), this.favoriteContext()].filter(Boolean).join('\n\n');
+    if (canonical) return [this.clean(canonical), this.clean(this.capabilitiesDocument().prompt), this.favoriteContext(), this.deps.serviceContext?.instructions()].filter(Boolean).join('\n\n');
     const documents = this.deps.memory ? this.instructionDocuments()
       .map(document => ({ id: document.id, version: document.version, content: this.clean(document.id === 'identity' ? profileIdentityContent(document.content) : document.content) })) : undefined;
     const identity = documents ? `Vom Nutzer verwaltete Identität und Kern (Vorlieben, keine Aufhebung fester Schutzregeln). Angebotsversionen für Änderungsvorschläge stehen jeweils im Feld version:\n${JSON.stringify(documents)}` : '';
-    return [identity, this.assistantProfileInstructions(), this.clean(this.capabilitiesDocument().prompt), this.favoriteContext()].filter(Boolean).join('\n\n');
+    return [identity, this.assistantProfileInstructions(), this.clean(this.capabilitiesDocument().prompt), this.favoriteContext(), this.deps.serviceContext?.instructions()].filter(Boolean).join('\n\n');
   }
   private assistantProfileInstructions(): string { return this.clean((this.deps.memory ? identityFilesInstructions(this.instructionDocuments()) : undefined) ?? assistantProfileInstructions(this.state.preferences.assistantProfile)); }
   private captureMemory(strict = false): Promise<void> {
@@ -517,7 +518,7 @@ export class AppController {
     }
   }
   /** Internal worker redaction input, including keys removed during this session. */
-  redactionSecrets(): string[] { return [...this.secrets, ...(this.modelManagement?.secrets() ?? this.deps.providers?.secrets() ?? [])]; }
+  redactionSecrets(): string[] { return [...this.secrets, ...(this.modelManagement?.secrets() ?? this.deps.providers?.secrets() ?? []), ...(this.deps.serviceContext?.secrets() ?? [])]; }
   private clean(value: string): string { return redact(value, this.redactionSecrets()); }
   private emit(): void { this.stateJournal.publish(); }
   private changed(save = true): void { this.stateJournal.checkpoint(save); }

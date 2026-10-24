@@ -58,7 +58,7 @@ export default function App() {
     <div className="workspace-view tasks-view-host" hidden={view !== 'tasks'}>
       <TasksView jobs={state?.jobs ?? []} onStop={id => window.openhiatus.stopJob(id)} onError={session.report} onConversation={() => navigate('chat')} />
     </div>
-    {view === 'services' && <div className="workspace-view services-view-host"><ServicesView onSettings={() => navigate('settings')} /></div>}
+    <div className="workspace-view services-view-host" hidden={view !== 'services'}><ServicesView active={view === 'services'} onSettings={() => navigate('settings')} /></div>
     <div className="workspace-view memory-view-host" hidden={view !== 'memory'}><MemoryView state={state} active={view === 'memory'} navigationRequest={memoryNavigation} /></div>
     {skillsVisited && <div className="workspace-view skills-view-host" hidden={view !== 'skills'}><SkillsView onInsert={session.insertSkill}
       insertDisabledReason={session.skillInsertDisabledReason} favorites={state?.preferences.skillFavorites}
