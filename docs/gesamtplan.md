@@ -1,34 +1,38 @@
 # openHiatus – Produkt- und Umsetzungsplan
 
-Stand: 22. Oktober 2026. Technischer Ausgangspunkt: Version 0.1.4. Dieses Dokument plant den Ausbau; es erklärt neue Funktionen nicht bereits für implementiert.
+Stand: 24. Oktober 2026. Quellstand: Version 0.0.15. Dieses Dokument plant den Ausbau; es erklärt neue Funktionen nicht bereits für implementiert.
 
 ## Richtung und Dokumentation
 
-openHiatus wird als persönlicher Desktop-Assistent weiterentwickelt: ansprechbar, im Hintergrund arbeitsfähig, mit verständlicher Oberfläche, allgemeiner Computersteuerung und optional angebundenen Diensten. Der aktuelle Quellstand wird als Alpha auf GitHub veröffentlicht und anschließend öffentlich weiterentwickelt. Die folgenden Ausbau- und Paketabnahmen begleiten diese Entwicklung.
+openHiatus wird als an das eigene Gerät gebundener Computer-Use-Assistent weiterentwickelt: Er bedient sichtbare Windows-Programme oder leitet Menschen Schritt für Schritt an, bleibt dabei ansprechbar und protokolliert nachvollziehbar. Hauptzielgruppe sind Selbstständige und kleine Betriebe; anleitende Unterstützung für Menschen, die sich am Computer Hilfe wünschen, wird als eigene Erkundung mit echten Personen geprüft. Einsatz in Unternehmen und neue Dienstanbindungen sind vorerst kein Ziel. Die Begründung steht in der [Vision](vision.md).
 
 Die Dokumente haben getrennte Aufgaben:
 
 | Dokument | Aufgabe |
 | --- | --- |
-| [Vision](vision.md) | Produktrichtung und Leitentscheidungen |
+| [Vision](vision.md) | Produktrichtung, Zielgruppen und Leitentscheidungen |
 | Dieser Gesamtplan | Gemeinsame Architektur, Lieferabschnitte und Abnahme |
-| [Architekturprüfung und Zielstruktur](architekturpruefung.md) | Belegte Bestandsaufnahme, Modulgrenzen und schrittweise Entkopplung vor dem Ausbau |
+| [Architekturprüfung und Zielstruktur](architekturpruefung.md) | Belegte Bestandsaufnahme, Modulgrenzen und schrittweise Entkopplung |
 | [Roadmap](roadmap.md) | Kurzer Überblick über aktuellen Stand und nächste Schritte |
-| [Computer-Use-Plan](computer-use-uebersicht-und-detail-plan.md) | Detaillierter Versuchs- und Implementierungsplan für Bilder, Bereichsauswahl und Koordinaten |
+| [Computer-Use-Plan](computer-use-uebersicht-und-detail-plan.md) | Versuchs- und Implementierungsplan für Bilder, Bereichsauswahl und Koordinaten |
 | [Entwicklungsplan](entwicklungsplan.md) | Technische openHiatus-Migration und ihre Grundentscheidungen |
 | [Testprotokoll](openhiatus-testprotokoll.md) | Tatsächlich geprüfter Stand und Prüfgrenzen |
 
-Frühere openHiatus-Pläne bleiben historische Referenzen. Für neue Umsetzung gelten die aktuelle Vision, dieser Plan und die nachgewiesenen openHiatus-Verträge.
+Der frühere [Gesamtplan mit Dienst- und Gmail-Schwerpunkt](archiv/gesamtplan-persoenlicher-assistent-2026-10-22.md) bleibt als historische Referenz erhalten, einschließlich der dort recherchierten Gmail-Scopes und Google-Verifizierungsanforderungen.
 
 ## Vorhandene Grundlage
 
-openHiatus besitzt bereits Electron/React mit TypeScript, die isolierte Pi-Laufzeit, mehrere Modellanbieter einschließlich offizieller ChatGPT-Anmeldung, Inworld-Sprache, Gedächtnis mit Quellen und Versionen, Skills, zwei geordnete Hintergrundworker und native Windows-Desktopsteuerung. Profil und Laufzeit sind von älteren Installationen getrennt. Diese Grundlage wird weiterentwickelt.
+openHiatus besitzt Electron/React mit TypeScript, die isolierte Pi-Laufzeit, mehrere Modellanbieter einschließlich offizieller ChatGPT-Anmeldung, Inworld-Sprache, Gedächtnis mit Quellen und Versionen sowie die vier Identitäts- und Gedächtnisdateien, Skills, zwei geordnete Hintergrundworker und native Windows-Desktopsteuerung. Profil und Laufzeit sind von älteren Installationen getrennt.
 
-Skills werden lokal im Benutzerprofil gepflegt. Eine Skill-Sammlung ist nicht Bestandteil des öffentlichen Repositorys oder der Windows-Pakete; eine automatische Skill-Installation oder -Migration findet nicht statt.
+Für Computersteuerung sind wählbare Übersichts- und Detailansichten, lokale Änderungserkennung, ein begrenztes Bildbudget, ein optional getrenntes Computer-Modell und die Arbeitsanzeige im Hintergrund als Versuch angeschlossen. Vollbild bleibt Standard. Der Desktoptreiber `@trycua/cua-driver` kennt Zustellwege über die Barrierefreiheitsschnittstelle; dem Modell werden bisher ausschließlich Bilder und Koordinatenaktionen angeboten. Unterstützt wird nur der Hauptbildschirm.
 
-Der aktuelle Quellcode trennt Gespräch, Aufgaben, Dienste, Gedächtnis, Skills und Einstellungen. Aufgaben haben eine eigene Ergebnisansicht; Einstellungen trennen Modelle/Zugänge, Sprache/Geräte und Bedienung. Die Windows-Auslieferung dieses UI-Stands wird als Version 0.1.5 unter dem Anzeigenamen openHiatus neu gebaut und separat abgenommen. Der technische Slug und das Profil bleiben `openhiatus`. Es gibt noch keine allgemeine Verwaltung persönlicher Dienstkonten wie Gmail; die Dienstansicht kennzeichnet dies als Vorbereitung. Die neue Bildstrategie ist ebenfalls noch ein Plan.
+Google Kalender ist als erster persönlicher Dienst über einen selbst eingerichteten Desktop-OAuth-Client angebunden ([Anleitung](google-calendar.md)). Er bleibt als optionale Ergänzung erhalten.
 
-Bestehende Prüfungen ersetzen keine neue Abnahme der folgenden Änderungen. Bereits funktionierende Anmeldung, Sprache, Auftragsannahme, Stopp, Sitzungsfortsetzung, Gedächtnis und persönliche Projektlisten müssen erhalten bleiben.
+Skills werden lokal im Benutzerprofil gepflegt. Der integrierte Produkt-Skill bildschirmhilfe wird einmalig ins Profil kopiert und bleibt bearbeitbar; persönliche Skill-Sammlungen sind nicht Bestandteil des öffentlichen Repositorys oder der Windows-Pakete.
+
+Eine erste [Bildschirmhilfe](screen-help.md) ist angeschlossen: Das Gesprächsmodell kann das sichtbare Programm auf dem Hauptbildschirm ansehen und das gesuchte Element mit Kreis und Pfeil direkt darüber markieren. Der Mensch bedient selbst. Eingaben und Fensterwechsel verwerfen die Markierung. Automatische Folgeprüfung und die breitere Erprobung mit Menschen gehören weiterhin zu Abschnitt H.
+
+Bestehende Prüfungen ersetzen keine neue Abnahme der folgenden Änderungen. Anmeldung, Sprache, Auftragsannahme, Stopp, Sitzungsfortsetzung, Gedächtnis und Kalender müssen erhalten bleiben.
 
 ## Architektur als eigener Lieferabschnitt
 
@@ -36,7 +40,7 @@ Die [Prüfung des aktuellen Codes](architekturpruefung.md) zeigt vorhandene Proz
 
 Gespräch, Aufgaben, Gedächtnis, Audio, Modelle, Skills, Computersteuerung und Dienste erhalten eindeutige Zuständigkeiten. Der Appstart setzt die Module zusammen; die Oberfläche verwendet typisierte, zur Laufzeit geprüfte Feature-IPC. Agentenlaufzeit, Betriebssystem und Speicherung bleiben konkrete Adapter. Fachzustand, gespeicherte Daten und UI-Daten werden bewusst getrennt. Neue Dienste werden über gebundene Werkzeuge angebunden, statt weitere Spezialfälle in Controller oder Pi-Transport einzubauen.
 
-Die Entkopplung erfolgt in lauffähigen Schritten mit den vorhandenen Verhaltenstests. Zuerst werden Gesprächs-/Auftragskoordination und langlebige UI-/Audioabläufe entlastet. Vor Gmail muss der allgemeine Dienst- und Werkzeugvertrag stehen; vor der neuen Bildstrategie deren eigener Beobachtungs- und Geometrievertrag. Synchrone Speicherarbeit und vollständige Zustandsveröffentlichungen werden gemessen und bei Bedarf entkoppelt, ohne die dauerhafte Auftragsannahme oder den Stopp zu schwächen.
+Die Entkopplung erfolgt in lauffähigen Schritten mit den vorhandenen Verhaltenstests. Zuerst werden Gesprächs-/Auftragskoordination und langlebige UI-/Audioabläufe entlastet. Vor der ersten Dienstanbindung musste der allgemeine Dienst- und Werkzeugvertrag stehen; vor der neuen Bildstrategie deren eigener Beobachtungs- und Geometrievertrag. Synchrone Speicherarbeit und vollständige Zustandsveröffentlichungen werden gemessen und bei Bedarf entkoppelt, ohne die dauerhafte Auftragsannahme oder den Stopp zu schwächen.
 
 Erster umgesetzter Abschnitt: Das Gesprächsmodul besitzt jetzt Dialogzustand, Warteschlange, Delegation und Stopp. Die langlebige Audio-Runtime besitzt Aufnahme, Wiedergabe, Sprachwarteschlange und Freigabe über injizierte Browserfähigkeiten. Automatische Importregeln prüfen diese Grenzen. Die Desktopfreigabe am Turn-Ende ist von erhaltenen Hintergrundprozessen getrennt. Die übrigen Verträge aus Abschnitt A werden anschließend ergänzt; dieser erste Schritt erklärt die gesamte Architekturgrundlage noch nicht für fertig. Details und nächste Extraktionen stehen in der [Architekturprüfung](architekturpruefung.md#erster-umgesetzter-abschnitt).
 
@@ -52,159 +56,121 @@ Sechster umgesetzter Abschnitt: Der Gedächtnisspeicher besitzt einen eigenen Wo
 
 Siebter umgesetzter Abschnitt: Die langlebige UI-Sitzung hält Snapshot, Entwurf, Senden, Hotkeys und Audioanbindung oberhalb der Ansichten. Ein eigener Navigationsrahmen verbindet die sechs Bereiche. Aufgaben besitzen Filter, Ergebnisdetails und Einzelstopp; Einstellungen besitzen getrennte Register. Navigation erhält laufende Arbeit, Audio und lokale Eingaben. Dienste bleiben ausdrücklich als Vorbereitung gekennzeichnet. [Umfang und Prüfnachweise](architekturpruefung.md#siebter-umgesetzter-abschnitt).
 
+
 ## Produktziele und Beispielabläufe
 
 Die nächsten Lieferabschnitte sollen drei zusammenhängende Abläufe tragen:
 
-1. Einen Auftrag sprechen oder schreiben, während der Bearbeitung weiterreden, das Ergebnis in der Aufgabenansicht wiederfinden und den Verlauf nach Neustart behalten.
-2. Ein beliebiges sichtbares Windows-Programm anhand aktueller Bilder bedienen, mit nachvollziehbaren Ansichten und richtig übersetzten Eingabekoordinaten.
-3. Gmail gezielt nach einem Thema durchsuchen, relevante Nachrichten lesen und eine Antwort vorbereiten. Tatsächlicher Versand folgt als eigene Fähigkeit und benötigt einen entsprechenden Nutzerauftrag.
+1. **Ausführen:** Einen wiederkehrenden Ablauf in einem beliebigen Windows-Programm sprechen oder schreiben, etwa Daten aus einer Liste in ein Formular übertragen. openHiatus bedient die Programme, hält vor endgültigen Aktionen zur Freigabe an, prüft das Ergebnis am tatsächlichen Zustand und legt Ergebnis und Protokoll in der Aufgabenansicht ab.
+2. **Anleiten:** Fragen, wie etwas im gerade sichtbaren Programm geht. openHiatus markiert den nächsten Schritt auf dem Bildschirm, erklärt ihn kurz und erkennt, wann er erledigt ist. Der Mensch bedient selbst.
+3. **Wiederholen:** Einen erfolgreich erledigten Ablauf als Rezept speichern und später schneller, günstiger und mit denselben Prüfpunkten erneut ausführen.
 
-Ein Dienst kann über seine API eine Aufgabe direkter erledigen als über Mausklicks. Allgemeine Desktopsteuerung bleibt für die übrigen Oberflächenabläufe erhalten. Beide Wege verwenden dieselbe Auftragsverwaltung und dieselben Ergebniszustände.
+Alle drei Abläufe verwenden dieselbe Auftragsverwaltung, dieselben Ergebniszustände und denselben Stopp.
 
-## Neue Oberfläche
+## Wahrnehmung: Bilder und Bedienelemente
 
-### Informationsarchitektur
+Neben den Bildansichten erhält der Arbeitsagent eine zweite Wahrnehmung aus der Windows-Barrierefreiheitsschnittstelle (UI Automation): eine begrenzte, auf das aktive Fenster oder einen Bereich bezogene Liste von Bedienelementen mit Rolle, Name, Wert, Zustand und Bildschirmrechteck.
 
-Als Arbeitsannahme dient ein ruhiger Gesprächseinstieg mit einer bei Bedarf erreichbaren Arbeitsansicht. Die konkrete visuelle Richtung wird anhand eines kleinen Prototyps festgelegt. Die bisherige Sprachbedienung bleibt ein Hauptweg; Schreiben wird vollständig unterstützt.
+- Elemente erhalten kurzlebige Kennungen, die wie Beobachtungs-Handles an eine Beobachtung gebunden sind. Veraltete Kennungen werden abgelehnt.
+- Aktionen können sich auf ein Element statt auf Koordinaten beziehen. Der Host übersetzt in die vorhandenen Eingabewege und prüft Fenster, Geometrie und Stopp wie bisher.
+- Feldwerte und Zustände dienen als Erfolgsprüfung, ohne dafür ein neues Bild anzufordern.
+- Programme ohne verwertbare Elementdaten – Canvas-Oberflächen, entfernte Desktops, manche ältere Anwendungen – bleiben über Bilder und Koordinaten bedienbar. Die Elementliste ergänzt die Bilder, sie ersetzt sie nicht.
+- Elementlisten werden in Umfang und Tiefe begrenzt, damit sie nicht mehr Kontext kosten als ein Bild.
 
-| Bereich | Inhalt |
-| --- | --- |
-| Gespräch | Sprechen, Schreiben, aktueller Austausch, erreichbarer Verlauf und ein kompakter Hinweis auf laufende Arbeit |
-| Aufgaben | Vollständige Liste, Statusfilter, Einzelstopp, Auftrag, verständlicher Fortschritt, Ergebnisse und Verbrauch |
-| Dienste | Persönliche Konten wie Gmail, verfügbare Fähigkeiten, Verbindungszustand, Anmelden und Trennen |
-| Gedächtnis | Berichte, Quellen, Versionen, Identität und persönlicher Kern |
-| Skills | Fähigkeiten finden, auswählen, favorisieren und eigene Projektzuordnungen erreichen |
-| Einstellungen | Modellanbieter und drei Modellrollen, Sprache und Geräte, Tastenkürzel, Verhalten und Diagnose |
+Programme mit höheren Rechten und der sichere Desktop von Windows-Sicherheitsabfragen sind für einen normal gestarteten Prozess nicht bedienbar. openHiatus erkennt solche Stellen und übergibt sie dem Menschen.
 
-Eine Verbindung zu einem Sprach- oder Modellanbieter wird sprachlich von einem persönlichen Arbeitskonto unterschieden. Der globale Stopp bleibt in allen Ansichten erreichbar. Bildschirmansicht und technische Aktivität werden bei Bedarf geöffnet; sie dominieren nicht den normalen Gesprächseinstieg.
+Die bestehenden Entscheidungen zur Bildstrategie bleiben gültig: native Auflösung erkennen, echte Übersichtsfaktoren als Versuchsparameter, relevanter Ausschnitt in Originalauflösung, Bild- und Ansichtskennung für jede Eingabe prüfen und umrechnen, Vorschau und Modell erhalten dieselben Ansichten. Der [Computer-Use-Plan](computer-use-uebersicht-und-detail-plan.md) bleibt dafür maßgeblich. Mehrere Monitore folgen über denselben ausdrücklichen Geometrievertrag.
 
-### Responsives UI-Design
+## Ausführen, Anleiten und gemeinsamer Bildschirm
 
-Als weiteres Produktziel passen sich alle Ansichten automatisch an Fenstergröße, Seitenverhältnis, Windows-Skalierung und vergrößerte Schrift an. Navigation und Inhalte ordnen sich bei wenig Platz neu; wichtige Aktionen bleiben erreichbar. Die Bedienoberfläche benötigt kein horizontales Scrollen; breite Tabellen oder Codebereiche dürfen innerhalb ihres eigenen Inhaltsbereichs scrollen.
+Mensch und Agent teilen sich Maus, Tastatur und Fokus. Dafür gelten feste Regeln:
 
-Zur Abnahme gehören kleine und große Fenster, unterschiedliche Skalierungen, lange Inhalte und das Verändern der Fenstergröße im laufenden Betrieb. Dabei bleiben Entwurf, Tastaturfokus, Aufnahme und laufende Aufgaben erhalten. Dies ist ein zusätzliches Ausbauziel; die bisherigen kompakten UI-Prüfungen belegen noch keine vollständige responsive Umsetzung.
+- **Vorrang des Menschen:** Eigene Maus- oder Tastatureingaben während einer Agentenaktion pausieren die Ausführung. Fortgesetzt wird erst nach ausdrücklicher Freigabe und mit einer frischen Beobachtung.
+- **Übergabe:** Anmeldungen, Captchas, Sicherheitsabfragen und unklare Zustände werden mit einer verständlichen Bitte übergeben. Nach der Rückgabe beobachtet der Agent neu, statt alte Annahmen fortzuführen.
+- **Sichtbarkeit:** Die Arbeitsanzeige zeigt, ob openHiatus gerade den Bildschirm bedient, wartet oder anleitet.
+- **Anleiten:** Eine Markierung über dem Zielelement oder -bereich, ein kurzer Text beziehungsweise gesprochener Satz und eine Erfolgsprüfung nach der Eingabe des Menschen. Die Markierung nimmt keine Eingaben an und wird vor Aufnahmen ausgeblendet, wie die heutige Arbeitsanzeige.
 
-### Aufgaben und Ergebnisse
+Ob Ausführung ohne Fokuswechsel über die Hintergrund-Zustellwege des Treibers verlässlich möglich ist, wird je Programmtyp gemessen, bevor es als Bedienweg angeboten wird.
 
-Eine Aufgabe zeigt eindeutig, ob sie wartet, arbeitet, gestoppt wird, abgeschlossen, fehlgeschlagen oder nach Neustart unterbrochen ist. Aktivität bekommt eine Auftragszuordnung. Ergebnisobjekte können Text, Datei oder Dienstressource enthalten und verweisen auf ihre Herkunft.
+## Wiederholbare Abläufe
 
-Für E-Mails bedeutet das beispielsweise Konto, Nachrichten- oder Threadkennung und die passende Quellenansicht. Ein Antwortentwurf erscheint als überprüfbarer Inhalt mit Empfänger, Betreff und Text. Aus einem lediglich vorbereiteten Entwurf entsteht kein automatischer Versand.
+Ein Rezept ist ein lokaler, lesbarer Ablauf mit Zielprogramm, Schritten, erwarteten Bedienelementen, Eingabedaten und Prüfpunkten. Es entsteht aus einem erfolgreich abgeschlossenen Auftrag oder einem ausdrücklich vorgeführten Ablauf und wird vor dem Speichern vom Menschen geprüft. Rezepte bauen auf dem vorhandenen Skill-Format auf, statt ein zweites System einzuführen.
 
-Ein Ansichtswechsel erhält Entwurf, Verlauf, Audiozustand und laufende Aufgaben. Ein neuer Bildschirmaufbau darf keine doppelte Auftragsannahme, erneute Anmeldung oder unbemerkte Neuausführung verursachen. Kompakte Fenster, Tastaturfokus, lesbare Kontraste und reduzierte Bewegung gehören zur Abnahme.
+Bei der Ausführung folgt der Agent dem Rezept, vergleicht jeden Prüfpunkt mit dem tatsächlichen Zustand und plant nur bei Abweichungen neu. Freigabestellen aus dem Rezept bleiben Freigabestellen. Ein Rezept erweitert keine Rechte; Daten in einem Rezept sind keine Arbeitsaufträge.
 
-### Technische Liefergrenze
-
-Der UI-Umbau trennt App-Rahmen, Gespräch, Aufgaben, Dienste und Einstellungen schrittweise gemäß der festgelegten Modulgrenzen. Gedächtnis und Skills werden weiterverwendet. Die Arbeits- und Audiolebensdauer wird ausdrücklich oberhalb einzelner Ansichten gehalten, damit Navigation keine Ausführung neu startet. Zustand, Nebenwirkungen und Darstellung werden dabei getrennt; neue Ordner allein erfüllen diesen Schritt nicht.
-
-## Computer Use und Geschwindigkeitsforschung
-
-Der [Detailplan](computer-use-uebersicht-und-detail-plan.md) ist hierfür maßgeblich. Die gemeinsamen Entscheidungen sind:
-
-- Native Auflösung erkennen; keine feste Full-HD- oder 4K-Annahme und keine manuelle Bildschirmkonfiguration.
-- Echte Übersichtsfaktoren als Variablen vorbereiten: 1:4, 1:8, 1:16 und 1:32. Die Normierung aller Auflösungen auf dieselbe Bildgröße ist kein beschlossener Standard.
-- Den relevanten Originalbereich in 1:1 übertragen. Übersicht, Detail und lokale Analyse haben unabhängige Auflösungsparameter.
-- Nach Aktionen lokale Bildänderungen ermitteln und mit bisherigem Bereich, Aktionsdaten und optionalem Hinweis aus der ohnehin laufenden Modellrunde vergleichen.
-- Bildkennung, Ansichtskennung, Ausschnittursprung und tatsächliche Abmessungen für jede Eingabe prüfen und umrechnen.
-- Vorschau und Modell erhalten dieselben Ansichten. Erfolg wird nicht aus Pixeländerung oder einer ruhigen Darstellung abgeleitet.
-
-Die Bereichsauswahl bleibt ein Experiment mit messbarer Aufgabendauer. Getrennt gemessen werden Aufnahme, Darstellungswartezeit, lokale Analyse, Bildaufbereitung, Modellzeit, zusätzliche Beobachtungen und Korrekturen. Ein schnellerer Einzelaufruf genügt nicht, wenn die Gesamtaufgabe langsamer oder unzuverlässiger wird.
-
-Die erste Umsetzung bleibt beim bereits unterstützten Hauptbildschirm. Das Verfahren wird auf verschiedenen Auflösungen, Formaten und Windows-Skalierungen geprüft. Eine spätere Mehrmonitor-Erweiterung verwendet denselben ausdrücklichen Geometrievertrag.
-
-## Allgemeine Dienstanbindung
-
-### Gemeinsamer Rahmen
-
-Ein eigenes Dienstmodul besitzt Konten, Fähigkeiten, Anmeldungslebensdauer und einen typisierten Adaptervertrag. Die allgemeine Werkzeugregistrierung bindet konkrete Operationen an den jeweiligen Auftrag. Neue Dienste werden anhand konkreter Aufgaben ergänzt. Eine synthetische zweite Integration prüft neben Gmail, ob die gemeinsame Schnittstelle tatsächlich unabhängig vom ersten Anbieter ist.
+## Vertrauensrahmen
 
 | Baustein | Zuständigkeit |
 | --- | --- |
-| Verbindung | Anbieter, stabile Kontozuordnung, öffentlicher Status und tatsächlich gewährte Fähigkeiten |
-| Anmeldung | Dienstspezifischer offizieller Ablauf, Abbruch, Erneuerung und Trennen |
-| Geschützter Zugangsspeicher | Geheimnisse im privilegierten Anwendungsteil; keine Token in Rendererzuständen, Werkzeugergebnissen oder Prompts |
-| Dienstadapter | Typisierte Operationen, begrenzte Ergebnisse, Fortsetzung und eindeutige Ressourcenkennungen |
-| Auftragsintegration | Ausführung, Abbruch, Ergebniszuordnung, verständliche Fehler und Schutz vor doppelten Aktionen |
-| Dienstansicht | Konto und Fähigkeiten zeigen, Verbindung prüfen, erneut anmelden und entfernen |
+| Kritische Aktionen | Senden, Bezahlen, Buchen, Löschen und endgültiges Absenden werden erkannt und vor der Ausführung mit konkretem Inhalt zur Freigabe vorgelegt. Eine klare bestehende Beauftragung gilt weiter; der Rahmen erfindet keine zusätzlichen Rückfragen für unveränderte, bereits ausdrücklich beauftragte Schritte. |
+| Feste Grenzen | Bei Geldgeschäften, Passwörtern und Fernwartungsprogrammen erklärt openHiatus höchstens und handelt nicht selbst. Diese Grenze ist keine abschaltbare Einstellung. |
+| Erlaubte Programme | Nutzer legen fest, welche Anwendungen und Fenster bedient werden dürfen. Andere Fenster werden nicht bedient und nach Möglichkeit nicht an Modelle übertragen. |
+| Protokoll | Je Auftrag nachvollziehbar: gesehene Ansichten, Elementdaten, Aktionen, Freigaben und Übergaben. Lokal gespeichert, in Größe und Aufbewahrungsdauer begrenzt, ohne Zugangsdaten. |
+| Fremde Inhalte | Text aus Bildschirm, Webseiten, E-Mails und Dateien bleibt Daten und erweitert den Nutzerauftrag nicht. |
+| Datenschutz | Bildschirminhalte gehen an das gewählte Modell. Erlaubte Programme, Schwärzung ausgewählter Bereiche und lokale Modelle begrenzen, was übertragen wird. |
 
-Die Fähigkeiten werden aus Verbindung und tatsächlich erteilten Rechten abgeleitet. Der Gesprächsagent bleibt für Gespräch und Delegation zuständig. Dienstarbeit wird an Arbeitsaufträge übergeben; ein verbundener Dienst verleiht dem Gespräch nicht pauschal weitere Werkzeuge.
+Stopp bleibt unabhängig von Freigaben, Protokoll und Speicher sofort wirksam. Bereits erfolgte Änderungen werden nicht rückgängig gemacht; das wird weiterhin klar kommuniziert.
 
-Die Zugangsdaten bleiben beim Dienstadapter im Hauptprozess. Der Arbeitsagent fordert eine konkrete Operation an und erhält deren Ergebnis. Gemeinsame OAuth-Hilfsfunktionen können wiederverwendet werden; Google- und ChatGPT-Anmeldungen bleiben eigene Protokolle und Konten.
+## Messung und Benchmarks
 
-Lesen, Entwurf, Versand und Änderungen sind getrennte Fähigkeiten. Externe Inhalte bleiben Daten und erweitern den Nutzerauftrag nicht. Eine eindeutige bestehende Beauftragung genügt; der Rahmen erfindet keine zusätzliche Bestätigung für bereits konkret autorisierte unveränderte Schritte.
+Maßstab ist die gesamte Aufgabe: Erfolg, Dauer, API-gleichwertige Kosten und Eingriffe des Menschen, je Modell und je Wahrnehmungsvariante. Getrennt erfasst werden Aufnahme, lokale Analyse, Modellzeit, zusätzliche Beobachtungen und Korrekturen. Ein schnellerer Einzelaufruf genügt nicht, wenn die Gesamtaufgabe langsamer oder unzuverlässiger wird.
 
-Schreibende Vorgänge benötigen einen dauerhaft erfassten lokalen Auftragsbezug. Wird ihr Ergebnis nach einer Netzwerkunterbrechung unklar, wird der Stand beim Dienst gezielt geprüft. Eine lokale Kennung allein garantiert keine serverseitige Idempotenz. Ein möglicherweise bereits erfolgter Versand wird nicht blind wiederholt.
+Die vorhandenen synthetischen LibreOffice-Aufgaben unter [benchmarks](../benchmarks/README.md) werden um realistische Abläufe kleiner Betriebe ergänzt: Browserformular mit Daten aus einer Tabelle, Dateidialoge, ein Ablauf über zwei Programme und eine Anwendung mit schwachen Elementdaten. Alle Benchmarks verwenden synthetische Daten und lokale Testseiten oder -programme, keine echten Konten. Wiederholte Läufe ersetzen Einzelergebnisse.
 
-### Aufnahme weiterer Dienste
+## Oberfläche
 
-Ein Dienst ist ein guter nächster Kandidat, wenn er eine offizielle nutzbare Schnittstelle, einen für Desktop-Apps geeigneten Zugang, klar begrenzbare Fähigkeiten und einen konkreten Alltagsnutzen hat. Ein erfolgreicher Gmail-Adapter soll die gemeinsame Schnittstelle erproben, keine Sonderarchitektur nur für E-Mail erzeugen.
+Die vorhandene Navigation mit Gespräch, Aufgaben, Diensten, Gedächtnis, Skills und Einstellungen bleibt erhalten. Ausbau:
 
-## Gmail als erste vertikale Integration
+| Bereich | Ausbau |
+| --- | --- |
+| Gespräch | Schneller Weg zu „Hilfe zum gerade Sichtbaren“ per Taste; Freigaben und Übergaben erscheinen dort, wo der Mensch gerade ist |
+| Aufgaben | Protokoll je Auftrag, Freigaben mit konkretem Inhalt, Übergabe- und Pausenzustand |
+| Skills | Rezepte prüfen, benennen, bearbeiten und starten |
+| Einstellungen | Erlaubte Programme, Freigabeverhalten, Protokollaufbewahrung, Start mit Windows |
+| Dienste | Google Kalender; keine weiteren Dienste in Vorbereitung |
 
-### Sinnvoller Pilot
+Eine Aufgabe zeigt weiterhin eindeutig, ob sie wartet, arbeitet, pausiert, auf Freigabe oder Übergabe wartet, gestoppt wird, abgeschlossen, fehlgeschlagen oder nach Neustart unterbrochen ist. Ein Ansichtswechsel erhält Entwurf, Verlauf, Audiozustand und laufende Aufgaben. Die Oberfläche passt sich an Fenstergröße, Windows-Skalierung und vergrößerte Schrift an; breitere Skalierungs- und Schriftabnahme bleibt offen.
 
-Der erste Ablauf lautet: verbinden, gezielt suchen, Nachrichten oder Thread lesen, einen lokalen Antwortentwurf zeigen. Die API stellt Nachrichten, Threads, Entwürfe und Versand als getrennte Operationen bereit. Suche, Paging, Zeichensätze und Anhänge werden anhand der jeweiligen Methodendokumentation implementiert; ein kompletter Mailclient ist nicht das erste Ziel. [Gmail-REST-Referenz](https://developers.google.com/workspace/gmail/api/reference/rest)
+## Dienste
 
-Ein lokaler Textentwurf braucht noch keinen Gmail-Schreibzugriff. Das Speichern als Gmail-Entwurf und das Senden werden später ergänzt. Inhalte werden zunächst als sicher dargestellter Text mit Quelle verarbeitet; fremdes Mail-HTML wird nicht als Anwendungscode ausgeführt. Eine dauerhafte Übernahme von E-Mails ins persönliche Gedächtnis ist keine automatische Nebenwirkung des Verbindens.
-
-### Anmeldung und Rechte
-
-Für die Desktop-App ist ein Google-OAuth-Client mit Systembrowser, PKCE und Loopback-Rückleitung vorgesehen. Die Entwicklungsanmeldung benötigt eine eingerichtete Google-Anwendung. Öffentliche Desktop-Clients können kein vertrauliches Client-Secret bewahren. Erweiterte Rechte benötigen einen bewusst erneuerten Anmeldeablauf; Googles Dokumentation unterstützt inkrementelle Autorisierung für installierte Apps nicht. [Google: Desktop-OAuth](https://developers.google.com/identity/protocols/oauth2/native-app)
-
-| Ausbauschritt | Passender Scope | Google-Kategorie |
-| --- | --- | --- |
-| Nachrichten lesen und lokalen Antworttext vorbereiten | `gmail.readonly` | Restricted |
-| Gmail-Entwürfe verwalten | `gmail.compose` | Restricted; umfasst auch Versand |
-| Versand ergänzen | `gmail.send`, sofern kein bereits benötigter Scope ihn umfasst | Sensitive |
-
-Die Scope-Namen tragen das Präfix `https://www.googleapis.com/auth/`. Ein gewährter breiterer Scope schaltet nicht automatisch jede technisch mögliche Aktion in openHiatus frei. Die App bietet nur die implementierten und beauftragten Fähigkeiten an. [Google: Gmail-Scopes](https://developers.google.com/workspace/gmail/api/auth/scopes)
-
-### Persönlicher Pilot und öffentliche Auslieferung
-
-Der technische Adapter und eine für beliebige Nutzer bequem nutzbare Anmeldung sind zwei Liefergegenstände. Ein persönlicher Test kann zunächst mit einem eigenen Google-Projekt und Testkonto erfolgen. Das spätere Produktziel bleibt ein Verbinden aus der Oberfläche, ohne dass normale Anwender selbst ein Cloudprojekt anlegen müssen.
-
-Eine öffentliche Integration mit den benötigten Gmail-Rechten muss Googles Verifizierungsanforderungen erfüllen. Bei Restricted-Daten sind auch Serverdatenflüsse für eine mögliche Sicherheitsprüfung maßgeblich. Dazu gehört in unserem Entwurf ausdrücklich ein verwendetes externes KI-Modell: Eine lokale Electron-App bedeutet nicht automatisch ausschließlich lokale Mailverarbeitung. Datenfluss und zulässiger öffentlicher Betrieb werden daher vor der Gmail-Freigabe geprüft. [Google: Restricted-Scope-Verifizierung](https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification)
-
-Für die öffentliche App werden außerdem passende App-Identität, Kontakt, Homepage und Datenschutzhinweise benötigt. Der veröffentlichte Desktop-Client und dessen Pflege werden bewusst festgelegt; ein Fork mit eigener App-Identität erhält eine dazu passende Registrierung. [Google: Markenverifizierung](https://developers.google.com/identity/protocols/oauth2/production-readiness/brand-verification)
-
-Die Dienstansicht muss deshalb persönliche Testverbindung und öffentlich unterstützte Anmeldung korrekt beschreiben. Ein Gmail-Releaseproblem blockiert weder den restlichen Assistenten noch andere unabhängige UI-Arbeit.
+Die gemeinsame Dienstgrenze mit Konten, gebundenen Werkzeugen und Dienstbroker bleibt im Code bestehen. Google Kalender wird gepflegt. Gmail und weitere Dienste werden vorerst nicht verfolgt; die Vorarbeiten stehen im [früheren Gesamtplan](archiv/gesamtplan-persoenlicher-assistent-2026-10-22.md#gmail-als-erste-vertikale-integration). Die dort festgelegten Regeln gelten weiter für vorhandene Dienste: Zugangsdaten bleiben im Hauptprozess, Lesen, Vorbereiten und Ausführen sind getrennte Fähigkeiten, unklare Schreibausgänge werden geprüft statt blind wiederholt.
 
 ## Lieferabschnitte
 
-Die Reihenfolge ist ein Umsetzungsvorschlag mit überprüfbaren Ergebnissen. Die Architekturgrundlage ist Voraussetzung für den Ausbau der jeweiligen Hotspots. Computer-Use-Versuche und Gmail-Machbarkeit können nach den benötigten Modulverträgen unabhängig vorangebracht werden.
+Die Architekturabschnitte und der UI-Rahmen sind umgesetzt. Die Reihenfolge der folgenden Abschnitte ist ein Umsetzungsvorschlag mit überprüfbaren Ergebnissen.
 
 | Abschnitt | Konkretes Ergebnis | Fertigkriterium |
 | --- | --- | --- |
-| A – Architekturgrundlage | Öffentliche Modulverträge und Importregeln, schrittweise Entlastung des Controllers, getrennte UI-/Audio-Runtime, Feature-IPC sowie Werkzeug-/Dienstgrenze | Gespräch, zwei Aufgaben, Audio, Stopp und Neustart bestehen ihre Regressionen; ein synthetischer Dienst lässt sich über die neue Grenze anbinden; die Ziele sind im Code umgesetzt und nicht nur dokumentiert |
-| B – UI-Rahmen und Aufgaben | Ruhiges Gespräch, eigene Aufgabenübersicht, Einstellungen und Platz für Dienste | Navigation erhält Entwurf, Verlauf, Audio und zwei laufende Aufträge; Einzelstopp und globaler Stopp haben den belegten Umfang |
-| C – Computer-Use-Prototyp | Skalierungsprofile, Originalausschnitt, Koordinatenschicht, lokale Änderungskandidaten und passende Vorschau | Tatsächliche Eingaben stimmen bei unterschiedlichen Auflösungen und DPI; Zeit und Zuverlässigkeit über vollständige Aufgaben sind vergleichbar gemessen |
-| D – Dienste und Gmail-Pilot | Gemeinsame Verbindungen, Google-Anmeldung und gezielter Lese-/Entwurfsablauf | Verbindung, Abbruch, Erneuerung, Trennen, Suche, Quellen und lokaler Antwortentwurf sind nachgewiesen; kein Entwurf wird versehentlich gesendet |
-| E – Bewährte Abläufe ausbauen | Gewählte Bildstrategie, strukturierte Ergebnisse und bei Bedarf Gmail-Entwurf/Versand | Bestehende Autorisierung, Konto- und Ergebniszuordnung sowie unklarer Versandausgang funktionieren ohne Doppelaktionen |
-| F – Öffentliche Vorschauversion | Gepflegtes Repository, reproduzierbares Windows-Paket, Einrichtung und dokumentierte Funktionsgrenzen | Frisches Profil und eigener Zugang auf weiterem Testsystem funktionieren; Lizenz- und Dienstfreigaben passen zum tatsächlich veröffentlichten Umfang |
+| C – Elementwahrnehmung | Machbarkeitsprüfung des Treibers, danach begrenzte Elementliste, Elementaktionen und Wertprüfung neben den Bildansichten | Elementaktionen treffen in mehreren Programmtypen das richtige Ziel; veraltete Kennungen werden abgelehnt; Pixelrückfall funktioniert |
+| D – Benchmarks | Erweiterte synthetische Aufgaben und vergleichbare Kennzahlen je Lauf | Wiederholte Läufe vergleichen Bildstrategie und Elementwahrnehmung nach Erfolg, Dauer, Kosten und Eingriffen |
+| E – Vertrauensrahmen | Freigabe kritischer Aktionen, feste Grenzen, erlaubte Programme, Protokoll | Kritische Aktionen werden in den Benchmarks erkannt und angehalten; nicht erlaubte Fenster werden nicht bedient; Protokoll ist vollständig und ohne Zugangsdaten |
+| F – Gemeinsamer Bildschirm | Pause bei Eingaben des Menschen, Übergabe und Rückgabe | Menschliche Eingaben stoppen weitere Agenteneingaben verlässlich; Fortsetzung beginnt mit neuer Beobachtung |
+| G – Rezepte | Rezept aus Auftrag erzeugen, prüfen, speichern und ausführen | Wiederholung ist in den Benchmarks schneller oder günstiger bei mindestens gleicher Erfolgsquote |
+| H – Anleiten | Markierung auf dem Bildschirm, kurze Erklärung, Erfolgsprüfung | Markierungen sitzen bei unterschiedlichen Auflösungen und Skalierungen am richtigen Element; Erprobung mit echten Personen ist dokumentiert |
+| I – Mehrere Monitore | Geometrievertrag für mehrere Anzeigen | Beobachtung, Eingabe und Markierung stimmen auf jedem Monitor und bei gemischter Skalierung |
+| J – Öffentliche Vorschauversion | Signiertes, einfach installierbares Windows-Paket, Start mit Windows, dokumentierte Grenzen | Frisches Profil und eigener Zugang auf weiterem Testsystem funktionieren ohne Entwicklerwerkzeuge; Lizenzhinweise passen zum Paket |
 
-UI und erster Gmail-Ablauf können mit synthetischen Verbindungen entwickelt werden. Reale Kontozugriffe und die jeweilige Anmeldung gehören anschließend zur ausdrücklich beauftragten Funktionsabnahme, nicht zur Erstellung dieses Plans.
+C und D gehören zusammen: Ohne Messung lässt sich der Nutzen der Elementwahrnehmung nicht belegen. E sollte vor einer breiteren Nutzung des Ausführens stehen.
+
+## Erkundung: anleitende Unterstützung
+
+Ob anleitende Unterstützung Menschen hilft, die sich am Computer schwertun, ist offen. Vor eigenen Funktionen für diese Gruppe steht eine kleine Erprobung mit wenigen Personen aus dem Umfeld, mit deren Einverständnis und ohne Aufzeichnung privater Inhalte im Repository. Denkbare Voraussetzungen sind Start mit Windows, eine einmalige Einrichtung durch eine vertraute Person und eine farbig markierte Sprechtaste. Beobachtet wird, ob Starten, Fragen, Verstehen der Markierung und Abschließen ohne Hilfe gelingen und welche Kosten je Hilfestellung entstehen. Eine vereinfachte Ansicht wird erst anhand dieser Beobachtungen entworfen.
 
 ## Weiterer Gesprächsausbau
 
-Die vorhandene Präsenz, Bestätigung und Signaltöne werden erhalten. Aus der bisherigen Vision bleiben optionale Satzendenerkennung, Unterbrechen beim Sprechen, satzweise beziehungsweise gestreamte Wiedergabe, verständlicher visueller Fortschritt, bessere Ergebniskarten und ein maßvoller persönlicher Einstieg als eigene Aufgaben bestehen.
-
-Die Arbeiten erhalten eigene Latenz- und Audioabnahmen. Regelmäßige gesprochene Statusmeldungen sind kein Standard. Eine Neubewertung von Live-Sprache, umfassendere Proaktivität, zusätzliche Agentenläufe und `/goal` werden separat priorisiert; sie sind keine Voraussetzung für UI, Gmail oder die erste öffentliche Version.
+Präsenz, Bestätigungen und Signaltöne bleiben erhalten. Die Sprechtaste bleibt Hauptweg. Unterbrechen beim Sprechen und satzweise Wiedergabe bleiben sinnvolle eigene Aufgaben, weil sie Anleiten flüssiger machen. Live-Sprache, Freisprechen, umfassende Proaktivität und `/goal` werden separat neu bewertet.
 
 ## Abnahme und Veröffentlichung
 
-Die Abnahme verbindet vorhandene Regressionen mit echten Nutzungsabläufen:
-
-- Einrichtung, Anmeldung, Sprechen oder Schreiben, ein Datei-/Programmauftrag, Ergebnis, Stopp und Neustart bleiben durchgängig geprüft.
-- Mindestens zwei parallele Aufgaben bleiben korrekt zugeordnet. Ein fehlender Dienst oder ein gescheiterter Login legt das Gespräch nicht still.
-- Computersteuerung wird an mehreren Programmtypen, Auflösungen und DPI-Einstellungen geprüft. Aufwände für lokale Auswahl und zusätzliche Modellrunden gehen in die Gesamtzeit ein.
-- Gmail wird zunächst gegen synthetische Antworten und dann mit einem dafür eingerichteten eigenen Konto geprüft. Abgebrochene Anmeldung, abgelaufener Zugang, Netzwerkfehler und unklarer Schreibausgang gehören dazu.
+- Einrichtung, Anmeldung, Sprechen oder Schreiben, ein Programmauftrag mit Freigabe, Ergebnis, Protokoll, Stopp und Neustart bleiben durchgängig geprüft.
+- Computersteuerung wird an mehreren Programmtypen, Auflösungen und Skalierungen geprüft; Elementwahrnehmung und Bildstrategie gehen mit ihrer Gesamtzeit in die Bewertung ein.
+- Freigaben, feste Grenzen und erlaubte Programme werden mit synthetischen kritischen Aktionen geprüft. Keine Abnahme verwendet echte Zahlungen, Konten oder Kundendaten.
+- Mindestens zwei parallele Aufgaben bleiben korrekt zugeordnet; Desktopzugriff bleibt geordnet.
 - Neue UI-Zustände werden auf Lesbarkeit, Tastaturbedienung, schmale Fenster, Animationseinstellungen und verständliche Fehler geprüft.
-- Das ausgelieferte Paket verwendet ein frisches Profil, eigene Konten und keine persönlichen Projektpfade oder Testdaten. Es bringt seine benötigte Laufzeit mit.
+- Das ausgelieferte Paket verwendet ein frisches Profil, eigene Konten und keine persönlichen Projektpfade oder Testdaten.
 
-Für die GitHub-Veröffentlichung werden README, Einrichtung, Architekturübersicht, bekannte Grenzen und reproduzierbarer Build gepflegt. Die Projektlizenz ist MIT und liegt im Repository als `LICENSE`; sie gehört bereits in den ersten öffentlichen Commit. Hinweise und Verteilungsbedingungen mitgelieferter Komponenten gehören zum Paket. Zugangsdaten, Mailinhalte, persönliche Profile und lokale Prüfartefakte gehören nicht in die Veröffentlichung.
-
-Der öffentliche Einstieg erfolgt mit dem Alpha-Quellcode unter MIT. Neue Downloadpakete werden getrennt davon erstellt und geprüft. Eine eigene Cloud, automatische Kontoübernahme, Synchronisation und ein Plugin-Marktplatz sind keine Voraussetzung. Der Anzeigename ist `openHiatus`; der technische Slug bleibt `openhiatus`.
+Für die GitHub-Veröffentlichung werden README, Einrichtung, Architekturübersicht, bekannte Grenzen und reproduzierbarer Build gepflegt. Die Projektlizenz ist MIT. Zugangsdaten, Bildschirmprotokolle, persönliche Profile und lokale Prüfartefakte gehören nicht in die Veröffentlichung.
 
 ## Nächster konkreter Einstieg
 
-Fachzustände, Feature-IPC, interne Host-Nachrichten und Werkzeug-/Dienstverträge sind abgegrenzt; Verlauf und Gedächtnis arbeiten über eigene Speicher-Worker. Der Navigationsrahmen mit langlebiger UI-Sitzung, Aufgabenansicht und getrennten Einstellungen ist umgesetzt und mit laufenden lokalen Testaufträgen geprüft. Der allgemeine Computer-Beobachtungsvertrag mit Geometrie, Übersicht-/Detailbildern und lokaler Änderungsauswahl ist als wählbarer Versuch angeschlossen. Als nächster Teil folgen reale Eingabeabnahme und wiederholte Zeit-/Erfolgsvergleiche; Vollbild bleibt bis dahin Standard. Die Gmail-Machbarkeit bleibt innerhalb des vorhandenen Dienstvertrags ein eigener Schritt. Der [Architekturplan](architekturpruefung.md) beschreibt Umfang und weitere Abnahme.
+Abschnitt C beginnt mit einer Machbarkeitsprüfung: Was liefert `@trycua/cua-driver` unter Windows an Elementdaten, wie schnell, in welcher Vollständigkeit für Büroprogramme, Browser, Electron-Anwendungen und ältere Win32-Programme, und welche Zustellwege funktionieren ohne Fokuswechsel? Falls der Treiber nicht genügt, wird eine eigene UI-Automation-Abfrage im vorhandenen nativen Hilfsprozess geprüft. Parallel werden die Benchmarks aus Abschnitt D vorbereitet, damit die erste Elementwahrnehmung direkt gegen die Bildstrategie gemessen werden kann.

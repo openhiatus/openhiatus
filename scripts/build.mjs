@@ -6,6 +6,10 @@ import path from 'node:path';
 await mkdir('dist', { recursive: true });
 await mkdir('dist/native', { recursive: true });
 execFileSync(path.join(process.env.WINDIR || 'C:\\Windows', 'Microsoft.NET', 'Framework64', 'v4.0.30319', 'csc.exe'),
+  ['/nologo', '/target:exe', `/out:${path.resolve('dist/native/openhiatus-screen-watch.exe')}`, path.resolve('src/main/openhiatus-screen-watch.cs')], { windowsHide: true, stdio: 'inherit' });
+await mkdir('dist/bildschirmhilfe', { recursive: true });
+await copyFile('resources/bildschirmhilfe/SKILL.md', 'dist/bildschirmhilfe/SKILL.md');
+execFileSync(path.join(process.env.WINDIR || 'C:\\Windows', 'Microsoft.NET', 'Framework64', 'v4.0.30319', 'csc.exe'),
   ['/nologo', '/target:exe', `/out:${path.resolve('dist/native/openhiatus-process-host.exe')}`, path.resolve('src/main/openhiatus-process-host.cs')], { windowsHide: true, stdio: 'inherit' });
 execFileSync(path.join(process.env.WINDIR || 'C:\\Windows', 'Microsoft.NET', 'Framework64', 'v4.0.30319', 'csc.exe'),
   ['/nologo', '/target:exe', `/out:${path.resolve('dist/native/openhiatus-hotkeys.exe')}`, path.resolve('src/main/openhiatus-hotkeys.cs')], { windowsHide: true, stdio: 'inherit' });

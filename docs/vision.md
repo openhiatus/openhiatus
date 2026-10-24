@@ -1,73 +1,84 @@
-# Vision: openHiatus als persönlicher Assistent
+# Vision: openHiatus als Computer-Use-Assistent am eigenen Rechner
 
-Stand: 22. Oktober 2026. Ausgangspunkt ist openHiatus, Version 0.1.4. Dieses Dokument beschreibt die Produktrichtung. Der [Gesamtplan](gesamtplan.md) legt Lieferabschnitte und Abnahme fest; der [Prüfstand](openhiatus-testprotokoll.md) dokumentiert tatsächlich getestete Funktionen.
+Stand: 24. Oktober 2026. Dieses Dokument beschreibt die Produktrichtung; es erklärt geplante Funktionen nicht für implementiert. Der [Gesamtplan](gesamtplan.md) legt Lieferabschnitte und Abnahme fest und wird an diese Richtung angepasst; der [Prüfstand](openhiatus-testprotokoll.md) dokumentiert tatsächlich getestete Funktionen.
 
 ## Das Ziel
 
-openHiatus soll ein ansprechbarer Assistent für den eigenen Rechner und die eigenen Arbeitsabläufe werden. Man kann mit ihm sprechen oder schreiben, Aufgaben abgeben und während der Ausführung weiter im Gespräch bleiben. Er nutzt bekannte Projekte und passende Erinnerungen, liefert nachvollziehbare Ergebnisse und verbindet bei Bedarf persönliche Dienste.
+openHiatus wird ein an das eigene Gerät gebundener Assistent für die Arbeit am Windows-Rechner. Er sieht, was auf dem Bildschirm ist, erledigt Abläufe in beliebigen sichtbaren Programmen oder zeigt Schritt für Schritt, wie man sie selbst erledigt. Man spricht oder schreibt mit ihm; Ergebnisse und Aktionen bleiben nachvollziehbar.
 
-Die Bedienung soll für Menschen funktionieren, die keine Entwickler sind. Eine Installation, verständliche Einrichtung und sinnvolle Voreinstellungen reichen für normale Aufgaben. Auflösung, lokale Verzeichnisse und interne Laufzeitdetails ermittelt die Anwendung selbst.
+Der Schwerpunkt liegt auf Computersteuerung und Unterstützung am Bildschirm, nicht auf einem ständig aktiven Allzweckagenten mit möglichst vielen angebundenen Diensten. Gerade dort, wo Programme keine Schnittstelle anbieten – Fachsoftware, Webportale, ältere Anwendungen –, ist Bedienung über die Oberfläche oft der einzige Weg zur Automatisierung.
 
-## Ein allgemeiner Assistent
+## Für wen
 
-Dateien, Shell, sichtbare Programme und offizielle Dienstschnittstellen bilden die Arbeitsgrundlage. Skills beschreiben wiederverwendbare Abläufe darauf. Die Anwendung erhält keine besondere Logik für einzelne Excel-Tabellen, Terminalpositionen oder einmalige Analyseaufträge.
+### Selbstständige und kleine Betriebe
 
-Wo eine geeignete Dienstschnittstelle vorhanden ist, kann openHiatus direkt mit ihr arbeiten. Wo Oberflächenarbeit benötigt wird, verwendet er allgemeine Computersteuerung. Beides gehört zur gleichen Aufgabenverwaltung und erscheint als verständlicher Fortschritt mit belegbaren Ergebnissen.
+Menschen, die über ihren Rechner selbst entscheiden und von eingesparter Zeit direkt profitieren. Typische Abläufe wiederholen sich: Belege und Rechnungen erfassen, Daten zwischen Programmen übertragen, Formulare und Portale ausfüllen, Dokumente vorbereiten. Hier steht das **Ausführen** im Vordergrund. Maßstab sind Zuverlässigkeit, Dauer und Kosten je erledigter Aufgabe.
 
-Anleitungen und Referenzdokumente werden bei der Aufgabenübergabe über eindeutige Pfade oder Links angegeben. Bereits vorhandene Anweisungen werden nicht in jedem Prompt noch einmal ausgeschrieben.
+### Menschen, die sich am Computer Unterstützung wünschen
 
-## Eine ruhige Oberfläche mit erreichbarer Arbeitsansicht
+Viele alltägliche Vorgänge – eine verschwundene E-Mail wiederfinden, eine Datei speichern, ein Dokument drucken – sind für manche Menschen eine Hürde. openHiatus kann hier **anleiten**: auf dem Bildschirm zeigen, wo der nächste Schritt ist, in einfacher Sprache erklären und abwarten, bis der Schritt erledigt ist.
 
-Der Einstieg ist ein klarer Ort für Gespräch, Sprechen und Schreiben. Präsenz und Status geben Rückmeldung, ohne mehrere konkurrierende Anzeigen. Der Verlauf ist erreichbar; Texteingabe bleibt ein vollständiger Bedienweg.
+Ob und in welcher Form das wirklich hilft, ist offen und wird mit echten Personen erprobt, bevor eigene Funktionen dafür ausgebaut werden. Denkbar ist eine einmalige Einrichtung durch eine vertraute Person, ein Start mit Windows und eine farbig markierte Sprechtaste, sodass im Alltag ein einziger Tastendruck genügt. Diese Gruppe ist eine Erkundung mit eigenem Prüfschritt, keine Zusage.
 
-Laufende und abgeschlossene Aufgaben bekommen eine eigene Übersicht. Dort sieht man Auftrag, tatsächlichen Stand, Ergebnis, Quellen und verfügbaren Verbrauch. Technische Aktivität ist bei Bedarf zugänglich. Ein Ansichtswechsel unterbricht weder Gespräch noch Arbeit.
+### Bewusst zunächst nicht: Einsatz in Unternehmen
 
-Persönliche Dienste wie Gmail bekommen einen eigenen Bereich. Modellanbieter, Sprachzugang, Geräte und sonstige Programmeinstellungen bleiben verständlich davon getrennt. Gedächtnis und Skills bleiben direkt erreichbar. Die genaue visuelle Gestaltung wird anhand eines kleinen bedienbaren Entwurfs abgestimmt; dieses Dokument legt keinen fertigen Stil fest.
+Zentrale Verwaltung, Richtlinien für Firmennetze und Firmeninstallationen sind kein Ziel der nächsten Zeit. openHiatus richtet sich an Menschen, die die Software auf ihrem eigenen Gerät und in eigener Verantwortung einsetzen.
 
-## Responsives UI-Design
+## Ein gemeinsamer Kern
 
-Die Oberfläche passt sich automatisch an Fenstergröße, Seitenverhältnis, Windows-Skalierung und vergrößerte Schrift an. Navigation, Gespräch, Aufgaben, Dienste und Einstellungen bleiben auch in schmalen Fenstern lesbar und vollständig bedienbar. Große Fenster nutzen den verfügbaren Platz sinnvoll.
+Beide Zielgruppen brauchen dieselbe Grundlage; unterschiedlich sind Oberfläche und Standardverhalten.
 
-Globale Bedienelemente wie Stopp sowie Sprechen und Schreiben bleiben erreichbar. Ein Wechsel des Layouts erhält Entwürfe, Fokus, Aufnahme und laufende Arbeit. Dieses Ziel gilt für die gesamte Anwendung und wird mit unterschiedlichen Fenstergrößen und Skalierungen geprüft.
+| Baustein | Bedeutung |
+| --- | --- |
+| Bildschirm verstehen | Aktuelle Bilder mit Übersicht und Detail, ergänzt um Bedienelemente aus der Windows-Barrierefreiheitsschnittstelle (UI Automation): Namen, Rollen, Werte und Positionen. Pixelbasierte Bedienung bleibt Rückfall für Programme ohne verwertbare Elementdaten. |
+| Ausführen | Der Agent bedient Programme selbst, prüft das Ergebnis am tatsächlichen Zustand und meldet Unsicherheiten. |
+| Anleiten | Der Agent markiert den nächsten Schritt auf dem Bildschirm, erklärt ihn und erkennt, ob er erledigt wurde. Der Mensch behält die Bedienung. |
+| Gemeinsamer Bildschirm | Mensch und Agent nutzen dieselbe Maus und Tastatur. Eingaben des Menschen haben Vorrang und pausieren den Agenten; Anmeldungen, Sicherheitsabfragen und unklare Stellen werden ausdrücklich übergeben und danach fortgesetzt. |
+| Wiederholbare Abläufe | Ein erfolgreich erledigter oder vorgeführter Ablauf kann als Rezept mit Schritten und Prüfpunkten gespeichert werden. Bei Wiederholung folgt der Agent dem Rezept und plant nur bei Abweichungen neu. |
+| Bildschirmgeometrie | Tatsächliche Auflösung und Windows-Skalierung werden erkannt; mehrere Monitore sind ein Ziel, weil sie an Arbeitsplätzen der Normalfall sind. |
 
-Der erste umgesetzte Schritt in 0.0.8 ist die automatisch oder manuell einklappbare Navigation mit gespeicherter Wahl und ein anhand der Gesprächsbühne skalierendes Symbol. Eine optionale Arbeitsanzeige erscheint oben rechts auf dem Monitor, wenn openHiatus im Hintergrund arbeitet; ihre Größe lässt sich am rechten Griff ändern. Geprüft sind Fenster bis zu nativen Außenmaßen von 560 × 440 Pixeln. Weitergehende Abnahme mit vergrößerter Schrift und unterschiedlichen Windows-Skalierungen bleibt Teil dieses Ziels.
+Der derzeit verwendete Desktoptreiber kennt bereits Wege über die Barrierefreiheitsschnittstelle für die Eingabezustellung; dem Modell werden bisher nur Bilder übergeben. Die Elementdaten als zweite Wahrnehmung zu nutzen, ist der nächste große technische Schritt. Er dient beiden Zielgruppen: weniger Bilddaten und Fehlklicks beim Ausführen, genaue Markierungen beim Anleiten.
 
-## Schnelle, zuverlässige Arbeit
+Skills bleiben lokale, eigene Abläufe im Benutzerprofil. Die Anwendung erhält keine Sonderlogik für einzelne Programme oder Tabellen.
 
-Zeit bis zum nutzbaren Ergebnis ist ein wesentliches Produktkriterium. Weniger Token oder kleinere Dateien allein sind kein Erfolg, wenn zusätzliche Modellrunden den Ablauf verlängern.
+## Schnell, günstig und verlässlich
 
-Für Computersteuerung wird eine stark verkleinerte Gesamtübersicht mit einem relevanten Originalausschnitt untersucht. Die Faktoren 1:4, 1:8, 1:16 und 1:32 sind Versuchsparameter. Lokale Änderungserkennung soll besonders nach Aktionen einen passenden Kontrollbereich liefern. openHiatus übernimmt Skalierung, Ausschnittversatz und Koordinatenprüfung. Das Verfahren funktioniert mit der tatsächlich vorhandenen Bildschirmauflösung und wird über mehrere Programme und Geräte geprüft.
+Zeit bis zum nutzbaren Ergebnis und Kosten je Aufgabe sind zentrale Produktkriterien, weil Nutzer ihre Modellzugänge selbst bezahlen. Weniger Token oder kleinere Bilder allein sind kein Erfolg, wenn zusätzliche Modellrunden oder Korrekturen den Ablauf verlängern.
 
-Die genaue Bereichsauswahl bleibt eine Forschungsfrage mit Messkriterien. Der [Computer-Use-Plan](computer-use-uebersicht-und-detail-plan.md) beschreibt die Varianten. Eine zusätzliche Wahrnehmungsstufe wird nur übernommen, wenn ihr Nutzen die eigene Laufzeit und die Korrekturkosten rechtfertigt.
+Verlässlichkeit wird mit wiederholbaren Benchmarks aus realistischen Abläufen gemessen: Büroprogramme, Browserformulare, Dateidialoge und Abläufe über mehrere Programme. Je Lauf werden Erfolg, Dauer, Kosten und nötige Eingriffe des Menschen erfasst, getrennt nach Modell. Die Bildstrategie mit Übersicht, Detailausschnitt und lokaler Änderungserkennung bleibt eine Messfrage; Einzelheiten stehen im [Computer-Use-Plan](computer-use-uebersicht-und-detail-plan.md).
 
-## Dienste als Fähigkeiten
+## Vertrauen und Grenzen
 
-Google Kalender ist der erste angebundene persönliche Dienst: Konto über einen eigenen Desktop-OAuth-Client verbinden, Kalender auswählen und Termine im Gespräch lesen, anlegen und ändern. Die erste Version bearbeitet persönliche Einzeltermine ohne Teilnehmer und erhält Kalenderauswahl und Verbindung nach Neustart. Gmail folgt als weiterer Dienst: Konto verbinden, passende Nachrichten finden, benötigten Inhalt lesen und eine Antwort als lokalen Entwurf vorbereiten. Gmail-Entwürfe und tatsächlicher Versand sind getrennte Ausbauschritte.
+Ein Agent, der den Rechner bedient, muss vorhersehbar handeln.
 
-Weitere Dienste werden anhand konkreter Abläufe und vorhandener offizieller Schnittstellen ergänzt. Dafür entsteht eine kleine gemeinsame Anbindung für Konten, Fähigkeiten und Werkzeugaufrufe. Ein Marktplatz oder eine eigene Cloudplattform ist dafür zunächst nicht nötig.
+- **Freigabe an kritischen Stellen:** Senden, Bezahlen, Buchen, Löschen und endgültiges Absenden werden vor der Ausführung bestätigt. Der Agent erkennt solche Stellen und hält dort an.
+- **Klare Tabus:** Bei Geldgeschäften, Passwörtern und Fernwartungsprogrammen erklärt openHiatus höchstens und handelt nicht selbst.
+- **Erlaubte Programme:** Welche Anwendungen und Fenster bedient werden dürfen, ist einstellbar.
+- **Nachvollziehbarkeit:** Gesehene Bilder und ausgeführte Aktionen lassen sich als Protokoll nachverfolgen.
+- **Fremde Inhalte sind Daten:** Texte aus E-Mails, Webseiten oder Dateien erweitern niemals den Auftrag des Nutzers.
 
-Verbundenes Konto und verfügbare Aktionen sind erkennbar. openHiatus unterscheidet Lesen, Vorbereiten und Ausführen. Eine klare bestehende Beauftragung gilt weiter; allgemeines Verbinden eines Kontos erlaubt keine beliebigen späteren Handlungen.
+openHiatus arbeitet mit den Rechten des Windows-Benutzers; eine Sandbox wird nicht versprochen. Stopp hält weitere Agentenaktionen an, bereits erfolgte Änderungen werden nicht rückgängig gemacht. Ausgewählte Cloudmodelle erhalten die für eine Aufgabe nötigen Daten, bei Computersteuerung auch Bildschirminhalte. Eine lokale Anwendung wird deshalb nicht als offline dargestellt; lokale Modelle bleiben als Option erhalten. Zugangsdaten gehören in den geschützten Zugangsspeicher, nicht in Gespräch, Gedächtnis oder Protokolle.
+
+## Bedienung
+
+Sprechen per Taste und Schreiben bleiben gleichwertige Wege. Die Oberfläche bleibt ruhig: ein klarer Gesprächseinstieg, eine Aufgabenansicht mit Ergebnis, Verbrauch und Protokoll, getrennte Einstellungen. Präsenz und die optionale Arbeitsanzeige zeigen, wann der Agent arbeitet und wann er den Bildschirm bedient. Ein schneller Weg, um Hilfe zum gerade Sichtbaren zu bekommen, gehört zum Kern.
+
+Die Oberfläche passt sich an Fenstergröße, Windows-Skalierung und vergrößerte Schrift an. Eine vereinfachte Ansicht für die anleitende Nutzung folgt erst, wenn Tests mit echten Personen zeigen, was dort gebraucht wird.
 
 ## Gedächtnis und Persönlichkeit
 
-openHiatus soll an bekannte Zusammenhänge anknüpfen und einen zum Nutzer passenden Gesprächsstil haben. Unter Gedächtnis → Agent & Nutzer liegen vier gemeinsam verwendete, in UI und Texteditor bearbeitbare Markdown-Dateien: SOUL.md für Persönlichkeit, Werte, Stil und Grenzen; IDENTITY.md für Name, Rolle, Ausstrahlung und Emoji; USER.md für Nutzerangaben und Präferenzen; MEMORY.md für wichtige Fakten, Entscheidungen und Erkenntnisse. Einstellungen → Persönlichkeit führt direkt dorthin. Vorlagen dienen als ausdrücklich zu übernehmende Entwürfe; die vier Dateien bestimmen den aktiven Stand. Vorhandene Daten und Versionen bleiben erhalten, laufende Arbeit behält ihren eingefrorenen Kontext. Eigene Langzeitgedächtnisvorschläge des Agenten bleiben freigabepflichtig. Quellen und historische Fassungen bleiben nachvollziehbar.
+Die vier bearbeitbaren Dateien SOUL.md, IDENTITY.md, USER.md und MEMORY.md bleiben die Grundlage für Stil, Namen, Nutzerangaben und dauerhafte Fakten. Eigene Gedächtnisvorschläge des Agenten bleiben freigabepflichtig. Mit dem neuen Schwerpunkt gewinnt Wissen über Programme und Abläufe dieses Rechners an Bedeutung: welche Anwendungen genutzt werden, wo sich wiederkehrende Schritte befinden und welche Rezepte sich bewährt haben.
 
-Präsenz, variierte Eingangsbestätigungen und Signaltöne sind bereits vorhandene Grundlagen. Weitere Schritte sind verständliche Ergebnisdarstellung, bei Bedarf ein persönlicher Einstieg, optionales Freisprechen, Unterbrechen und frühere Sprachausgabe. Initiative bleibt dosierbar; alles Hörbare kann abgeschaltet werden.
+## Was zurücktritt
 
-## Verlässliche Grenzen
-
-openHiatus verwendet Pi als eigene Agent-Laufzeit und bleibt unabhängig von einer Codex- oder OpenClaw-Installation. Modelle und Sprachdienste sind wählbare Verbindungen. Vorhandene ChatGPT-Anmeldung und API-Anbieter bleiben erhalten.
-
-Die aktuelle Windows-App arbeitet nach einmaligem Hinweis mit den Rechten des Benutzerkontos. Eine Sandbox wird nicht versprochen. Stopp hält weitere Agentenaktionen und verwaltete Ausführung an; eigenständig übergebene Arbeitsfenster bleiben erhalten. Bereits erfolgte Änderungen werden nicht rückgängig gemacht.
-
-Die Anwendung und ihre Datenablage laufen lokal. Ausgewählte Cloudmodelle, Sprach- und Arbeitsdienste erhalten die für ihre Aufgabe benötigten Daten. Eine lokale Anwendung wird deshalb nicht als vollständig offline dargestellt. Zugangsdaten gehören in den geschützten Zugangsspeicher, nicht in Gespräch, Gedächtnis oder Ergebnisprotokolle.
+- **Persönliche Dienste:** Neue Anbindungen wie E-Mail, Kalender oder Chatdienste werden nicht vorrangig ausgebaut. Die vorhandene Google-Kalender-Anbindung bleibt als optionale Ergänzung erhalten und wird gepflegt; die gemeinsame Dienstgrenze bleibt im Code bestehen. Gmail wird vorerst nicht weiterverfolgt.
+- **Ständige Eigeninitiative:** Regelmäßige Meldungen, Tagesübersichten und Hintergrundüberwachung sind kein Ziel. Ein Start mit Windows dient der schnellen Erreichbarkeit, nicht einem dauerhaft aktiven Agenten.
+- **Live-Sprache und Freisprechen** werden später neu bewertet; die Sprechtaste bleibt der Hauptweg.
 
 ## Öffentliche Alpha und spätere Auslieferung
 
-Der aktuelle Quellcode wird als Alpha auf GitHub veröffentlicht und öffentlich weiterentwickelt. Weitere Funktionen und eine breitere Paketabnahme folgen im Verlauf dieser Entwicklung. Für spätere Downloadpakete soll die Anwendung mit frischem Profil, anderen Bildschirmauflösungen und eigenen Konten der jeweiligen Person funktionieren. Persönliche Projektlisten, Zugänge und Testprofile sind keine Voraussetzung des Produkts.
+Der Quellcode wird als Alpha unter MIT auf GitHub öffentlich weiterentwickelt. Für Menschen ohne Entwicklerumgebung ist ein signiertes, einfach installierbares Windows-Paket nötig; es soll mit frischem Profil, anderen Bildschirmauflösungen und eigenen Konten funktionieren. Persönliche Projektlisten, Zugänge und Testprofile sind keine Voraussetzung des Produkts. Lizenzhinweise mitgelieferter Komponenten werden mitgeliefert.
 
-Quellcode, Windows-Paket, Einrichtung und tatsächlich verfügbare Funktionen werden gemeinsam beschrieben. Dienstanmeldungen müssen zur öffentlichen Auslieferung passen; ein erfolgreicher persönlicher Pilot ersetzt diese Vorbereitung nicht. Die Projektlizenz ist MIT. Die Bedingungen mitgelieferter Komponenten werden vor der Veröffentlichung geprüft und ihre Lizenzhinweise mitgeliefert.
+## Einordnung früherer Fassungen
 
-## Einordnung der bisherigen Vision
-
-Die bisherige openHiatus-Vision bleibt als [historische Fassung](archiv/vision-openhiatus-2026-10-20.md) erhalten. Ihre Ideen zu Präsenz, Sprachfluss und maßvoller Initiative fließen hier ein. Frühere Safe/Risk-, Codex- und Versionsannahmen sind keine Vorgaben für openHiatus.
+Die Fassung vom 22. Oktober 2026 mit dem Schwerpunkt auf einem allgemeinen persönlichen Assistenten und Gmail als erstem Dienst bleibt als [historische Fassung](archiv/vision-persoenlicher-assistent-2026-10-22.md) erhalten, ebenso die [ältere Vision](archiv/vision-openhiatus-2026-10-20.md). Ihre Grundlagen – Pi als eigene Laufzeit, wählbare Modelle, Sprache, Gedächtnis, Aufgabenverwaltung und Computersteuerung – werden weiterverwendet.

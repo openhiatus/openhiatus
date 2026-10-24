@@ -11,7 +11,7 @@ export function applyComputerImageDetail(payload: unknown, messages: readonly un
   if (!isWireRecord(payload) || !Array.isArray(payload.input)) return payload;
   const calls = new Map<string, Set<string>>();
   for (const message of messages) {
-    if (!isWireRecord(message) || message.role !== 'toolResult' || message.toolName !== 'computer'
+    if (!isWireRecord(message) || message.role !== 'toolResult' || (message.toolName !== 'computer' && message.toolName !== 'screen_help')
       || typeof message.toolCallId !== 'string' || !isWireRecord(message.details)
       || !Array.isArray(message.details.computerViews) || !Array.isArray(message.content)) continue;
     const callId = message.toolCallId.split('|')[0].replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 64).replace(/_+$/, '');

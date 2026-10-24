@@ -72,12 +72,12 @@ try {
   await page.screenshot({ path: 'artifacts/openhiatus-gespraech-navigation.png' });
 
   await page.getByRole('button', { name: 'Skills', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Hier ist Platz für deine ersten Skills.', exact: true })).toBeVisible({ timeout: 30000 });
+  await expect(page.getByRole('button', { name: 'Pfad für bildschirmhilfe in Auftrag einfügen', exact: true })).toBeVisible({ timeout: 30000 });
   const emptySkills = await page.evaluate(() => window.openhiatus.listSkills());
   assert.equal(emptySkills.directory, skillsDirectory);
-  assert.deepEqual(emptySkills.skills, []);
+  assert.deepEqual(emptySkills.skills.map(skill => skill.name), ['bildschirmhilfe']);
   assert.deepEqual(emptySkills.errors, []);
-  assert.deepEqual(await readdir(skillsDirectory), [], 'A fresh profile must not receive preinstalled skills.');
+  assert.deepEqual(await readdir(skillsDirectory), ['bildschirmhilfe'], 'Only the requested product help skill is seeded, never personal collections.');
   await mkdir(skillDirectory, { recursive: true });
   await writeFile(skillPath, skillContent, 'utf8');
   await page.getByRole('button', { name: 'Aktualisieren', exact: true }).click();
@@ -186,7 +186,7 @@ try {
   assert.equal(await readFile(skillPath, 'utf8'), skillContent, 'Restart must preserve the user skill unchanged.');
   const restoredSkills = await restarted.evaluate(() => window.openhiatus.listSkills());
   assert.deepEqual(restoredSkills.errors, []);
-  assert.deepEqual(restoredSkills.skills.map(({ name, path, enabled }) => ({ name, path, enabled })), [{ name: 'ui-notizen', path: skillPath, enabled: true }]);
+  assert.deepEqual(restoredSkills.skills.map(({ name, path, enabled }) => ({ name, path, enabled })), [{ name: 'bildschirmhilfe', path: path.join(skillsDirectory, 'bildschirmhilfe', 'SKILL.md'), enabled: true }, { name: 'ui-notizen', path: skillPath, enabled: true }]);
   await restarted.getByRole('button', { name: 'Skills', exact: true }).click();
   await expect(restarted.getByRole('button', { name: 'Pfad für ui-notizen in Auftrag einfügen', exact: true })).toBeVisible({ timeout: 30000 });
   await expect(restarted.getByRole('button', { name: 'Verstanden, Vollzugriff bestätigen', exact: true })).toHaveCount(0);
@@ -208,5 +208,5 @@ try {
   await restarted.getByRole('button', { name: /Gedächtnis/ }).first().click();
   await expect(restarted.getByRole('heading', { name: 'Gedächtnis.', exact: true })).toBeVisible();
   assert.deepEqual(errors, []);
-  console.log(JSON.stringify({ status: 'passed', profile, checked: ['first-run full access acknowledgement and restart persistence', 'fresh profile has no preinstalled skills', 'user skill content and discovery survive restart', 'navigation preserves draft and unsaved credentials', 'settings keyboard tabs and retained selection', 'provider password fields', 'local provider without a key', 'provider test through a loopback SSE server', 'independent model roles', 'Windows DPAPI credential roundtrip and secret exclusion', 'provider and speech credential removal', 'skills with Unicode paths preserve drafts and never send', 'synthetic microphone capture survives navigation, Escape stops it', 'compact layout', 'reduced-motion preference', 'no renderer exceptions'] }, null, 2));
+  console.log(JSON.stringify({ status: 'passed', profile, checked: ['first-run full access acknowledgement and restart persistence', 'fresh profile seeds only the requested help skill', 'user skill content and discovery survive restart', 'navigation preserves draft and unsaved credentials', 'settings keyboard tabs and retained selection', 'provider password fields', 'local provider without a key', 'provider test through a loopback SSE server', 'independent model roles', 'Windows DPAPI credential roundtrip and secret exclusion', 'provider and speech credential removal', 'skills with Unicode paths preserve drafts and never send', 'synthetic microphone capture survives navigation, Escape stops it', 'compact layout', 'reduced-motion preference', 'no renderer exceptions'] }, null, 2));
 } finally { if (instance) await instance.close(); await new Promise(resolve => modelServer.close(resolve)); }

@@ -16,7 +16,7 @@ interface StateNote { text: string; callId?: string; timestamp?: number; }
 const identifier = (value: unknown): value is string => typeof value === 'string' && value.length > 0 && value.length <= 512;
 function computerCalls(messages: readonly unknown[]): { call: Record<string, unknown>; timestamp?: number }[] {
   return messages.flatMap(message => !isWireRecord(message) || message.role !== 'assistant' || !Array.isArray(message.content) ? []
-    : message.content.filter(isWireRecord).filter(block => block.type === 'toolCall' && block.name === 'computer' && identifier(block.id))
+    : message.content.filter(isWireRecord).filter(block => block.type === 'toolCall' && (block.name === 'computer' || block.name === 'screen_help') && identifier(block.id))
       .map(call => ({ call, ...(Number.isSafeInteger(message.timestamp) && (message.timestamp as number) >= 0 ? { timestamp: message.timestamp as number } : {}) })));
 }
 function noteArguments(value: unknown): Record<string, unknown> | undefined {
@@ -28,11 +28,11 @@ function noteArguments(value: unknown): Record<string, unknown> | undefined {
 }
 function completedComputerCalls(messages: readonly unknown[]): Set<string> {
   const calls = new Set(computerCalls(messages).map(({ call }) => call.id as string));
-  return new Set(messages.filter(isWireRecord).filter(message => message.role === 'toolResult' && message.toolName === 'computer'
+  return new Set(messages.filter(isWireRecord).filter(message => message.role === 'toolResult' && (message.toolName === 'computer' || message.toolName === 'screen_help')
     && identifier(message.toolCallId) && calls.has(message.toolCallId)).map(message => message.toolCallId as string));
 }
 const computerImage = (message: unknown): message is Record<string, unknown> & { toolCallId: string; content: unknown[] } =>
-  isWireRecord(message) && message.role === 'toolResult' && message.toolName === 'computer' && typeof message.toolCallId === 'string'
+  isWireRecord(message) && message.role === 'toolResult' && (message.toolName === 'computer' || message.toolName === 'screen_help') && typeof message.toolCallId === 'string'
   && Array.isArray(message.content) && message.content.some(block => isWireRecord(block) && block.type === 'image');
 function observationId(message: { toolCallId: string; content: unknown[] }): string {
   for (const block of message.content) if (isWireRecord(block) && block.type === 'text' && typeof block.text === 'string') {
@@ -182,14 +182,14 @@ export class ComputerImageHistory {
     return messages.flatMap((message, index) => {
       if (!isWireRecord(message)) return [message];
       if (this.injectedMessages.has(message)) return [];
-      if (message.role === 'toolResult' && message.toolName === 'computer' && dropped(message.toolCallId)) return [];
+      if (message.role === 'toolResult' && (message.toolName === 'computer' || message.toolName === 'screen_help') && dropped(message.toolCallId)) return [];
       let projected = message;
       if (Array.isArray(message.content)) {
         const originalContent = message.content;
-        const computerOnlyTurn = message.role === 'assistant' && originalContent.some(block => isWireRecord(block) && block.type === 'toolCall' && block.name === 'computer')
-          && originalContent.every(block => isWireRecord(block) && (block.type === 'thinking' || block.type === 'text' || block.type === 'toolCall' && block.name === 'computer'));
+        const computerOnlyTurn = message.role === 'assistant' && originalContent.some(block => isWireRecord(block) && block.type === 'toolCall' && (block.name === 'computer' || block.name === 'screen_help'))
+          && originalContent.every(block => isWireRecord(block) && (block.type === 'thinking' || block.type === 'text' || block.type === 'toolCall' && (block.name === 'computer' || block.name === 'screen_help')));
         const content = originalContent.filter(block => !isWireRecord(block) || !this.injectedNotes.has(block)
-          && !(message.role === 'assistant' && block.type === 'toolCall' && block.name === 'computer' && dropped(block.id))).map(block => {
+          && !(message.role === 'assistant' && block.type === 'toolCall' && (block.name === 'computer' || block.name === 'screen_help') && dropped(block.id))).map(block => {
           if (message.role !== 'assistant' || !isWireRecord(block) || block.type !== 'toolCall' || block.name !== 'computer') return block;
           const args = noteArguments(block.arguments);
           if (!args || !Object.hasOwn(args, 'stateNote')) return block;
@@ -216,7 +216,7 @@ export class ComputerImageHistory {
     for (const block of blocks) this.injectedNotes.add(block);
     for (let index = messages.length - 1; index >= 0; index--) {
       const message = messages[index];
-      if (isWireRecord(message) && message.role === 'toolResult' && message.toolName === 'computer' && Array.isArray(message.content)) {
+      if (isWireRecord(message) && message.role === 'toolResult' && (message.toolName === 'computer' || message.toolName === 'screen_help') && Array.isArray(message.content)) {
         messages[index] = { ...message, content: [...message.content, ...blocks] } as Message; return messages;
       }
     }

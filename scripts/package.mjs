@@ -29,7 +29,8 @@ Sprechen verwendet Inworld für Spracherkennung und Sprachausgabe;
 den Zugang unter Einstellungen → Sprache & Geräte einrichten.
 Für Gespräch, Arbeitsaufträge und Gedächtnis sind getrennte Modelle wählbar.
 Eigene Skills können unter %APPDATA%\\openhiatus\\pi\\skills abgelegt werden.
-Das Paket liefert keine Skills mit.
+Der Hilfe-Skill bildschirmhilfe wird einmalig ins Profil kopiert und bleibt dort bearbeitbar.
+Persönliche Skill-Sammlungen werden nicht mitgeliefert.
 
 F8 startet/beendet die Aufnahme. F9 sendet den Entwurf bei aktiviertem „Transkript prüfen“.
 Belegt eine andere App die Tasten, zeigt openHiatus einen sichtbaren Hinweis.

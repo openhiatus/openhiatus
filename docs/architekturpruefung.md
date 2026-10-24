@@ -2,6 +2,8 @@
 
 Stand: 21. Oktober 2026. Die Bestandsaufnahme unten bezieht sich auf den Quellstand 0.1.4 vor der Refaktorierung. Sieben Abschnitte sind inzwischen im Code umgesetzt; ihr Umfang steht am Ende dieses Dokuments. Die vollständige Zielstruktur bleibt der weitere Ausbauplan.
 
+> Hinweis vom 24. Oktober 2026: Die Produktrichtung liegt seitdem auf gerätegebundener Computersteuerung ([Vision](vision.md)). Gmail-Beispiele in diesem Dokument beschreiben den damaligen Planungsstand; als realer Dienst ist inzwischen Google Kalender angebunden ([Anleitung](google-calendar.md)).
+
 ## Einschätzung
 
 openHiatus hat eine brauchbare modulare Grundlage und bereits wichtige Prozess-, Zugangs- und Ausführungsgrenzen. Die Anwendungslogik ist jedoch stark in einem zentralen Controller und einer zentralen React-Komponente gebündelt. Für den vorgesehenen Ausbau reicht diese Trennung noch nicht aus. Architekturarbeit ist deshalb ein eigener Lieferabschnitt vor der Erweiterung dieser Stellen.
