@@ -1,8 +1,8 @@
 # openHiatus
 
-**A personal Windows assistant you can talk to, write to, and hand tasks off to.**
+**A computer-use assistant for your own Windows PC: it works in your programs for you, and you can talk to it while it does.**
 
-openHiatus is a desktop app that combines your choice of AI models, speech services, and a personal memory. You keep the conversation going while up to two tasks run in the background, and each task returns a result you can trace.
+openHiatus is a desktop app that operates visible Windows applications with your choice of AI models. You describe a task by voice or text, keep the conversation going while up to two tasks run in the background, and each task returns a result you can trace. The project focuses on reliable, affordable computer use on your own device; see [Direction](#direction).
 
 ![Status: alpha](https://img.shields.io/badge/status-alpha-orange)
 ![Version 0.0.15](https://img.shields.io/badge/version-0.0.15-blue)
@@ -14,10 +14,11 @@ openHiatus is a desktop app that combines your choice of AI models, speech servi
 
 ## Features
 
+- 🖥️ **Works in your programs.** Windows desktop control from current screenshots, plus tools for files and the shell and your own local skills.
 - 🎙️ **Talk or type.** Voice and text conversations, with push-to-talk via global hotkeys and an optional transcript review before sending.
 - ⚙️ **Background tasks.** Up to two tasks run while the conversation stays available. Each task shows its progress, result, and usage.
-- 🖥️ **Works on your computer.** Tools for files, the shell, and Windows desktop control, plus your own local skills.
 - 🧠 **Personal memory.** Memories with sources, reports, and history, along with core instructions you can edit.
+- 📅 **Google Calendar (optional).** Read your agenda and create or change personal events through your own Google OAuth client.
 - 🔌 **Bring your own models.** Sign in with ChatGPT or use your own credentials for Anthropic, Google, OpenRouter, OpenAI, or a local OpenAI-compatible server.
 
 openHiatus is built on Electron, React, and TypeScript. It uses [Pi](https://www.npmjs.com/package/@earendil-works/pi-coding-agent) as its agent runtime and [Inworld](https://inworld.ai) for speech. No separate Codex or OpenClaw installation is needed.
@@ -121,27 +122,27 @@ This first version creates and changes personal single events without attendees.
 
 ## Known limitations
 
-- Gmail and other services are still planned. Google Calendar is available through a user-configured Desktop OAuth client; a shared verified openHiatus Google client is not bundled.
+- Google Calendar requires a user-configured Desktop OAuth client; a shared verified openHiatus Google client is not bundled. Further service integrations such as Gmail are not currently planned.
+- Desktop control sees screenshots only; reading UI elements through Windows accessibility data, approval of critical actions, and multi-monitor support are planned.
 - Live audio is not available yet.
 - How reliably desktop control works depends partly on the selected model and the application being controlled.
 - Window layouts adapt down to a 560 × 440 outer window; broader display-scaling and enlarged-text coverage is still planned.
 
-## Roadmap
+## Direction
 
-Planned work is tracked in [GitHub issues](https://github.com/openhiatus/openhiatus/issues?q=is%3Aissue+is%3Aopen+label%3Aplanning):
+openHiatus is moving from a general personal assistant toward device-bound computer use: operating programs on your behalf, and guiding you step by step through tasks you want to do yourself. The primary audience is people who decide about their own PC, such as freelancers and small businesses. Guided help for people who find computers difficult is being explored with real users before dedicated features are built. Enterprise deployment and new service integrations are not current goals.
 
-| Area | Issue |
-| --- | --- |
-| Personal assistant: conversation and background tasks | [#1](https://github.com/openhiatus/openhiatus/issues/1) |
-| Clearer UI: navigation, tasks, and results | [#2](https://github.com/openhiatus/openhiatus/issues/2) |
-| Responsive UI for window size, scaling, and text size | [#3](https://github.com/openhiatus/openhiatus/issues/3) |
-| Architecture: domain modules and validated interfaces | [#4](https://github.com/openhiatus/openhiatus/issues/4) |
-| Faster computer use with overview and detail views | [#5](https://github.com/openhiatus/openhiatus/issues/5) |
-| Service integrations, starting with Gmail | [#6](https://github.com/openhiatus/openhiatus/issues/6) |
-| Memory and personality | [#7](https://github.com/openhiatus/openhiatus/issues/7) |
-| Voice: interruption, earlier playback, hands-free input | [#8](https://github.com/openhiatus/openhiatus/issues/8) |
+Planned next steps, in order:
 
-For more background, see the [vision](docs/vision.md), the [roadmap](docs/roadmap.md), and the [implementation plan](docs/gesamtplan.md). These documents are written in German.
+1. Read UI elements through Windows accessibility data alongside screenshots, with pixel control as fallback.
+2. Repeatable benchmarks measuring success, duration, cost and human interventions per run.
+3. Approval before critical actions, fixed limits around payments, passwords and remote-access tools, allowed applications, and a per-task action log.
+4. Sharing the screen safely: user input pauses the agent, with explicit hand-over and resumption.
+5. Saving successful workflows as reusable recipes.
+6. Guidance mode that highlights the next step on screen.
+7. Multi-monitor support and a signed, easy-to-install Windows package.
+
+The existing [planning issues](https://github.com/openhiatus/openhiatus/issues?q=is%3Aissue+is%3Aopen+label%3Aplanning) predate this direction and will be realigned. For details, see the [vision](docs/vision.md), the [roadmap](docs/roadmap.md), and the [implementation plan](docs/gesamtplan.md). These documents are written in German.
 
 ## Development
 
