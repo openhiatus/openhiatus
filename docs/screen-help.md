@@ -1,18 +1,26 @@
 # Screen help
 
-Keep a program on the primary display in front, press F8 and ask where to find a visible control. The conversation model receives a screen observation and can request an original-resolution crop, then shows a yellow circle and an arrow pointing at its edge. A short spoken answer explains the next step. Voice submission and transcript review retain their existing behavior. The model needs image input support.
+Keep a program on the primary display in front, press F8 and ask where to find a visible control. The conversation model receives a screen observation and can request an original-resolution crop, then shows a thick circle and an arrow pointing at its edge. The model chooses red, black or white based on the observed background. The app enforces that palette and draws a 7-DIP colored stroke with a 12-DIP contrasting halo. A short spoken answer explains the next step. Voice submission and transcript review retain their existing behavior. The model needs image input support.
 
 The separate transparent hint window has no app preload, Node access or input handlers. It is non-focusable and passes mouse input to the program underneath. The assistant does not click, type, open files or run commands through the help tool. An explicitly requested executing task still uses the normal work path. No image is inserted into the conversation view; the existing diagnostic computer preview remains a separate feature.
 
+## IT supporter role
+
+Enable **Einstellungen → Bedienung → IT-Supporter** to make helping the user operate their PC the primary interaction role. This is a persistent mode, not a keyword classifier or a special rule for one sentence. The model uses the whole request and context to decide how to guide the user. Indirect requests to find something or get unstuck should lead to the next visible step; a bare filename or path is not enough when the user needs to know where to click. Explicitly requested execution can still be delegated to a worker.
+
+The navigation calls the conversation **Protokoll**. Its entries remain readable for later analysis, while ordinary text composition is hidden and voice plus desktop marks provide help. A recognized speech transcript can still be reviewed and submitted if transcript review is enabled. Keyboard submission cannot send an unrelated hidden draft. Switching back restores the normal composer and its retained draft. Mode selection survives restart and leaves voice settings, personality and identity documents intact.
+
+The selected role is captured with the dialog context. A mode change refreshes the next thread; an active response retains its captured instructions. The dialog-only role is not injected into explicitly executing workers. Existing profiles default to normal conversation until this option is selected.
+
 ## Editable skill
 
-The shipped source is [resources/bildschirmhilfe/SKILL.md](../resources/bildschirmhilfe/SKILL.md). At startup it seeds `%APPDATA%\openhiatus\pi\skills\bildschirmhilfe\SKILL.md` only if that file is missing. User edits are never replaced. `screen_help` with `action: "observe"` reads that file together with a fresh image; the routing prompt only points to the tool. The skill contains the workflow and communication rules, while the host enforces the available operations and validates geometry.
+The shipped source is [resources/bildschirmhilfe/SKILL.md](../resources/bildschirmhilfe/SKILL.md). At startup it seeds `%APPDATA%\openhiatus\pi\skills\bildschirmhilfe\SKILL.md` if missing. The exact known unedited 0.0.16 factory text can also be upgraded, keeping `SKILL.factory-0.0.16.md` as a backup. Any user edits, other content and symbolic links are preserved. `screen_help` with `action: "observe"` reads that file together with a fresh image; the routing prompt only points to the tool. The skill contains the workflow and communication rules, while the host enforces the available operations and validates geometry. The optional IT supporter role is selected by the host and applies to the whole dialog, including requests before a skill has been loaded.
 
 The dialog-only `screen_help` tool supports:
 
 - `observe`: fresh primary-display capture, initially at 1:2; optional `resolution: "original"` requests full resolution.
 - `inspect`: original-resolution crop from the same frame, up to the existing detail pixel limit. Local view coordinates and exact frame/view IDs are required.
-- `mark`: the observed target rectangle and optional short label. Local pixels map through the crop origin and actual capture dimensions to display-local DIP; the monitor's desktop origin positions the overlay.
+- `mark`: the observed target rectangle, required `color` (`red`, `black` or `white`) and optional short label. Local pixels map through the crop origin and actual capture dimensions to display-local DIP; the monitor's desktop origin positions the overlay.
 - `clear`: remove the hint and retained observation.
 
 No general desktop action is exposed by this tool. A worker controlling the desktop blocks help operations; starting a desktop operation clears hints. The help images use the existing two-request image-retention policy, including replacement views of the same capture. Original images can remain in the local provider session log, as with other computer observations.

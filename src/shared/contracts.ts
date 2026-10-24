@@ -25,6 +25,7 @@ export interface Activity { id: string; at: string; kind: 'system' | 'command' |
 export interface Task { id: string; status: TaskStatus; threadId?: string; turnId?: string; error?: string; }
 export interface Preferences {
   assistantProfile?: AssistantProfile;
+  itSupporter?: boolean;
   sidebarMode?: SidebarMode; activityOverlayEnabled?: boolean; activityOverlaySize?: number;
   inputDeviceId: string; outputDeviceId: string;
   inputDeviceLabel?: string; inputDeviceGroupId?: string; outputDeviceLabel?: string; outputDeviceGroupId?: string;

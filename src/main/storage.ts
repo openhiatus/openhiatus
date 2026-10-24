@@ -20,7 +20,7 @@ const taskStatuses = new Set<TaskStatus>(['idle', 'running', 'stopping', 'comple
 export function defaultState(): SavedState {
   return {
     messages: [], activity: [], task: { id: '', status: 'idle' },
-    preferences: { assistantProfile: structuredClone(DEFAULT_ASSISTANT_PROFILE), sidebarMode: 'auto', activityOverlayEnabled: false, activityOverlaySize: ACTIVITY_OVERLAY_DEFAULT_SIZE, inputDeviceId: 'default', outputDeviceId: 'default', speakReplies: true, voiceId: 'Dennis', model: '', dialogModel: '', memoryModel: '', memoryAutoSummarize: true, voiceConversation: true, fullAccessAcknowledged: false, chatgptBackgroundUsage: false, computerOverviewScaleDivisor: 1, computerDetailScaleDivisor: 1, computerImageRetentionCalls: 0, computerWorkingMemoryCalls: 0, computerDelegationEnabled: false, computerModel: '', computerFast: true },
+    preferences: { itSupporter: false, assistantProfile: structuredClone(DEFAULT_ASSISTANT_PROFILE), sidebarMode: 'auto', activityOverlayEnabled: false, activityOverlaySize: ACTIVITY_OVERLAY_DEFAULT_SIZE, inputDeviceId: 'default', outputDeviceId: 'default', speakReplies: true, voiceId: 'Dennis', model: '', dialogModel: '', memoryModel: '', memoryAutoSummarize: true, voiceConversation: true, fullAccessAcknowledged: false, chatgptBackgroundUsage: false, computerOverviewScaleDivisor: 1, computerDetailScaleDivisor: 1, computerImageRetentionCalls: 0, computerWorkingMemoryCalls: 0, computerDelegationEnabled: false, computerModel: '', computerFast: true },
   };
 }
 
@@ -76,7 +76,9 @@ function validateState(value: unknown): SavedState {
   if (p.computerDelegationEnabled !== undefined && typeof p.computerDelegationEnabled !== 'boolean') throw new Error('Ungültige Einstellung für das Computer-Modell.');
   if (p.computerFast !== undefined && typeof p.computerFast !== 'boolean') throw new Error('Ungültige Fast-Einstellung für das Computer-Modell.');
   if (p.activityOverlayEnabled !== undefined && typeof p.activityOverlayEnabled !== 'boolean') throw new Error('Ungültige Einstellung für die Arbeitsanzeige.');
+  if (p.itSupporter !== undefined && typeof p.itSupporter !== 'boolean') throw new Error('Ungültiger IT-Supporter-Modus.');
   const preferences: Preferences = {
+    itSupporter: p.itSupporter === true,
     assistantProfile: parseAssistantProfile(p.assistantProfile === undefined ? DEFAULT_ASSISTANT_PROFILE : p.assistantProfile),
     sidebarMode: p.sidebarMode === undefined ? 'auto' : sidebarMode(p.sidebarMode),
     activityOverlayEnabled: p.activityOverlayEnabled === true,

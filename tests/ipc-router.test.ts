@@ -51,6 +51,13 @@ test('device identity metadata is accepted and validated before preferences reac
   }
   assert.equal(f.calls.length, 1);
 });
+test('the supporter flag crosses IPC only as a boolean', async () => {
+  const f = fixture(); assert.equal((await f.router.dispatch('savePreferences', [{ itSupporter: true }])).ok, true);
+  assert.deepEqual(f.calls.at(-1), { name: 'savePreferences', args: [{ itSupporter: true }] });
+  const count = f.calls.length;
+  for (const value of [null, 'true', 1, {}]) assert.equal((await f.router.dispatch('savePreferences', [{ itSupporter: value }])).ok, false);
+  assert.equal(f.calls.length, count);
+});
 
 test('workspace appearance preferences cross the typed boundary only with valid values', async () => {
   const f = fixture(), patch = { sidebarMode: 'collapsed', activityOverlayEnabled: true, activityOverlaySize: 160 };

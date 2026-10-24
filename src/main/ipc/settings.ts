@@ -7,7 +7,7 @@ import { parseAssistantProfile } from '../../shared/assistant-profile';
 import { command, inputObject, inputText, noArgs, type HandlerMap } from './command';
 import type { IpcPorts } from './ports';
 
-const booleanPreferences = ['speakReplies', 'voiceConversation', 'earcons', 'memoryAutoSummarize', 'chatgptBackgroundUsage', 'computerDelegationEnabled', 'computerFast', 'activityOverlayEnabled'] as const;
+const booleanPreferences = ['speakReplies', 'voiceConversation', 'earcons', 'memoryAutoSummarize', 'chatgptBackgroundUsage', 'computerDelegationEnabled', 'computerFast', 'activityOverlayEnabled', 'itSupporter'] as const;
 const textPreferences = ['inputDeviceId', 'outputDeviceId', 'voiceId', 'model', 'dialogModel', 'memoryModel', 'computerModel'] as const;
 const deviceMetadata = ['inputDeviceLabel', 'inputDeviceGroupId', 'outputDeviceLabel', 'outputDeviceGroupId'] as const;
 function preferences(value: unknown): PreferencesPatch {

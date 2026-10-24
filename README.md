@@ -5,7 +5,7 @@
 openHiatus is a desktop app that operates visible Windows applications with your choice of AI models. You describe a task by voice or text, keep the conversation going while up to two tasks run in the background, and each task returns a result you can trace. The project focuses on reliable, affordable computer use on your own device; see [Direction](#direction).
 
 ![Status: alpha](https://img.shields.io/badge/status-alpha-orange)
-![Version 0.0.16](https://img.shields.io/badge/version-0.0.16-blue)
+![Version 0.0.17](https://img.shields.io/badge/version-0.0.17-blue)
 ![Platform: Windows x64](https://img.shields.io/badge/platform-Windows%20x64-0078D6)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green)
 
@@ -106,9 +106,11 @@ The computer runtime has the desktop tool and a bounded result-reporting tool: n
 
 ### Screen help without switching programs
 
-Keep your program in front and ask by voice using F8, for example: “Where is the bold button?” The conversation model can observe the primary display and show a yellow circle with an arrow directly around the target. The overlay does not take keyboard focus and lets your clicks pass through. You operate the program yourself; a help question does not need an executing background task. Existing voice submission/review settings still apply.
+Keep your program in front and ask by voice using F8, for example: “Where is the bold button?” The conversation model can observe the primary display and show a thick circle with an arrow directly around the target. It selects **red, black or white** for contrast with the observed background; the app draws a 7-DIP stroke with a 12-DIP contrasting halo. The overlay does not take keyboard focus and lets your clicks pass through. You operate the program yourself; a help question does not need an executing background task. Existing voice submission/review settings still apply.
 
-The editable **bildschirmhilfe** skill is installed at `%APPDATA%\openhiatus\pi\skills\bildschirmhilfe\SKILL.md`. Its instructions are loaded with a help observation, rather than repeated in every system prompt. Existing edits survive app upgrades. The read-only tool supports observation, original-resolution detail inspection, marking and clearing; it has no desktop input operations. Screen images go to your selected conversation model and are omitted after two model requests. They are not added to the chat view.
+Enable **Einstellungen → Bedienung → IT-Supporter** (Settings → Controls → IT supporter) to make guidance the assistant's primary role throughout the interaction. It uses context and the user's goal rather than matching keywords: indirect requests, confusion, finding things and changing settings normally lead to explanation and visible next steps. Explicit requests to execute work remain available. In this mode, **Gespräch** becomes a read-only **Protokoll** (Log), voice and desktop hints carry the help, and the regular text composer is hidden. Transcript review remains available for recognized speech. Disabling the mode restores the normal conversation and any retained text draft. Existing profiles keep this optional mode off until selected; changing it applies to the next message and does not replace identity files or audio preferences.
+
+The editable **bildschirmhilfe** skill is installed at `%APPDATA%\openhiatus\pi\skills\bildschirmhilfe\SKILL.md`. Its instructions are loaded with a help observation, rather than repeated in every system prompt. Existing edits survive app upgrades; the known unedited 0.0.16 factory instruction is updated with a backup. The read-only tool supports observation, original-resolution detail inspection, marking and clearing; it has no desktop input operations. Screen images go to your selected conversation model and are omitted after two model requests. They are not added to the chat view.
 
 A local comparison checks the target before drawing. Keyboard input, mouse clicks or scrolling, foreground-window/geometry changes and Stop invalidate the marker; it also expires after 30 seconds. Automatic changes within a program after the marker appears are not continuously verified. Recognition accuracy depends on the selected image-capable model. See the [screen-help guide](docs/screen-help.md).
 

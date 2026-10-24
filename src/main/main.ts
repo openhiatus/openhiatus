@@ -109,7 +109,7 @@ async function createApp(): Promise<void> {
       const capture = async () => { await new Promise(resolve => setTimeout(resolve, 45)); signal.throwIfAborted(); return captureHelpScreen(() => monitor.current(), signal); };
       return activityOverlay ? activityOverlay.runHidden(capture) : capture();
     },
-    show: async (rect, image, bounds, label) => { if (!guidanceOverlay || quitting) throw Error('Bildschirmhilfe nicht verfügbar.'); await guidanceOverlay.show(rect, image, bounds, label); },
+    show: async (rect, image, bounds, label, color) => { if (!guidanceOverlay || quitting) throw Error('Bildschirmhilfe nicht verfügbar.'); await guidanceOverlay.show(rect, image, bounds, label, color); },
   });
   const runDesktopOperation = <T>(operation: () => Promise<T>): Promise<T> => { help.clear(); return activityOverlay?.runHidden(operation) ?? operation(); };
   const computerTools = () => createComputerToolContribution({

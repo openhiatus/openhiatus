@@ -32,22 +32,30 @@ test('help capture loads the skill and maps an inspected target back to physical
   const inspected = await f.service.execute({ action: 'inspect', frameId: initial.frameId, viewId: initial.views[0].viewId, x: 100, y: 50, width: 200, height: 100 }, f.signal);
   const metadata = inspected.contentItems.find(i => i.type === 'inputText' && i.text.startsWith('OPENHIATUS_')); assert.ok(metadata && metadata.type === 'inputText');
   const detail = JSON.parse(metadata.text.slice(metadata.text.indexOf(' ') + 1)).views[1];
-  const result = await f.service.execute({ action: 'mark', frameId: initial.frameId, viewId: detail.viewId, x: 20, y: 10, width: 24, height: 18, label: 'Fett' }, f.signal);
+  const result = await f.service.execute({ action: 'mark', color: 'red', frameId: initial.frameId, viewId: detail.viewId, x: 20, y: 10, width: 24, height: 18, label: 'Fett' }, f.signal);
   assert.equal(result.success, true); assert.deepEqual(f.shown()[0], { x: 220, y: 110, width: 24, height: 18 });
   assert.deepEqual(f.shown()[2], { x: -1280, y: 40, width: 1280, height: 720 });
-  await assert.rejects(f.service.execute({ action: 'mark', frameId: initial.frameId, viewId: 'misspelled', x: 1, y: 1, width: 1, height: 1 }, f.signal), /Unbekannte/);
+  await assert.rejects(f.service.execute({ action: 'mark', color: 'red', frameId: initial.frameId, viewId: 'misspelled', x: 1, y: 1, width: 1, height: 1 }, f.signal), /Unbekannte/);
+});
+test('the model selects one allowed color and the host passes it to the marker', async () => {
+  for (const color of ['red', 'black', 'white'] as const) {
+    const f = fixture(), m = await f.observe();
+    const input = { action: 'mark', color, frameId: m.frameId, viewId: m.views[0].viewId, x: 20, y: 30, width: 12, height: 12 };
+    await f.service.execute(parseScreenHelpInput(input), f.signal); assert.equal(f.shown()[4], color);
+    for (const invalid of [undefined, '#ff0000', 'yellow', {}, '__proto__']) assert.throws(() => parseScreenHelpInput({ ...input, color: invalid }));
+  }
 });
 test('stale, changed and user-invalidated targets never show an overlay', async () => {
   for (const change of ['stamp','time','pixels','clear'] as const) {
     const f = fixture(), m = await f.observe();
     if (change === 'stamp') f.stamp('changed'); if (change === 'time') f.now(62000); if (change === 'pixels') f.pixel(255); if (change === 'clear') f.service.clear();
-    await assert.rejects(f.service.execute({ action: 'mark', frameId: m.frameId, viewId: m.views[0].viewId, x: 20, y: 30, width: 12, height: 12 }, f.signal)); assert.deepEqual(f.shown(), []);
+    await assert.rejects(f.service.execute({ action: 'mark', color: 'red', frameId: m.frameId, viewId: m.views[0].viewId, x: 20, y: 30, width: 12, height: 12 }, f.signal)); assert.deepEqual(f.shown(), []);
   }
 });
 test('Stop during a pending local validation cannot publish a late marker', async () => {
   const f = fixture(), m = await f.observe(); let release!: () => void;
   f.gate(new Promise<void>(resolve => { release = resolve; }));
-  const pending = f.service.execute({ action: 'mark', frameId: m.frameId, viewId: m.views[0].viewId, x: 20, y: 30, width: 12, height: 12 }, f.signal);
+  const pending = f.service.execute({ action: 'mark', color: 'red', frameId: m.frameId, viewId: m.views[0].viewId, x: 20, y: 30, width: 12, height: 12 }, f.signal);
   await new Promise(resolve => setImmediate(resolve)); f.service.clear(); release(); await assert.rejects(pending); assert.deepEqual(f.shown(), []);
 });
 test('guidance is a restricted dialog tool and refuses a busy desktop', async () => {
@@ -65,7 +73,7 @@ test('circle and arrow geometry uses actual image dimensions and display-local D
     assert.ok(Math.abs(Math.hypot(g.tipX-g.cx,g.tipY-g.cy) - (g.radius+3)) < 1e-7);
     assert.ok(g.arrowX >= 0 && g.arrowX <= 1920 && g.arrowY >= 0 && g.arrowY <= 1080);
   }
-  for (const value of [{ action: 'mark', frameId:'f',viewId:'v',x:-1,y:0,width:10,height:10 }, { action: 'observe', click: true }, { action: 'clear', label: 'bad' }]) assert.throws(() => parseScreenHelpInput(value));
+  for (const value of [{ action: 'mark', color: 'red', frameId:'f',viewId:'v',x:-1,y:0,width:10,height:10 }, { action: 'observe', click: true }, { action: 'clear', label: 'bad' }]) assert.throws(() => parseScreenHelpInput(value));
 });
 test('a cleared overlay cannot reappear after its asynchronous document load', async () => {
   let loaded!: () => void, shows=0;
@@ -80,6 +88,16 @@ test('the editable help skill is seeded once and user changes survive reinstall'
   const source=join(directory,'source.md'), content='---\nname: bildschirmhilfe\ndescription: Testhilfe\n---\n\nZeige nur.';
   await writeFile(source,content); const file=await installHelpSkill(join(directory,'profile'),source); assert.equal(await readHelpSkill(file),content);
   await writeFile(file,content+' Meine Ergänzung.'); await installHelpSkill(join(directory,'profile'),source); assert.equal(await readFile(file,'utf8'),content+' Meine Ergänzung.');
+});
+test('only the known unedited factory skill is upgraded and its previous text is backed up', async t => {
+  const directory = await mkdtemp(join(tmpdir(), 'openhiatus-help-upgrade-')); t.after(() => rm(directory, { recursive: true, force: true }));
+  const legacy = await readFile(new URL('./fixtures/bildschirmhilfe-0.0.16.md', import.meta.url), 'utf8');
+  const original = join(directory, 'old.md'), updated = join(directory, 'new.md');
+  await writeFile(original, legacy); const home = join(directory, 'profile'), file = await installHelpSkill(home, original);
+  const current = '---\nname: bildschirmhilfe\ndescription: Neue Hilfe\n---\n\nWähle die sichtbare Farbe.'; await writeFile(updated, current);
+  await installHelpSkill(home, updated); assert.equal(await readFile(file, 'utf8'), current);
+  assert.equal(await readFile(join(home, 'skills/bildschirmhilfe/SKILL.factory-0.0.16.md'), 'utf8'), legacy);
+  await writeFile(file, legacy + '\nMeine eigene Anleitung.'); await installHelpSkill(home, updated); assert.equal(await readFile(file, 'utf8'), legacy + '\nMeine eigene Anleitung.');
 });
 test('help images expire after two model requests without removing unrelated images', () => {
   const messages: unknown[] = [{ role: 'assistant', content: [{type:'toolCall',name:'screen_help',id:'help1',arguments:{action:'observe'}}] },

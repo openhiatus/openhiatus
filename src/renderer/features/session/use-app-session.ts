@@ -41,7 +41,7 @@ export function useAppSession(navigation: SessionNavigation) {
     transcribing: () => {},
     connectionsRequired: () => navigation.openSettings(),
     transcript: async (text, automatic) => {
-      if (text && automatic) { setNotice('Sprache erkannt. openHiatus übernimmt.'); await send(false, text); }
+      if (text && automatic) { setNotice(stateRef.current?.preferences.itSupporter ? 'Frage erkannt. Dein IT-Supporter hilft dir weiter.' : 'Sprache erkannt. openHiatus übernimmt.'); await send(false, text, true); }
       else if (text) {
         setDraft(current => current ? `${current}\n${text}` : text); setTranscript(true);
         setNotice('Dein Transkript ist bereit. Prüfe es kurz und sende mit F9 oder Strg + Enter.');
@@ -85,12 +85,13 @@ export function useAppSession(navigation: SessionNavigation) {
       failed: report, settled: () => setBusyAction(''), cancelled: () => setBusyAction(''),
     });
   }
-  function sendBlockedReason(globalShortcut = false, submittedText = draft): string {
+  function sendBlockedReason(globalShortcut = false, submittedText = draft, voiceInput = false): string {
     const text = submittedText.trim();
     const current = stateRef.current;
     if (globalShortcut && hasOpenDialog()) return 'Schließe zuerst den offenen Dialog in openHiatus. Drücke danach erneut F9.';
     if (!current) return 'openHiatus wird noch verbunden. Drücke danach erneut F9.';
     if (!current.preferences.fullAccessAcknowledged) return 'Bestätige zuerst den Vollzugriff von openHiatus.';
+    if (current.preferences.itSupporter && !voiceInput && !transcript) return 'Im IT-Supporter-Modus stellst du deine Frage mit F8 oder der Sprechtaste. Das Protokoll dient zum Nachlesen.';
     if (operations.current?.isStopping() || current.task.status === 'stopping' || current.summary?.status === 'stopping') return 'Bitte warte auf den bestätigten Stopp und drücke danach erneut F9.';
     if (getPhase() === 'opening') return 'Das Mikrofon wird geöffnet. Beende die Aufnahme mit F8 und drücke erst nach dem Transkript F9.';
     if (getPhase() === 'recording' || getPhase() === 'mic-test') return 'Die Aufnahme läuft. Beende sie mit F8 und drücke erst nach dem Transkript F9.';
@@ -102,10 +103,10 @@ export function useAppSession(navigation: SessionNavigation) {
     if (current.connections.agent !== 'ready') return 'Richte zuerst einen Modellanbieter in den Einstellungen ein.';
     return '';
   }
-  async function send(globalShortcut = false, submittedText = draft) {
+  async function send(globalShortcut = false, submittedText = draft, voiceInput = false) {
     const lifetime = operations.current;
     if (!lifetime) return;
-    const blocked = sendBlockedReason(globalShortcut, submittedText);
+    const blocked = sendBlockedReason(globalShortcut, submittedText, voiceInput);
     if (blocked) {
       if (submittedText !== draft) { setDraft(current => current ? `${current}\n${submittedText}` : submittedText); setTranscript(true); setNotice(blocked); }
       if (globalShortcut) setNotice(blocked);
@@ -155,7 +156,7 @@ export function useAppSession(navigation: SessionNavigation) {
   const currentDialogModel = state?.models.find(model => model.id === state.preferences.dialogModel)?.label ?? modelSelectionLabel(state?.preferences.dialogModel ?? '');
   const voiceStatus = { idle: 'Sprachgespräch', opening: 'Mikrofon wird geöffnet', recording: 'Ich höre zu', 'mic-test': 'Mikrofontest', transcribing: 'Sprache wird erkannt', synthesizing: 'Antwort wird vertont', playing: 'Antwort wird vorgelesen' }[phase];
   const activeJobs = state?.jobs?.filter(job => ['queued', 'running', 'stopping'].includes(job.status)).length ?? 0;
-  const skillInsertDisabledReason = busyAction === 'new' ? 'Das neue Gespräch wird vorbereitet. Danach kannst du einen Skill ergänzen.' : ['opening', 'recording', 'mic-test', 'transcribing'].includes(phase) ? 'Beende zuerst die Sprachaufnahme und warte auf das Transkript. Danach kannst du einen Skill ergänzen.' : undefined;
+  const skillInsertDisabledReason = state?.preferences.itSupporter ? 'Im IT-Supporter-Modus nennst du den gewünschten Skill per Sprache. Zum Schreiben kannst du den Modus in Einstellungen → Bedienung ausschalten.' : busyAction === 'new' ? 'Das neue Gespräch wird vorbereitet. Danach kannst du einen Skill ergänzen.' : ['opening', 'recording', 'mic-test', 'transcribing'].includes(phase) ? 'Beende zuerst die Sprachaufnahme und warte auf das Transkript. Danach kannst du einen Skill ergänzen.' : undefined;
   const overlayPhase = voicePresence(phase, pendingSend, transcript && !!draft.trim()).phase;
   useEffect(() => {
     window.openhiatus?.publishActivityPresence({ phase: overlayPhase });

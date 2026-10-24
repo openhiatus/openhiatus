@@ -27,7 +27,7 @@ export const decodeSnapshot: Decoder<Snapshot> = object({
   task: object({ id, status: taskStatus, threadId: optional(body), turnId: optional(body), error: optional(body) }),
   preferences: object({ assistantProfile: optional(parseAssistantProfile), sidebarMode: optional(sidebarMode), activityOverlayEnabled: optional(boolean), activityOverlaySize: optional(activityOverlaySize), inputDeviceId: short, outputDeviceId: short, speakReplies: boolean, voiceId: short, model: short, dialogModel: short, memoryModel: short,
     inputDeviceLabel: optional(text(1000)), inputDeviceGroupId: optional(text(1000)), outputDeviceLabel: optional(text(1000)), outputDeviceGroupId: optional(text(1000)),
-    memoryAutoSummarize: optional(boolean), voiceConversation: optional(boolean), earcons: optional(boolean), skillFavorites: optional(parseSkillFavorites),
+    memoryAutoSummarize: optional(boolean), voiceConversation: optional(boolean), earcons: optional(boolean), skillFavorites: optional(parseSkillFavorites), itSupporter: optional(boolean),
     fullAccessAcknowledged: optional(boolean), chatgptBackgroundUsage: optional(boolean), computerOverviewScaleDivisor: optional(overviewPreference),
     computerDetailScaleDivisor: optional(detailPreference), computerImageRetentionCalls: optional(computerImageRetentionCalls), computerWorkingMemoryCalls: optional(computerWorkingMemoryCalls),
     computerDelegationEnabled: optional(boolean), computerModel: optional(text(300)), computerFast: optional(boolean) }),

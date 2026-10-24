@@ -1,5 +1,5 @@
 import type { ComputerPixels, ComputerRect, ComputerSize, ComputerViewImage } from '../../../shared/computer-views';
-import type { ScreenHelpInput } from '../../../shared/screen-help';
+import type { ScreenHelpColor, ScreenHelpInput } from '../../../shared/screen-help';
 import type { DynamicToolResponse } from '../../../shared/contracts';
 import { createViewDescriptor, mapViewRect, validateSourceRect } from '../../computer-views';
 import { computerHandle } from '../../computer-handles';
@@ -12,7 +12,7 @@ export interface ScreenHelpPorts {
   processor(): Promise<ComputerImageProcessor>;
   skill(): Promise<string>;
   busy(): boolean;
-  show(rect: ComputerRect, image: ComputerSize, bounds: ComputerRect, label: string): Promise<void>;
+  show(rect: ComputerRect, image: ComputerSize, bounds: ComputerRect, label: string, color: ScreenHelpColor): Promise<void>;
   clear(): void;
   now?(): number;
 }
@@ -67,9 +67,9 @@ export class ScreenHelpService {
     if (current.stamp !== frame.capture.stamp || current.displayId !== frame.capture.displayId || JSON.stringify(current.bounds) !== JSON.stringify(frame.capture.bounds)
       || !sameHelpTarget(frame.source, frame.processor.decode(current.png, current), rect)) throw Error('Das Zielelement hat sich seit der Aufnahme verändert. Neu beobachten, dann erneut markieren.');
     if (await this.ports.currentStamp() !== current.stamp) throw Error('Der Bildschirm wurde inzwischen bedient. Bitte neu beobachten.'); check();
-    try { await this.ports.show(rect, frame.capture, frame.capture.bounds, input.label ?? 'Hier'); check(); }
+    try { await this.ports.show(rect, frame.capture, frame.capture.bounds, input.label ?? 'Hier', input.color); check(); }
     catch (error) { this.ports.clear(); throw error; }
-    return response({ marked: true, shape: 'circle-and-arrow', label: input.label ?? 'Hier', inputPerformed: false, expiresInSeconds: 30 });
+    return response({ marked: true, shape: 'circle-and-arrow', color: input.color, label: input.label ?? 'Hier', inputPerformed: false, expiresInSeconds: 30 });
   }
   private images(frame: Frame, skill?: string): DynamicToolResponse {
     return { success: true, contentItems: [
