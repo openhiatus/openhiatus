@@ -1,5 +1,6 @@
 import type { MemoryStore } from '../../memory.js';
 import { UnsupportedMemoryVersion } from '../../memory.js';
+import { parseAssistantProfile } from '../../../shared/assistant-profile';
 import type { CoreProposal, MemoryContext, MemoryDocument, MemorySummaryInput, MemorySummaryPlanJob, MemorySummaryResult } from '../../../shared/memory.js';
 import { array, boolean, choice, integer, nothing, object, optional, record, text, type Decoder } from '../../../shared/ipc/decode.js';
 import { decodeMemoryPeriod, decodeMemorySearch, decodeMemorySnapshot, decodeMemorySource } from '../../../shared/ipc/memory.js';
@@ -22,9 +23,10 @@ export type MemoryWorkerResponse =
   | { version: 1; type: 'rejected'; id: number; method: MemoryMethod; error: MemoryWorkerFailure }
   | { version: 1; type: 'fatal'; error: MemoryWorkerFailure };
 
-const methods = ['capture', 'snapshot', 'source', 'retrieve', 'rebuild', 'edit', 'propose', 'decide', 'search', 'readPeriod', 'planSummaries', 'summaryInput', 'applySummary'] as const satisfies readonly MemoryMethod[];
-const mutations: readonly MemoryMethod[] = ['capture', 'retrieve', 'rebuild', 'edit', 'propose', 'decide', 'applySummary'];
+const methods = ['initializeProfile', 'capture', 'snapshot', 'source', 'retrieve', 'rebuild', 'edit', 'propose', 'decide', 'search', 'readPeriod', 'planSummaries', 'summaryInput', 'applySummary'] as const satisfies readonly MemoryMethod[];
+const mutations: readonly MemoryMethod[] = ['initializeProfile', 'capture', 'retrieve', 'rebuild', 'edit', 'propose', 'decide', 'applySummary'];
 export function mutatesMemory(method: MemoryMethod): boolean { return mutations.includes(method); }
+export function updatesInstructionCache(method: MemoryMethod): boolean { return method === 'snapshot' || mutatesMemory(method); }
 export class MemoryWorkerProtocolError extends Error { constructor() { super('Ungültiges Protokoll des Gedächtnisspeichers.'); } }
 function fail(): never { throw new MemoryWorkerProtocolError(); }
 function exact(value: unknown, keys: readonly string[]): Record<string, unknown> {
@@ -62,8 +64,9 @@ export function decodeSecrets(value: unknown): string[] {
   return secrets;
 }
 export function decodeInstructions(value: unknown): InstructionDocuments {
-  const documents = array(object({ id: choice(['identity', 'core']), version: positive, content: text(8000) }), 2)(value);
-  if (documents.length !== 2 || new Set(documents.map(doc => doc.id)).size !== 2) fail();
+  const documents = array(object({ id: choice(['identity', 'core', 'soul', 'agent', 'user']), version: positive, content: text(8000) }), 5)(value);
+  const ids = new Set(documents.map(doc => doc.id));
+  if (![2, 5].includes(documents.length) || ids.size !== documents.length || !ids.has('identity') || !ids.has('core')) fail();
   return documents;
 }
 function args(value: unknown, min: number, max = min): unknown[] {
@@ -79,6 +82,7 @@ export function decodeMemoryRequest(value: unknown): MemoryWorkerRequest {
     exact(source, ['version', 'type', 'id', 'method', 'args', 'secrets']);
     const common = { version: 1 as const, type: 'call' as const, id: positive(source.id), secrets: decodeSecrets(source.secrets) };
     switch (source.method) {
+      case 'initializeProfile': { const a = args(source.args, 1); return { ...common, method: 'initializeProfile', args: [parseAssistantProfile(a[0])] }; }
       case 'capture': { const a = args(source.args, 2); return { ...common, method: 'capture', args: [array(object({ ...messageFields, id, at }), 50000)(a[0]), id(a[1])] }; }
       case 'snapshot': args(source.args, 0); return { ...common, method: 'snapshot', args: [] };
       case 'source': { const a = args(source.args, 1); return { ...common, method: 'source', args: [id(a[0])] }; }
@@ -98,6 +102,7 @@ export function decodeMemoryRequest(value: unknown): MemoryWorkerRequest {
 }
 
 const results: { [M in MemoryMethod]: Decoder<MemoryResult<M>> } = {
+  initializeProfile: decodeSnapshot,
   capture: nothing, snapshot: decodeSnapshot, source: decodeMemorySource, retrieve: context, rebuild: decodeSnapshot, edit: decodeSnapshot,
   propose: proposal, decide: decodeSnapshot, search: decodeMemorySearch, readPeriod: decodeMemoryPeriod, planSummaries: plans, summaryInput, applySummary: decodeSnapshot,
 };
@@ -120,8 +125,8 @@ export function decodeMemoryResponse(value: unknown): MemoryWorkerResponse {
       case 'result': {
         exact(source, ['version', 'type', 'id', 'method', 'result', 'instructions']);
         const method = choice(methods)(source.method);
-        if (!Object.hasOwn(source, 'result') || mutatesMemory(method) !== Object.hasOwn(source, 'instructions')) return fail();
-        const instructions = mutatesMemory(method) ? decodeInstructions(source.instructions) : undefined;
+        if (!Object.hasOwn(source, 'result') || updatesInstructionCache(method) !== Object.hasOwn(source, 'instructions')) return fail();
+        const instructions = updatesInstructionCache(method) ? decodeInstructions(source.instructions) : undefined;
         return { version: 1, type: 'result', id: positive(source.id), method, result: source.result,
           ...(instructions === undefined ? {} : { instructions }) };
       }

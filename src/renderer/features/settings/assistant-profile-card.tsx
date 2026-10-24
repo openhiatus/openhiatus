@@ -9,6 +9,7 @@ import {
 export interface AssistantProfileCardProps {
   profile?: AssistantProfile;
   ready: boolean;
+  libraryMode?: boolean;
   onSave(profile: AssistantProfile): Promise<void>;
   onError(error: unknown): void;
 }
@@ -23,7 +24,7 @@ function profileFrom(draft: ProfileDraft): AssistantProfile {
 }
 
 /** The profile is saved atomically; snapshots cannot replace an unfinished local edit. */
-export function AssistantProfileCard({ profile, ready, onSave, onError }: AssistantProfileCardProps) {
+export function AssistantProfileCard({ profile, ready, libraryMode = false, onSave, onError }: AssistantProfileCardProps) {
   const id = useId();
   const [draft, setDraft] = useState(() => draftFrom(profile ?? DEFAULT_ASSISTANT_PROFILE));
   const baseline = useRef(JSON.stringify(draft));
@@ -60,7 +61,7 @@ export function AssistantProfileCard({ profile, ready, onSave, onError }: Assist
       const value = parseAssistantProfile(create());
       await onSave(value);
       const saved = draftFrom(value);
-      baseline.current = JSON.stringify(saved); setDraft(saved); setNotice(success);
+      baseline.current = JSON.stringify(saved); setDraft(saved); setNotice(libraryMode ? 'Vorlagenbibliothek gespeichert. Übernimm den ausgewählten Stil bei Bedarf als Entwurf in SOUL.md.' : success);
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : 'Das Profil konnte nicht gespeichert werden.');
       onError(failure);
@@ -87,14 +88,16 @@ export function AssistantProfileCard({ profile, ready, onSave, onError }: Assist
 
   return <section className="settings-card assistant-profile-card" aria-labelledby={`${id}-title`} aria-busy={!!saving}>
     <div className="settings-card-head"><span className="service-icon"><UserRound size={22} aria-hidden="true" /></span><div>
-      <h2 id={`${id}-title`}>Name &amp; Persönlichkeit</h2><p>Gib deinem Assistenten einen Rufnamen und wähle seinen Gesprächsstil.</p>
+      <h2 id={`${id}-title`}>{libraryMode ? 'Stilvorlagen' : 'Name & Persönlichkeit'}</h2><p>{libraryMode ? 'Vorlagen verwalten und anschließend als Entwurf in SOUL.md übernehmen.' : 'Gib deinem Assistenten einen Rufnamen und wähle seinen Gesprächsstil.'}</p>
     </div></div>
     <form onSubmit={save}>
       <fieldset className="assistant-profile-fields" disabled={disabled}>
+        <div hidden={libraryMode}>
         <label className="field-label" htmlFor={`${id}-name`}>Rufname</label>
         <input className="provider-input" id={`${id}-name`} value={draft.name} maxLength={ASSISTANT_NAME_MAX_LENGTH}
           placeholder="Assistent" autoComplete="off" aria-describedby={`${id}-name-help`} onChange={event => edit({ name: event.target.value })} />
         <p className="billing-note assistant-profile-help" id={`${id}-name-help`}>Der Rufname bleibt beim Wechsel der Persönlichkeit erhalten. Ohne Eintrag heißt er „Assistent“. Die Anwendung heißt weiterhin openHiatus.</p>
+        </div>
 
         <label className="field-label" htmlFor={`${id}-personality`}>Persönlichkeit</label>
         <div className="select-wrap"><select id={`${id}-personality`} value={draft.personalityId} onChange={event => selectPersonality(event.target.value)}>

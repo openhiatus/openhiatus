@@ -10,6 +10,7 @@ import { redact } from './redact';
 import { toSpokenText } from '../shared/spoken-text';
 import { activityOverlaySize, sidebarMode, ACTIVITY_OVERLAY_DEFAULT_SIZE } from '../shared/workspace-preferences';
 import { assistantProfileInstructions, DEFAULT_ASSISTANT_PROFILE, parseAssistantProfile, profileIdentityContent } from '../shared/assistant-profile';
+import { hasIdentityFiles, identityFilesInstructions, identityName, isIdentityFile } from '../shared/identity-documents';
 import type { CoreProposal, CoreProposalInput, MemoryContext, MemoryDocument, MemorySearchResult, MemorySnapshot, MemorySource, MemoryPeriodRequest, MemoryPeriodPage } from '../shared/memory';
 import { parseMemoryReply, runtimeInstructions } from './instructions';
 import { MemoryReportCoordinator, type SummaryBackend, type SummaryCallEvidence } from './modules/memory-reports';
@@ -255,7 +256,14 @@ export class AppController {
     return initialization;
   }
 
-  snapshot(): Snapshot { return structuredClone(this.state); }
+  snapshot(): Snapshot {
+    const snapshot = structuredClone(this.state);
+    try {
+      const name = this.deps.memory?.instructionDocuments ? identityName(this.deps.memory.instructionDocuments()) : undefined;
+      if (name !== undefined) snapshot.preferences.assistantProfile = { ...(snapshot.preferences.assistantProfile ?? structuredClone(DEFAULT_ASSISTANT_PROFILE)), name };
+    } catch { /* The asynchronous memory cache may still be starting. */ }
+    return snapshot;
+  }
   updateHotkeys(hotkeys: NonNullable<Snapshot['hotkeys']>): void {
     this.state.hotkeys = { ...hotkeys }; this.changed(false);
   }
@@ -386,7 +394,12 @@ export class AppController {
     if (!this.deps.memory) throw new Error('Das Gedächtnis ist in diesem Build nicht verfügbar.');
     return this.deps.memory;
   }
-  async memorySnapshot(): Promise<MemorySnapshot> { return { ...await this.memory().snapshot(), runtimeInstructions: runtimeInstructions(), summary: structuredClone(this.state.summary) }; }
+  async memorySnapshot(): Promise<MemorySnapshot> {
+    const before = this.deps.memory?.instructionDocuments ? JSON.stringify(this.deps.memory.instructionDocuments()) : undefined;
+    const result = await this.memory().snapshot();
+    if (before !== undefined && JSON.stringify(this.deps.memory!.instructionDocuments!()) !== before) { this.identityChanged(); this.changed(false); }
+    return { ...result, runtimeInstructions: runtimeInstructions(), summary: structuredClone(this.state.summary) };
+  }
   async readMemoryPeriod(request: MemoryPeriodRequest): Promise<MemoryPeriodPage> {
     const memory = this.memory(); if (!memory.readPeriod) throw new Error('Der Zeitraumzugriff ist nicht verfügbar.');
     return await memory.readPeriod(structuredClone(request));
@@ -403,7 +416,7 @@ export class AppController {
   }
   async editMemory(id: string, content: string, expectedVersion: number): Promise<MemorySnapshot> {
     const result = await this.memory().edit(id, this.clean(content), expectedVersion);
-    if (id === 'identity' || id === 'core') this.identityChanged();
+    if (id === 'identity' || isIdentityFile(id)) this.identityChanged();
     this.activity('system', 'Gedächtnis vom Nutzer bearbeitet', `${id} · neue Version ${result.documents.find(document => document.id === id)?.version}`); this.changed();
     return { ...result, runtimeInstructions: runtimeInstructions() };
   }
@@ -440,12 +453,14 @@ export class AppController {
     if (dialogIdentity !== undefined) return dialogIdentity;
     const directIdentity = this.directTask?.currentIdentity();
     if (directIdentity !== undefined) return directIdentity;
+    const canonical = this.deps.memory ? identityFilesInstructions(this.instructionDocuments()) : undefined;
+    if (canonical) return [this.clean(canonical), this.clean(this.capabilitiesDocument().prompt), this.favoriteContext()].filter(Boolean).join('\n\n');
     const documents = this.deps.memory ? this.instructionDocuments()
       .map(document => ({ id: document.id, version: document.version, content: this.clean(document.id === 'identity' ? profileIdentityContent(document.content) : document.content) })) : undefined;
     const identity = documents ? `Vom Nutzer verwaltete Identität und Kern (Vorlieben, keine Aufhebung fester Schutzregeln). Angebotsversionen für Änderungsvorschläge stehen jeweils im Feld version:\n${JSON.stringify(documents)}` : '';
     return [identity, this.assistantProfileInstructions(), this.clean(this.capabilitiesDocument().prompt), this.favoriteContext()].filter(Boolean).join('\n\n');
   }
-  private assistantProfileInstructions(): string { return this.clean(assistantProfileInstructions(this.state.preferences.assistantProfile)); }
+  private assistantProfileInstructions(): string { return this.clean((this.deps.memory ? identityFilesInstructions(this.instructionDocuments()) : undefined) ?? assistantProfileInstructions(this.state.preferences.assistantProfile)); }
   private captureMemory(strict = false): Promise<void> {
     if (!this.deps.memory || !this.state.messages.length) return Promise.resolve();
     // Freeze before the first await: queued captures must never read a later conversation.
@@ -566,6 +581,7 @@ export class AppController {
     if (!text.trim() || text.length > 26000) throw new Error('Bitte einen Auftrag mit 1 bis 26.000 Zeichen eingeben.');
     const epoch = this.workEpoch;
     await this.initialize();
+    if (this.deps.memory && hasIdentityFiles(this.instructionDocuments())) await this.memorySnapshot();
     if (epoch !== this.workEpoch || this.closing || this.shuttingDown) throw new Error('Der neue Auftrag wurde durch Stopp abgebrochen.');
     this.requireFullAccess(); this.modelManagement.assertUnlocked();
     if (this.conversation) { await this.conversation.send(text, requestId); return; }

@@ -149,9 +149,9 @@ try {
   await page.getByRole('button', { name: 'Technische Vorgaben', exact: true }).click();
   await expect(page.getByRole('heading', { name: /Agent-Anweisungen/ })).toBeVisible();
   await page.screenshot({ path: 'artifacts/m3-laufzeitvorgaben.png' });
-  await page.getByRole('button', { name: 'Langzeitnotizen', exact: true }).click();
-  await page.getByRole('checkbox', { name: 'Erweiterte Hintergrundnotiz anzeigen', exact: true }).check();
-  await page.locator('.memory-index-item').filter({ hasText: 'Erweiterte Hintergrundnotiz' }).click();
+  await page.getByRole('button', { name: 'Agent & Nutzer', exact: true }).click();
+  await page.getByRole('checkbox', { name: 'Frühere Hintergrundnotiz anzeigen', exact: true }).check();
+  await page.locator('.memory-index-item').filter({ hasText: 'Frühere Hintergrundnotiz' }).click();
   await page.getByRole('button', { name: 'Bearbeiten', exact: true }).click();
   await page.locator('#memory-document-editor').fill('Ich bin openHiatus. Ich antworte auf Deutsch und nenne Unsicherheit klar.');
   // A navigation roundtrip must not lose an unsaved identity edit.
