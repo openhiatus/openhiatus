@@ -19,7 +19,12 @@ function fixture() {
     memorySnapshot: () => memory, rebuildMemory: () => memory, startMemorySummary: capture('startMemorySummary'), readMemoryPeriod: () => period, memorySource: () => undefined, searchMemory: () => [],
     editMemory: (id, content, expectedVersion) => { calls.push({ name: 'editMemory', args: [id, content, expectedVersion] }); return memory; }, decideMemoryProposal: () => memory,
   };
-  const ports: IpcPorts = { controller, reportError: error => { errors.push(error); return 'Bereinigte Meldung'; }, platform: {
+  const calendarSnapshot = { configured: false, status: 'disconnected' as const, calendars: [] };
+  const ports: IpcPorts = { controller, calendar: {
+    googleCalendarSnapshot: async () => calendarSnapshot, saveGoogleCalendarClient: async () => calendarSnapshot, connectGoogleCalendar: async () => calendarSnapshot,
+    cancelGoogleCalendarLogin: async () => calendarSnapshot, disconnectGoogleCalendar: async () => calendarSnapshot, selectGoogleCalendar: async () => calendarSnapshot,
+    googleCalendarEvents: async () => ({ events: [], now: '2026-10-24T00:00:00Z', timeZone: 'UTC' }), openGoogleCalendarSetup: capture('openGoogleCalendarSetup'),
+  }, reportError: error => { errors.push(error); return 'Bereinigte Meldung'; }, platform: {
     stopActivityPresence: () => { calls.push({ name: 'stopActivityPresence', args: [] }); },
     openWorkspace: capture('openWorkspace'), openSkillsFolder: capture('openSkillsFolder'), openChatGPTUsage: capture('openChatGPTUsage'), revealFile: capture('revealFile'),
   } };
@@ -27,6 +32,8 @@ function fixture() {
 }
 
 const validArgs: { [Name in CommandName]: CommandArgs<Name> } = {
+  googleCalendarSnapshot: [], saveGoogleCalendarClient: [{ clientId: 'synthetic-client.apps.googleusercontent.com' }], connectGoogleCalendar: [], cancelGoogleCalendarLogin: [], disconnectGoogleCalendar: [], selectGoogleCalendar: ['primary'],
+  googleCalendarEvents: [{ timeMin: '2026-10-24T00:00:00Z', timeMax: '2026-10-25T00:00:00Z' }], openGoogleCalendarSetup: [],
   snapshot: [], send: ['Hallo', 'request'], stop: [], stopJob: ['job'], savePreferences: [{ speakReplies: false }], acknowledgeFullAccess: [],
   signInChatGPT: [], cancelChatGPTSignIn: [], signOutChatGPT: [], openChatGPTUsage: [], saveProvider: [{ id: 'local', models: ['test'] }], testProvider: ['local'], removeProvider: ['local'],
   listSkills: [], openSkillsFolder: [], saveSpeechKey: ['key'], removeSpeechKey: [], testSpeech: [], transcribe: [{ base64: '', mimeType: 'audio/wav' }], synthesize: ['Hallo'],

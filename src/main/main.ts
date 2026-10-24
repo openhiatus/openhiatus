@@ -7,6 +7,8 @@ import { AppController } from './controller';
 import { PiAdapter } from './pi';
 import { createToolRegistry, defineTool } from './modules/tools';
 import { ServiceBroker } from './modules/services';
+import { GoogleCalendarAuth } from './platform/services/google-calendar-auth';
+import { GoogleCalendarService } from './platform/services/google-calendar';
 import { createComputerToolContribution } from './platform/tools';
 import { createDelegatedComputerToolContribution } from './platform/tools/computer-delegation';
 import { AGENT_INSTRUCTIONS, COMPUTER_PLANNER_INSTRUCTIONS } from './instructions';
@@ -35,8 +37,16 @@ if (!locked) app.quit();
 let window: BrowserWindow | undefined, controller: AppController | undefined;
 let activityOverlay: ActivityOverlay | undefined;
 let voicePresence: ActivityPresence = { phase: 'idle' };
-function stopActivityPresence(): void { voicePresence = { phase: 'idle' }; activityOverlay?.stop(); }
+function stopActivityPresence(): void { voicePresence = { phase: 'idle' }; activityOverlay?.stop(); void googleCalendarAuth?.cancelLogin(); }
 let services: ServiceBroker | undefined;
+let googleCalendarAuth: GoogleCalendarAuth | undefined;
+function syncCalendarConnection(): void {
+  const snapshot = googleCalendarAuth?.snapshot();
+  if (!services || !snapshot) return;
+  if (snapshot.status !== 'ready') { services.removeConnection('google_calendar', 'google'); return; }
+  const selected = googleCalendarAuth!.selected();
+  services.setConnection({ provider: 'google_calendar', id: 'google', label: selected.title, account: snapshot.account!, status: 'ready', capabilities: ['calendar.read', ...(['owner', 'writer'].includes(selected.accessRole) ? ['calendar.write'] : [])] });
+}
 let stateWriter: WorkerStateStore | undefined;
 let memoryWriter: WorkerMemoryStore | undefined;
 let quitting = false, disposed = false;
@@ -61,6 +71,12 @@ async function createApp(): Promise<void> {
     onChange: () => controller?.refreshChatGPT(),
   });
   const providers = new ProviderStore(dataDirectory, credentials, chatgpt), initialSecrets = providers.secrets();
+  const calendarAuth = new GoogleCalendarAuth(credentials, { openBrowser: async value => {
+    const url = new URL(value); if (url.origin !== 'https://accounts.google.com' || url.pathname !== '/o/oauth2/v2/auth' || url.username || url.password) throw Error('Ungültige Google-Anmeldeadresse.');
+    await shell.openExternal(url.href);
+  }, onChange: syncCalendarConnection });
+  googleCalendarAuth = calendarAuth;
+  const calendar = new GoogleCalendarService(calendarAuth); initialSecrets.push(...calendarAuth.secrets());
   try { const key = credentials.get('inworld'); if (key) initialSecrets.push(key); } catch { /* Never expose unavailable credentials. */ }
   const memory = new WorkerMemoryStore(path.join(dataDirectory, 'Gedächtnis'), {
     workerPath: path.join(__dirname, 'memory-worker.cjs'),
@@ -69,9 +85,10 @@ async function createApp(): Promise<void> {
   });
   memoryWriter = memory;
   const processHost = app.isPackaged ? path.join(process.resourcesPath, 'native', 'openhiatus-process-host.exe') : path.join(__dirname, 'native', 'openhiatus-process-host.exe');
-  const runtimeOptions = { executable: process.execPath, hostEntry: path.join(__dirname, 'agent-host.mjs'), processHost, home, workspace, providers };
+  const runtimeOptions = { executable: process.execPath, hostEntry: path.join(__dirname, 'agent-host.mjs'), processHost, home, workspace, providers, getSecrets: () => calendarAuth.secrets() };
   services = new ServiceBroker();
   const serviceBroker = services;
+  serviceBroker.register(calendar.adapter()); syncCalendarConnection();
   const runDesktopOperation = <T>(operation: () => Promise<T>): Promise<T> => activityOverlay?.runHidden(operation) ?? operation();
   const computerTools = () => createComputerToolContribution({
     getOverviewScaleDivisor: () => controller?.snapshot().preferences.computerOverviewScaleDivisor ?? 1,
@@ -106,11 +123,12 @@ async function createApp(): Promise<void> {
       computerImageRetentionCalls: computer?.imageRetentionCalls ?? 0,
       computerWorkingMemoryCalls: computer?.workingMemoryCalls ?? 0,
       ...(computer?.delegationEnabled ? { instructions: `${AGENT_INSTRUCTIONS}\n\n${COMPUTER_PLANNER_INSTRUCTIONS}` } : {}),
-      tools: createToolRegistry([desktop, serviceBroker.createReadTools(job.id)]),
+      tools: createToolRegistry([desktop, serviceBroker.createTools(job.id, ['read', 'write'])]),
       getIdentityInstructions: () => job.identityInstructions ?? '', onEvent });
   };
   const speech = new SpeechService({ getKey: () => credentials.get('inworld'), getVoice: () => controller?.snapshot().preferences.voiceId || 'Dennis', cacheDirectory: path.join(dataDirectory, 'speech-cache') });
   controller = new AppController({ version: app.getVersion(), store, credentials, speech, memory, providers, chatgpt, modelClient: new ModelClient(providers), agent: runtime, dialogAgent: dialogRuntime, createWorker, workspace, profileDirectory: dataDirectory,
+    serviceContext: { instructions: () => calendar.instructions(), secrets: () => calendarAuth.secrets() },
     publishComputerFrame: frame => { if (window && !window.isDestroyed()) window.webContents.send('openhiatus:computer-frame', decodeComputerFrame(frame)); },
     publish: state => {
       activityOverlay?.update(activityOverlayState(state, voicePresence));
@@ -160,7 +178,12 @@ async function createApp(): Promise<void> {
   window.webContents.on('render-process-gone', () => { stopActivityPresence(); void controller?.stop().catch(() => {}); });
   powerMonitor.on('suspend', () => { stopActivityPresence(); window?.webContents.send('openhiatus:emergency-stop'); void controller?.stop().catch(() => {}); });
   const ipcController = controller;
-  const ipc = createIpcRouter({ controller: ipcController, reportError: error => ipcController.reportError(error), platform: {
+  const ipc = createIpcRouter({ controller: ipcController, reportError: error => ipcController.reportError(error), calendar: {
+    googleCalendarSnapshot: async () => calendarAuth.snapshot(), saveGoogleCalendarClient: client => calendarAuth.configure(client),
+    connectGoogleCalendar: async () => { await calendarAuth.connect(); return calendarAuth.snapshot(); }, cancelGoogleCalendarLogin: () => calendarAuth.cancelLogin(),
+    disconnectGoogleCalendar: () => calendarAuth.disconnect(), selectGoogleCalendar: async id => calendarAuth.select(id), googleCalendarEvents: query => calendar.list(query, AbortSignal.timeout(30000)),
+    openGoogleCalendarSetup: () => shell.openExternal('https://console.cloud.google.com/apis/library/calendar-json.googleapis.com'),
+  }, platform: {
     stopActivityPresence,
     openChatGPTUsage: () => shell.openExternal('https://chatgpt.com/settings/usage'),
     openWorkspace: async () => { const error = await shell.openPath(workspace); if (error) throw new Error('Arbeitsordner konnte nicht geöffnet werden.'); },
@@ -212,7 +235,7 @@ app.on('second-instance', () => { window?.restore(); window?.focus(); });
 app.on('window-all-closed', () => app.quit());
 app.on('before-quit', event => {
   if (disposed) return; event.preventDefault(); if (quitting) return; quitting = true; stopActivityPresence();
-  void (controller?.dispose() ?? Promise.resolve()).then(async () => { await memoryWriter?.dispose(); await stateWriter?.dispose(); services?.dispose(); activityOverlay?.dispose(); await voiceHotkeys?.dispose(); disposed = true; globalShortcut.unregisterAll(); app.quit(); }).catch(() => {
+  void (controller?.dispose() ?? Promise.resolve()).then(async () => { await googleCalendarAuth?.dispose(); await memoryWriter?.dispose(); await stateWriter?.dispose(); services?.dispose(); activityOverlay?.dispose(); await voiceHotkeys?.dispose(); disposed = true; globalShortcut.unregisterAll(); app.quit(); }).catch(() => {
     quitting = false; if (controller) activityOverlay?.update(activityOverlayState(controller.snapshot(), voicePresence));
     void dialog.showMessageBox({ type: 'error', title: `${APP_DISPLAY_NAME} konnte die Arbeit nicht sicher beenden`, message: `Die laufende Arbeit oder das Speichern konnte nicht sicher abgeschlossen werden. ${APP_DISPLAY_NAME} bleibt geöffnet. Bitte erneut versuchen.` });
   });

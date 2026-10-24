@@ -3,12 +3,16 @@ import type { CommandName, CommandResult } from './contracts';
 import { array, boolean, choice, invalidPayload, nothing, object, optional, record, text, type Decoder } from './decode';
 import { decodeMemoryPeriod, decodeMemorySearch, decodeMemorySnapshot, decodeMemorySource } from './memory';
 import { decodeSnapshot } from './snapshot';
+import { decodeGoogleCalendarSnapshot, decodeCalendarEvents } from './calendar';
 
 const audio: Decoder<AudioClip> = object({ base64: text(32 * 1024 * 1024), mimeType: choice(['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/wave', 'audio/x-wav']) });
 const skills: Decoder<SkillCatalog> = object({ skills: array(object({ name: text(1024), displayName: optional(text()), description: text(), path: text(4096),
   enabled: boolean, scope: choice(['user', 'repo', 'system', 'admin']) }), 10000), errors: array(object({ path: text(4096), message: text() }), 10000), directory: text(4096) });
 /** Exhaustive map: a new public async command must choose its result decoder. */
 const results: { [Name in CommandName]: Decoder<CommandResult<Name>> } = {
+  googleCalendarSnapshot: decodeGoogleCalendarSnapshot, saveGoogleCalendarClient: decodeGoogleCalendarSnapshot, connectGoogleCalendar: decodeGoogleCalendarSnapshot,
+  cancelGoogleCalendarLogin: decodeGoogleCalendarSnapshot, disconnectGoogleCalendar: decodeGoogleCalendarSnapshot, selectGoogleCalendar: decodeGoogleCalendarSnapshot,
+  googleCalendarEvents: decodeCalendarEvents, openGoogleCalendarSetup: nothing,
   snapshot: decodeSnapshot, send: nothing, stop: nothing, stopJob: nothing, savePreferences: nothing, acknowledgeFullAccess: nothing,
   signInChatGPT: nothing, cancelChatGPTSignIn: nothing, signOutChatGPT: nothing, openChatGPTUsage: nothing,
   saveProvider: nothing, testProvider: nothing, removeProvider: nothing, listSkills: skills, openSkillsFolder: nothing,

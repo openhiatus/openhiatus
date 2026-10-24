@@ -150,6 +150,10 @@ export class ServiceBroker {
 
   /** Only the read pilot is exposed. Writes need durable operation tracking and uncertain-outcome handling first. */
   createReadTools(jobId: string): ToolContribution {
+    return this.createTools(jobId, ['read']);
+  }
+  /** Writes are exposed only when composition explicitly requests them and the account grants them. */
+  createTools(jobId: string, effects: readonly ('read' | 'write')[] = ['read']): ToolContribution {
     const owner = text(jobId, 512);
     return { bind: context => {
       if (this.disposed) throw denied();
@@ -159,7 +163,7 @@ export class ServiceBroker {
         const account = session.connection;
         if (account.status !== 'ready') continue;
         for (const operation of this.adapters.get(account.provider) ?? []) {
-          if (operation.effect !== 'read' || !account.capabilities.includes(operation.capability)) continue;
+          if (!effects.includes(operation.effect) || !account.capabilities.includes(operation.capability)) continue;
           const suffix = createHash('sha256').update(JSON.stringify([account.provider, account.id, operation.id])).digest('hex').slice(0, 12);
           tools.push(defineTool({ audience: 'worker', definition: {
             type: 'function', name: `service_${account.provider.slice(0, 16)}_${operation.id.slice(0, 16)}_${suffix}`,
@@ -174,8 +178,8 @@ export class ServiceBroker {
             try {
               result = await abortable(() => operation.run(input, { provider: account.provider, connectionId: account.id,
                 jobId: owner, runId: run.runId, signal }), signal);
-            } catch { throw new Error('Die Dienstanfrage wurde abgebrochen oder konnte nicht abgeschlossen werden.'); }
-            if (!current()) throw denied();
+            } catch { throw new Error(operation.effect === 'write' ? 'Die Dienständerung konnte nicht bestätigt werden und kann bereits ausgeführt sein. Vor einem weiteren Versuch den Dienst prüfen.' : 'Die Dienstanfrage wurde abgebrochen oder konnte nicht abgeschlossen werden.'); }
+            if (!current()) throw operation.effect === 'write' ? new Error('Die Dienständerung konnte nicht bestätigt werden und kann bereits ausgeführt sein. Vor einem weiteren Versuch den Dienst prüfen.') : denied();
             try {
               const projected = projectResult(result, account.provider, account.id);
               return { success: true, contentItems: [{ type: 'inputText', text: JSON.stringify({ jobId: owner, provider: account.provider,

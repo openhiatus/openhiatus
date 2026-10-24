@@ -42,7 +42,7 @@ Die genaue Bereichsauswahl bleibt eine Forschungsfrage mit Messkriterien. Der [C
 
 ## Dienste als Fähigkeiten
 
-Gmail ist der erste geplante Dienst. Ein sinnvoller erster Ablauf ist: Konto verbinden, passende Nachrichten finden, benötigten Inhalt lesen und eine Antwort als lokalen Entwurf vorbereiten. Gmail-Entwürfe und tatsächlicher Versand sind getrennte Ausbauschritte.
+Google Kalender ist der erste angebundene persönliche Dienst: Konto über einen eigenen Desktop-OAuth-Client verbinden, Kalender auswählen und Termine im Gespräch lesen, anlegen und ändern. Die erste Version bearbeitet persönliche Einzeltermine ohne Teilnehmer und erhält Kalenderauswahl und Verbindung nach Neustart. Gmail folgt als weiterer Dienst: Konto verbinden, passende Nachrichten finden, benötigten Inhalt lesen und eine Antwort als lokalen Entwurf vorbereiten. Gmail-Entwürfe und tatsächlicher Versand sind getrennte Ausbauschritte.
 
 Weitere Dienste werden anhand konkreter Abläufe und vorhandener offizieller Schnittstellen ergänzt. Dafür entsteht eine kleine gemeinsame Anbindung für Konten, Fähigkeiten und Werkzeugaufrufe. Ein Marktplatz oder eine eigene Cloudplattform ist dafür zunächst nicht nötig.
 

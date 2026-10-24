@@ -14,6 +14,7 @@ import { computerImageRetentionCalls, computerWorkingMemoryCalls } from '../shar
 const WORKER_BUILTIN_TOOLS = new Set(['read', 'write', 'edit', 'powershell', 'grep', 'find', 'ls']);
 
 export interface PiAdapterOptions {
+  getSecrets?(): readonly string[];
   executable: string; processHost: string; hostEntry: string; home: string; workspace: string; providers: ProviderStore;
   getIdentityInstructions?: () => string;
   role?: ToolRole;
@@ -51,7 +52,7 @@ export class PiAdapter implements AgentAdapter {
     this.tools = options.tools ?? createToolRegistry([]);
   }
   private emit(event: AgentEvent): void { if (!this.disposed) this.options.onEvent(event); }
-  private clean(error: unknown): string { return redactError(error, this.options.providers.secrets()); }
+  private clean(error: unknown): string { return redactError(error, [...this.options.providers.secrets(), ...(this.options.getSecrets?.() ?? [])]); }
   async start(): Promise<void> {
     if (this.disposed) throw new Error(`${APP_DISPLAY_NAME} wird beendet.`);
     await Promise.all([mkdir(this.options.home, { recursive: true }), mkdir(this.options.workspace, { recursive: true })]);
