@@ -5,7 +5,7 @@
 openHiatus is a desktop app that combines your choice of AI models, speech services, and a personal memory. You keep the conversation going while up to two tasks run in the background, and each task returns a result you can trace.
 
 ![Status: alpha](https://img.shields.io/badge/status-alpha-orange)
-![Version 0.0.12](https://img.shields.io/badge/version-0.0.12-blue)
+![Version 0.0.13](https://img.shields.io/badge/version-0.0.13-blue)
 ![Platform: Windows x64](https://img.shields.io/badge/platform-Windows%20x64-0078D6)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green)
 
@@ -47,6 +47,8 @@ The app interface is currently in German. English meanings are shown in parenthe
 
 1. **Permissions:** On first launch, read and acknowledge the access permissions notice.
 2. **Models:** Under **Einstellungen → Modelle & Zugänge** (Settings → Models & access), sign in with ChatGPT or set up your own provider. Then pick models for conversation, work, and memory. For a local server, enter its base URL and model ID.
+
+Eligible ChatGPT and OpenAI models appear as adjacent choices such as **gpt-6.1-sol** and **gpt-6.1-sol (fast)**. Each role saves its own choice. The Fast variant requests faster processing with the same underlying model; a choice without `(fast)` sends no explicit Fast request. The provider determines the actual processing tier, which can differ from the request. API Fast requests may cost more. The conversation view shows both the selected conversation and work model, including `(fast)`. Existing model selections remain unchanged. The experimental separate computer model retains its own Fast switch under **Bedienung**.
 3. **Speech (optional):** Under **Einstellungen → Sprache & Geräte** (Settings → Speech & devices), add your Inworld credentials, choose your audio devices, and run the speech test. Text input works without a speech service.
 
 Model and speech providers are used with your own accounts. Their availability, usage limits, and costs depend on the service you choose.
@@ -148,6 +150,7 @@ npm run test:ui
 npm run test:audio-devices-ui
 npm run test:chatgpt-ui
 npm run test:conversation
+node scripts/fast-model-ui-check.mjs
 npm run test:workflow
 npm run test:ipc
 npm run test:storage-ui

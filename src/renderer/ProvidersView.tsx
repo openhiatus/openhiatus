@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Check, ChevronDown, KeyRound, LoaderCircle, PlugZap } from 'lucide-react';
 import type { Preferences, ProviderView, Snapshot } from '../shared/contracts';
 import { ChatGPTCard } from './ChatGPTCard';
+import { isFastModelSelection } from '../shared/model-selection';
 
 const providers = [
   { id: 'anthropic', label: 'Anthropic' },
@@ -36,7 +37,7 @@ function ProviderCard({ provider, disabled, onError }: { provider: ProviderView;
       <label className="field-label" htmlFor={`${provider.id}-url`}>Basis-URL {provider.id !== 'local' && <span className="muted">· optional</span>}</label>
       <input className="provider-input" id={`${provider.id}-url`} type="url" spellCheck={false} value={baseUrl} placeholder={provider.id === 'local' ? 'http://localhost:11434/v1' : 'Standard-Endpunkt des Anbieters'} onChange={event => { setBaseUrl(event.target.value); setSaved(false); }} disabled={busy} />
       <label className="field-label" htmlFor={`${provider.id}-models`}>Eigene Modell-IDs {provider.id !== 'local' && <span className="muted">· optional</span>}</label>
-      <textarea className="provider-input" id={`${provider.id}-models`} value={modelIds} rows={2} spellCheck={false} placeholder={provider.models.length ? provider.models.map(model => model.id.slice(model.id.indexOf('/') + 1)).join(', ') : 'Eine Modell-ID pro Zeile oder mit Komma getrennt'} onChange={event => { setModelIds(event.target.value); setSaved(false); }} disabled={busy} />
+      <textarea className="provider-input" id={`${provider.id}-models`} value={modelIds} rows={2} spellCheck={false} placeholder={provider.models.length ? provider.models.filter(model => !isFastModelSelection(model.id)).map(model => model.id.slice(model.id.indexOf('/') + 1)).join(', ') : 'Eine Modell-ID pro Zeile oder mit Komma getrennt'} onChange={event => { setModelIds(event.target.value); setSaved(false); }} disabled={busy} />
       <p className="billing-note">{provider.id === 'local' ? 'Trage mindestens eine Modell-ID ein, die dein Server bereitstellt.' : 'Leere Modell-IDs behalten den vorhandenen Modellkatalog. Eine leere Basis-URL nutzt den Standard des Anbieters.'}</p>
     </details>
     {provider.error && <p className="provider-error" role="alert">{provider.error}</p>}
@@ -54,7 +55,7 @@ export function ProvidersView({ state, disabled, onError, onPreference }: { stat
   return <>
     <section className="settings-card model-roles"><div className="settings-card-head"><span className="service-icon"><PlugZap size={21} /></span><div><h2>Deine Modelle</h2><p>Wähle für jede Aufgabe das passende Modell.</p></div></div>
       {roles.map(role => { const selected = state?.preferences[role.key] ?? ''; return <div className="field-row model-row" key={role.key}><label className="field-label" htmlFor={`role-${role.key}`}>{role.label}<small>{role.detail}</small></label><div className="select-wrap"><select id={`role-${role.key}`} value={selected} disabled={disabled || !models.length} onChange={event => onPreference({ [role.key]: event.target.value })}>{!models.length ? <option value="">Zuerst einen Anbieter einrichten</option> : !models.some(model => model.id === selected) ? <option value={selected}>{selected || 'Modell wählen'}</option> : null}{models.map(model => <option key={model.id} value={model.id}>{model.label}</option>)}</select><ChevronDown size={14} /></div></div>; })}
-      <p className="billing-note">Anbieterzugänge werden lokal geschützt gespeichert. Modelle mit ChatGPT nutzen dein freigeschaltetes ChatGPT-Kontingent. API-Modelle werden über das jeweilige Anbieterkonto abgerechnet.</p>
+      <p className="billing-note">„(fast)“ fordert Fast an. Ein Eintrag ohne diesen Zusatz sendet keine Fast-Anforderung. Die Verarbeitungsstufe bestimmt letztlich der Anbieter; bei API-Modellen kann Fast mehr kosten. Modelle mit ChatGPT nutzen dein freigeschaltetes ChatGPT-Kontingent. Anbieterzugänge werden lokal geschützt gespeichert.</p>
     </section>
     <ChatGPTCard state={state} provider={state?.providers?.find(provider => provider.id === 'chatgpt')} disabled={disabled} onError={onError} onPreference={onPreference} />
     {catalog.map(provider => <ProviderCard key={provider.id} provider={provider} disabled={disabled || !state} onError={onError} />)}

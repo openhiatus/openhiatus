@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { SkillEntry, Snapshot } from '../../../shared/contracts';
+import { modelSelectionLabel } from '../../../shared/model-selection';
 import { friendlyAudioError } from '../../audio';
 import { useVoiceSession, voicePresence } from '../voice';
 import { SessionOperations } from './session-operations';
@@ -150,7 +151,8 @@ export function useAppSession(navigation: SessionNavigation) {
   const isRecording = phase === 'recording' || phase === 'mic-test';
   const audioBusy = phase !== 'idle' && phase !== 'playing';
   const taskStatus = state?.task.status ?? 'idle';
-  const currentModel = state?.models.find(model => model.id === state.preferences.model)?.label ?? state?.preferences.model;
+  const currentModel = state?.models.find(model => model.id === state.preferences.model)?.label ?? modelSelectionLabel(state?.preferences.model ?? '');
+  const currentDialogModel = state?.models.find(model => model.id === state.preferences.dialogModel)?.label ?? modelSelectionLabel(state?.preferences.dialogModel ?? '');
   const voiceStatus = { idle: 'Sprachgespräch', opening: 'Mikrofon wird geöffnet', recording: 'Ich höre zu', 'mic-test': 'Mikrofontest', transcribing: 'Sprache wird erkannt', synthesizing: 'Antwort wird vertont', playing: 'Antwort wird vorgelesen' }[phase];
   const activeJobs = state?.jobs?.filter(job => ['queued', 'running', 'stopping'].includes(job.status)).length ?? 0;
   const skillInsertDisabledReason = busyAction === 'new' ? 'Das neue Gespräch wird vorbereitet. Danach kannst du einen Skill ergänzen.' : ['opening', 'recording', 'mic-test', 'transcribing'].includes(phase) ? 'Beende zuerst die Sprachaufnahme und warte auf das Transkript. Danach kannst du einen Skill ergänzen.' : undefined;
@@ -206,7 +208,7 @@ export function useAppSession(navigation: SessionNavigation) {
     report, phase, level, seconds, devices, microphoneLevel, playbackLevel, speak, testSpeech, cancelAudio, clearSpeech, stopEarcons,
     stopAll, send, startRecording, preference, insertSkill, action, newConversation, composerRef: textarea,
     acknowledged, taskBusy, jobsBusy, workBusy, voiceConversation, summaryInProgress, manualSummaryBusy, connected, ready,
-    speechReady: !!speechReady, isRecording, audioBusy, taskStatus, currentModel, voiceStatus, activeJobs,
+    speechReady: !!speechReady, isRecording, audioBusy, taskStatus, currentModel, currentDialogModel, voiceStatus, activeJobs,
     skillInsertDisabledReason };
 }
 

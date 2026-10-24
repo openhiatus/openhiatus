@@ -75,7 +75,7 @@ export function decodeRun(value: unknown): HostRun {
   if (typeof input.dialog !== 'boolean' || !Array.isArray(input.tools) || input.tools.length > 100) fail();
   if (input.computerOnly !== undefined && typeof input.computerOnly !== 'boolean') fail();
   if (input.computerOnly && input.dialog) fail();
-  if (input.serviceTier !== undefined && (input.serviceTier !== 'fast' || !input.computerOnly)) fail();
+  if (input.serviceTier !== undefined && input.serviceTier !== 'fast') fail();
   const tools = Array.from(input.tools, toolDefinition);
   if (new Set(tools.map(tool => tool.name)).size !== tools.length) fail();
   const threadId = input.threadId === undefined ? undefined : uuid(input.threadId);
