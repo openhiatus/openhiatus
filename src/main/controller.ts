@@ -8,6 +8,7 @@ import { favoriteSkillsContext } from './skill-favorites-context';
 import type { Activity, AudioClip, BackgroundJob, AgentAdapter, AgentEvent, ComputerFrame, Message, Preferences, SkillCatalog, Snapshot, SpeechCue, ProviderView, ProviderInput, DynamicFunctionTool, DynamicToolResponse, ChatGPTConnection } from '../shared/contracts';
 import { redact } from './redact';
 import { toSpokenText } from '../shared/spoken-text';
+import { activityOverlaySize, sidebarMode, ACTIVITY_OVERLAY_DEFAULT_SIZE } from '../shared/workspace-preferences';
 import type { CoreProposal, CoreProposalInput, MemoryContext, MemoryDocument, MemorySearchResult, MemorySnapshot, MemorySource, MemoryPeriodRequest, MemoryPeriodPage } from '../shared/memory';
 import { parseMemoryReply, runtimeInstructions } from './instructions';
 import { MemoryReportCoordinator, type SummaryBackend, type SummaryCallEvidence } from './modules/memory-reports';
@@ -97,6 +98,9 @@ export class AppController {
     saved.preferences.computerModel ??= '';
     saved.preferences.computerDelegationEnabled = saved.preferences.computerDelegationEnabled === true;
     saved.preferences.computerFast ??= true;
+    saved.preferences.sidebarMode ??= 'auto';
+    saved.preferences.activityOverlayEnabled ??= false;
+    saved.preferences.activityOverlaySize ??= ACTIVITY_OVERLAY_DEFAULT_SIZE;
     saved.preferences.computerDetailScaleDivisor = computerDetailDivisor(saved.preferences.computerDetailScaleDivisor ?? 1);
     saved.preferences.computerImageRetentionCalls = computerImageRetentionCalls(saved.preferences.computerImageRetentionCalls ?? 0);
     saved.preferences.computerWorkingMemoryCalls = computerWorkingMemoryCalls(saved.preferences.computerWorkingMemoryCalls ?? 0);
@@ -592,6 +596,9 @@ export class AppController {
     this.modelManagement.validateSelections(patch);
     if (patch.computerDelegationEnabled !== undefined && typeof patch.computerDelegationEnabled !== 'boolean') throw new Error('Ungültige Einstellung für das Computer-Modell.');
     if (patch.computerFast !== undefined && typeof patch.computerFast !== 'boolean') throw new Error('Ungültige Fast-Einstellung für das Computer-Modell.');
+    if (Object.hasOwn(patch, 'activityOverlayEnabled') && typeof patch.activityOverlayEnabled !== 'boolean') throw new Error('Ungültige Einstellung für die Arbeitsanzeige.');
+    if (Object.hasOwn(patch, 'sidebarMode')) patch = { ...patch, sidebarMode: sidebarMode(patch.sidebarMode) };
+    if (Object.hasOwn(patch, 'activityOverlaySize')) patch = { ...patch, activityOverlaySize: activityOverlaySize(patch.activityOverlaySize) };
     if (Object.hasOwn(patch, 'computerDetailScaleDivisor')) computerDetailDivisor(patch.computerDetailScaleDivisor);
     if (Object.hasOwn(patch, 'computerImageRetentionCalls')) computerImageRetentionCalls(patch.computerImageRetentionCalls);
     if (Object.hasOwn(patch, 'computerWorkingMemoryCalls')) computerWorkingMemoryCalls(patch.computerWorkingMemoryCalls);

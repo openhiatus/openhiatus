@@ -1,4 +1,5 @@
-import type { OpenhiatusApi, ComputerFrame, Snapshot, VoiceOverlayState } from '../contracts';
+import type { OpenhiatusApi, ComputerFrame, Snapshot } from '../contracts';
+import type { ActivityPresence } from '../activity-presence';
 
 /** The public async API is the source of truth for command argument and result types. */
 type ApiCommands = {
@@ -28,5 +29,5 @@ export interface IpcEvents {
 export interface IpcClientTransport {
   invoke(method: CommandName, args: readonly unknown[]): Promise<unknown>;
   subscribe(channel: keyof IpcEvents, listener: (payload: unknown) => void): () => void;
-  publishVoiceOverlay(state: VoiceOverlayState): void;
+  publishActivityPresence(state: ActivityPresence): void;
 }

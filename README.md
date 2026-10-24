@@ -5,7 +5,7 @@
 openHiatus is a desktop app that combines your choice of AI models, speech services, and a personal memory. You keep the conversation going while up to two tasks run in the background, and each task returns a result you can trace.
 
 ![Status: alpha](https://img.shields.io/badge/status-alpha-orange)
-![Version 0.0.7](https://img.shields.io/badge/version-0.0.7-blue)
+![Version 0.0.9](https://img.shields.io/badge/version-0.0.9-blue)
 ![Platform: Windows x64](https://img.shields.io/badge/platform-Windows%20x64-0078D6)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green)
 
@@ -53,6 +53,14 @@ Model and speech providers are used with your own accounts. Their availability, 
 
 Spoken replies include the actual answer. The system prompt asks the model to return an `openhiatus-reply` block with two fields: `spoken`, a self-contained answer of at most 450 characters including important limitations, and `text`, the complete written reply. Both are produced in the same model request. The app accepts speech up to 500 characters unchanged and shortens longer speech without failing the task. Only the full written answer appears in the conversation. Older plain-text replies remain supported, and malformed output stays recoverable without reading raw protocol data aloud. See the [structured-reply contract](docs/structured-replies.md).
 
+### Window layout and background activity
+
+The left navigation automatically collapses to icons below 960 pixels of content width and expands in wider windows. Use the button at its bottom-right edge to choose either layout manually; your choice survives restart. The small reset button or **Einstellungen → Bedienung → Linke Navigation → Automatisch** restores automatic behavior. The central symbol scales with the space available in the conversation view.
+
+Enable **Arbeitsanzeige im Hintergrund** (Background activity indicator) under **Einstellungen → Bedienung** to see a round symbol with a short status at the top-right of the app's monitor. It stays visible throughout listening, transcription, thinking, work, speech synthesis, and playback while the main window is in the background. Transcript review keeps a ready indicator; idle hides it. The former rectangular transcript overlay is replaced by this same optional symbol. Full transcripts and replies stay in the main window.
+
+Choose **Größe der Arbeitsanzeige** (Indicator size) in the same settings card, or drag the symbol's right-hand grip down to enlarge it and up to shrink it. The size is saved. The indicator stays out of keyboard focus, and desktop operations temporarily hide it before input and capture.
+
 ### Keyboard shortcuts
 
 Choose a specific microphone and speaker to keep using those devices. A disconnected choice remains selected and is marked as unavailable; reconnecting the device restores its use when it can be identified. If several identical devices cannot be distinguished, select the intended device again. Choose **Windows-Standardgerät** (Windows default device) only when you want to follow the current Windows selection.
@@ -98,7 +106,7 @@ The computer runtime has the desktop tool and a bounded result-reporting tool: n
 - Gmail and other personal services aren't connected yet. The services view is a placeholder for future integrations.
 - Live audio is not available yet.
 - How reliably desktop control works depends partly on the selected model and the application being controlled.
-- The interface is not fully responsive to window size and display scaling yet.
+- Window layouts adapt down to a 560 × 440 outer window; broader display-scaling and enlarged-text coverage is still planned.
 
 ## Roadmap
 

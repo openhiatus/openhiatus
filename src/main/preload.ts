@@ -11,6 +11,6 @@ const api = createOpenhiatusApi({
     ipcRenderer.on(channel, handler);
     return () => { ipcRenderer.removeListener(channel, handler); };
   },
-  publishVoiceOverlay: state => { ipcRenderer.send('openhiatus:voice-overlay', state); },
+  publishActivityPresence: state => { ipcRenderer.send('openhiatus:activity-presence', state); },
 });
 contextBridge.exposeInMainWorld('openhiatus', api);

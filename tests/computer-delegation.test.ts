@@ -90,6 +90,23 @@ test('a fresh Luna Fast child performs several observed inputs with only compute
   await fixture.registry.dispose();
 });
 
+test('delegated actions and planner observations both use the desktop visibility guard', async () => {
+  let hidden = false, guarded = 0, executed = 0;
+  const fixture = setup([async tools => {
+    await tools.call('computer', { action: 'screenshot' });
+    await tools.call('computer', { action: 'click', frameId: 'guarded-1', x: 10, y: 20 });
+    return JSON.stringify({ status: 'reported', summary: 'Synthetic input completed' });
+  }], {
+    runDesktopOperation: async operation => { guarded++; hidden = true; try { return await operation(); } finally { hidden = false; } },
+    computer: { execute: async () => { assert.equal(hidden, true); return frame(`guarded-${++executed}`); }, stop: async () => {}, dispose: async () => {} },
+  });
+  const parent = fixture.bind();
+  await parent.call('computer_task', { objective: 'Synthetic guarded input' });
+  await parent.call('computer', { action: 'screenshot', resolution: 'original' });
+  assert.equal(executed, 3); assert.equal(guarded, 3); assert.equal(hidden, false);
+  await fixture.registry.dispose();
+});
+
 test('blocked and failed child reports stay distinct from verified completion and Fast can explicitly be disabled', async () => {
   const fixture = setup([async () => JSON.stringify({ status: 'blocked', summary: 'Need exact destination' }), async () => { throw new Error('Synthetic worker failure'); }], { fast: false });
   const parent = fixture.bind();

@@ -30,7 +30,7 @@ Die aktuelle Entwicklung liegt in **eigenem Projektordner und eigenem Repository
 
 **Unverändert oder fast unverändert:**
 - Renderer/UI: Präsenz, Gespräch, Hintergrundaufträge, Gedächtnis-Ansicht, Earcons, Sprachwarteschlange
-- `speech.ts`, `voice-overlay.ts`, `native-hotkeys.ts` mit `openhiatus-hotkeys.cs`
+- `speech.ts`, `activity-overlay.ts`, `native-hotkeys.ts` mit `openhiatus-hotkeys.cs`
 - `memory.ts`, `storage.ts`, `redact.ts`, Identität und Kern
 - `computer.ts` (cua-driver-Anbindung, Frame-Prüfung), `desktop-coordinator.ts`
 - `jobs.ts` (parallele Aufträge, Ressourcenvormerkung)

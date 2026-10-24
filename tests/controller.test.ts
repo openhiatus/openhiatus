@@ -43,6 +43,20 @@ test('changing a device ID without identity metadata cannot retain the previous 
   await f.app.dispose();
 });
 
+test('workspace preference validation is atomic and persists valid manual overrides', async () => {
+  const f = fixture();
+  await f.app.savePreferences({ sidebarMode: 'expanded', activityOverlayEnabled: true, activityOverlaySize: 224 });
+  const before = f.app.snapshot().preferences;
+  assert.equal(before.sidebarMode, 'expanded'); assert.equal(before.activityOverlaySize, 224);
+  for (const patch of [{ sidebarMode: 'invalid' }, { sidebarMode: undefined }, { activityOverlayEnabled: 'yes' },
+    { activityOverlayEnabled: undefined }, { activityOverlaySize: 400 }, { activityOverlaySize: undefined }, { activityOverlaySize: 144.1 }]) {
+    await assert.rejects(f.app.savePreferences({ sidebarMode: 'collapsed', ...patch } as never));
+    assert.deepEqual(f.app.snapshot().preferences, before);
+  }
+  await f.app.dispose();
+  assert.equal(f.saved().preferences.sidebarMode, 'expanded'); assert.equal(f.saved().preferences.activityOverlaySize, 224);
+});
+
 test('legacy direct-task completion scrubs secrets revealed by structured reply decoding', async () => {
   const f = fixture(); await f.app.saveSpeechKey('synthetic-secret');
   await f.app.send('Antworte auf die Frage.', 'encoded-direct');

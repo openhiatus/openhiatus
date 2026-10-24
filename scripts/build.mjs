@@ -14,6 +14,7 @@ await bundle({ entryPoints: ['src/main/agent-host.ts'], bundle: true, platform: 
 await bundle({ entryPoints: ['src/main/state-worker.ts'], bundle: true, platform: 'node', target: 'node24', format: 'cjs', outfile: 'dist/state-worker.cjs', sourcemap: true });
 await bundle({ entryPoints: ['src/main/memory-worker.ts'], bundle: true, platform: 'node', target: 'node24', format: 'cjs', outfile: 'dist/memory-worker.cjs', sourcemap: true });
 await bundle({ entryPoints: ['src/main/preload.ts'], bundle: true, platform: 'node', target: 'node24', format: 'cjs', external: ['electron'], outfile: 'dist/preload.cjs' });
+await bundle({ entryPoints: ['src/main/activity-overlay-preload.ts'], bundle: true, platform: 'node', target: 'node24', format: 'cjs', external: ['electron'], outfile: 'dist/activity-overlay-preload.cjs' });
 await renderer({ base: './', build: { outDir: 'dist/renderer', emptyOutDir: true }, esbuild: { jsx: 'automatic' } });
 await mkdir('dist/demo', { recursive: true });
 await copyFile('demo/projektnotizen.md', 'dist/demo/projektnotizen.md');

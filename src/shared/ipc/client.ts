@@ -30,7 +30,7 @@ export function createOpenhiatusApi(transport: IpcClientTransport): OpenhiatusAp
     onToggleRecording: listener => subscribe('openhiatus:toggle-recording', () => listener()),
     onSubmitDraft: listener => subscribe('openhiatus:submit-draft', () => listener()),
     onComputerFrame: listener => subscribe('openhiatus:computer-frame', listener),
-    publishVoiceOverlay: state => transport.publishVoiceOverlay(state),
+    publishActivityPresence: state => transport.publishActivityPresence(state),
     send: (text, requestId) => call('send', text, requestId), stop: () => call('stop'), stopJob: id => call('stopJob', id),
     savePreferences: patch => call('savePreferences', patch), acknowledgeFullAccess: () => call('acknowledgeFullAccess'),
     signInChatGPT: () => call('signInChatGPT'), cancelChatGPTSignIn: () => call('cancelChatGPTSignIn'), signOutChatGPT: () => call('signOutChatGPT'),

@@ -60,3 +60,21 @@ test('native input failure keeps error status and the same fresh control images 
     await binding.stop(); await registry.dispose();
   }
 });
+
+test('the desktop visibility guard covers native input and recovery, and always releases on failures', async () => {
+  const order: string[] = []; let hidden = false;
+  const registry = createToolRegistry([createComputerToolContribution({
+    runDesktopOperation: async operation => {
+      order.push('hide'); hidden = true;
+      try { return await operation(); } finally { hidden = false; order.push('restore'); }
+    },
+    computer: {
+      execute: async () => { assert.equal(hidden, true); order.push('native'); throw new Error('synthetic driver failure'); },
+      stop: async () => {}, dispose: async () => {},
+    },
+  })]);
+  const binding = registry.bind({ role: 'worker', runId: 'test', signal: new AbortController().signal, emit: () => {} });
+  await assert.rejects(binding.call('computer', { action: 'screenshot' }), /synthetic driver failure/);
+  assert.deepEqual(order, ['hide', 'native', 'restore']); assert.equal(hidden, false);
+  await binding.stop(); await registry.dispose();
+});

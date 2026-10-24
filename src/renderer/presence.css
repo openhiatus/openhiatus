@@ -121,3 +121,14 @@
 .context-meter.full small{color:#e8a08a}
 .history-open .context-meter{width:190px;flex-shrink:0;gap:3px}
 .history-open .context-meter small{display:none}
+.voice-stage .presence.large .presence-mark{transform:scale(var(--presence-mark-scale,1.9))}
+.workspace-shell .voice-stage{padding-left:24px;padding-right:24px;justify-content:safe center}
+.workspace-shell .stage-actions{flex-shrink:0}
+@media(max-width:760px){
+  .workspace-shell .voice-stage{padding-left:18px;padding-right:18px;gap:12px}
+  .workspace-shell .stage-text strong{font-size:clamp(23px,4vw,30px)}
+  .workspace-shell .history-open .voice-stage{flex-wrap:wrap;padding:12px 18px;gap:10px}
+  .workspace-shell .history-open .stage-text{flex:1 1 120px}
+  .workspace-shell .history-open .stage-text strong{font-size:13px}
+  .workspace-shell .history-open .context-meter{width:100%;flex-basis:100%;max-width:none}
+}

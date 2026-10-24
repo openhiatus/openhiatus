@@ -1,4 +1,6 @@
 import type { SkillFavorites } from './skill-favorites';
+import type { SidebarMode } from './workspace-preferences';
+import type { ActivityPresence } from './activity-presence';
 import type { MemorySnapshot, MemorySource, MemorySearchResult, MemoryPeriodRequest, MemoryPeriodPage, SummaryJobState } from './memory';
 
 export interface Usage { inputTokens: number; outputTokens: number; cacheReadTokens: number; cacheWriteTokens: number; costUsd?: number; }
@@ -20,6 +22,7 @@ export interface Message { id: string; role: 'user' | 'assistant'; text: string;
 export interface Activity { id: string; at: string; kind: 'system' | 'command' | 'file' | 'error'; title: string; detail?: string; }
 export interface Task { id: string; status: TaskStatus; threadId?: string; turnId?: string; error?: string; }
 export interface Preferences {
+  sidebarMode?: SidebarMode; activityOverlayEnabled?: boolean; activityOverlaySize?: number;
   inputDeviceId: string; outputDeviceId: string;
   inputDeviceLabel?: string; inputDeviceGroupId?: string; outputDeviceLabel?: string; outputDeviceGroupId?: string;
   computerOverviewScaleDivisor?: number;
@@ -50,19 +53,13 @@ export interface Snapshot { messages: Message[]; activity: Activity[]; task: Tas
 export interface ContextUsage { threadId: string; usedTokens: number; windowTokens?: number; at: string; }
 export interface AudioClip { base64: string; mimeType: string; }
 export interface ComputerFrame { dataUrl: string; frameId: string; width: number; height: number; at: string; observation?: import('./computer-views').ComputerObservation; }
-export interface VoiceOverlayState {
-  phase: 'idle' | 'opening' | 'recording' | 'transcribing' | 'ready' | 'sending' | 'sent' | 'error';
-  text: string;
-  detail: string;
-  canSend: boolean;
-}
 export interface OpenhiatusApi {
   snapshot(): Promise<Snapshot>;
   subscribe(listener: (state: Snapshot) => void): () => void;
   onStop(listener: () => void): () => void;
   onToggleRecording(listener: () => void): () => void;
   onSubmitDraft(listener: () => void): () => void;
-  publishVoiceOverlay(state: VoiceOverlayState): void;
+  publishActivityPresence(state: ActivityPresence): void;
   onComputerFrame(listener: (frame: ComputerFrame) => void): () => void;
   send(text: string, requestId: string): Promise<void>;
   stop(): Promise<void>;
