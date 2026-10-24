@@ -50,7 +50,7 @@ Verbundenes Konto und verfügbare Aktionen sind erkennbar. openHiatus unterschei
 
 ## Gedächtnis und Persönlichkeit
 
-openHiatus soll an bekannte Zusammenhänge anknüpfen und einen angenehmen, direkten Gesprächsstil haben. Identität und persönlicher Kern bleiben vom Nutzer bearbeitbar; autonome Kernänderungen benötigen den vorhandenen konkreten Freigabeweg. Quellen und historische Fassungen bleiben nachvollziehbar.
+openHiatus soll an bekannte Zusammenhänge anknüpfen und einen zum Nutzer passenden Gesprächsstil haben. Rufname, Persönlichkeit und dauerhafter Antwortstil werden eindeutig im Profil unter Einstellungen → Persönlichkeit gepflegt. Das Gedächtnis hält Erinnerungen, Fakten und persönliche Arbeitsvorlieben; es verweist zum Profil, statt einen zweiten Stileditor anzubieten. Erweiterte Hintergrundnotizen bleiben vom Nutzer bearbeitbar; autonome Änderungen benötigen den vorhandenen konkreten Freigabeweg. Quellen und historische Fassungen bleiben nachvollziehbar.
 
 Präsenz, variierte Eingangsbestätigungen und Signaltöne sind bereits vorhandene Grundlagen. Weitere Schritte sind verständliche Ergebnisdarstellung, bei Bedarf ein persönlicher Einstieg, optionales Freisprechen, Unterbrechen und frühere Sprachausgabe. Initiative bleibt dosierbar; alles Hörbare kann abgeschaltet werden.
 

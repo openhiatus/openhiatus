@@ -21,12 +21,13 @@ test('the compact rail retains named destinations, state, controls and a way bac
     onNavigate: () => {}, onNewConversation: () => {}, onStop: async () => {}, onError: () => {}, children: 'Inhalt',
   }));
   assert.match(html, /workspace-shell sidebar-collapsed/);
-  for (const label of ['Gespräch', 'Aufgaben', 'Dienste', 'Gedächtnis &amp; Identität', 'Skills', 'Einstellungen', 'Neues Gespräch', 'Arbeitsordner öffnen']) {
+  for (const label of ['Gespräch', 'Aufgaben', 'Dienste', 'Gedächtnis', 'Skills', 'Einstellungen', 'Neues Gespräch', 'Arbeitsordner öffnen']) {
     assert.ok(html.includes(`aria-label="${label}"`), `Compact navigation must retain an accessible name: ${label}`);
   }
   assert.match(html, /aria-current="page"/);
   assert.match(html, /aria-expanded="false" aria-controls="workspace-sidebar" aria-label="Navigation ausklappen"/);
   assert.match(html, /aria-label="Navigation automatisch anpassen"/);
+  assert.doesNotMatch(html, /Gedächtnis &amp; Identität/);
 });
 
 test('the central symbol responds to each stage dimension and remains bounded at extreme sizes', () => {

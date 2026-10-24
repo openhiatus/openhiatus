@@ -1,5 +1,5 @@
 .settings-feature{min-height:0;color:var(--text);font-size:14px}
-.settings-feature .settings-content{max-width:1050px;padding:36px clamp(20px,4vw,48px) 42px}
+.settings-feature .settings-content{max-width:1050px;padding:36px clamp(20px,4vw,48px) 42px;container-type:inline-size;container-name:settings-content}
 .settings-feature-heading .eyebrow{font-size:12px;letter-spacing:1.6px}
 .settings-feature .settings-feature-heading h1{font-size:clamp(30px,3.3vw,38px);margin:10px 0 12px}
 .settings-feature .settings-lead{font-size:14px;line-height:1.75;color:#a7b29e;margin-bottom:26px}
@@ -48,3 +48,17 @@
 .settings-shortcuts kbd{display:inline-block;padding:4px 7px;font-size:12px;line-height:1.5;color:#d5e5c5;border:1px solid #4d5e41;border-bottom-width:2px;border-radius:5px;background:#162011}
 @media(max-width:850px){.settings-feature .settings-content{padding:26px 20px 32px}.settings-tabs{gap:3px}.settings-tabs>button{gap:6px;padding:9px 6px;font-size:13px}.settings-feature .settings-card{padding:20px}.settings-feature .audio-device-grid{grid-template-columns:1fr;gap:24px}.settings-feature .settings-card-head .service-status{margin-left:53px}.settings-shortcuts dl>div{grid-template-columns:1fr;gap:8px}.settings-toggle{gap:18px}.settings-feature .model-roles .field-label{flex:auto;width:auto}}
 @media(max-width:540px){.settings-feature .settings-content{padding-left:14px;padding-right:14px}.settings-tabs>button{flex-direction:column;font-size:12px;gap:6px}.settings-feature .settings-card{padding:17px}.settings-feature .input-action{flex-wrap:wrap}.settings-feature .input-action input{flex-basis:100%;width:100%}.settings-feature .input-action>.secondary-button{width:100%}.settings-feature .settings-card-head>div{flex-basis:calc(100% - 60px)}.settings-feature .provider-actions{align-items:stretch}.settings-feature .provider-actions .subtle-danger{margin-left:0}}
+.assistant-profile-fields{border:0;padding:0;margin:0;min-width:0}
+.assistant-profile-card .provider-input{width:100%;min-width:0}
+.assistant-profile-card .assistant-profile-help{margin:8px 0 20px}
+.assistant-template-heading{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin:24px 0 15px;padding-top:20px;border-top:1px solid #35432e;font-size:13px}
+.assistant-template-heading strong{font-weight:550;color:#d5e2c9}
+.assistant-template-heading span{font-size:12px;color:#95a986}
+.assistant-personality-instructions{display:block;resize:vertical;min-height:140px;max-height:440px;line-height:1.75!important}
+.assistant-profile-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:20px}
+.assistant-profile-actions>button{display:inline-flex;align-items:center;justify-content:center;gap:7px;max-width:100%;white-space:normal;text-align:center}
+.assistant-profile-feedback{min-height:20px;margin-top:12px;font-size:13px;line-height:1.7;color:#b6cba5;overflow-wrap:anywhere}
+.assistant-profile-card .provider-error.assistant-profile-feedback{color:#e3b198}
+@media(max-width:540px){.assistant-profile-actions{align-items:stretch;gap:10px}.assistant-profile-actions>.primary-button,.assistant-profile-actions>.secondary-button{width:100%}.assistant-profile-actions>.text-button{padding:7px 0}}
+/* The actual content width includes a manually expanded sidebar and narrow native windows. */
+@container settings-content (max-width:660px){.settings-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}.settings-tabs>button{flex-direction:row;min-height:46px;padding:10px 6px;font-size:13px;gap:7px}}

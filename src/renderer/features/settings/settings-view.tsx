@@ -1,6 +1,7 @@
 import { AudioDeviceSelect } from './audio-device-select';
-import { useId, useRef, useState, type KeyboardEvent } from 'react';
-import { AudioLines, ChevronDown, Headphones, KeyRound, Keyboard, LoaderCircle, Mic, Monitor, SlidersHorizontal, Square, Volume2 } from 'lucide-react';
+import { AssistantProfileCard } from './assistant-profile-card';
+import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
+import { AudioLines, ChevronDown, Headphones, KeyRound, Keyboard, LoaderCircle, Mic, Monitor, SlidersHorizontal, Square, UserRound, Volume2 } from 'lucide-react';
 import type { PreferencesPatch, Snapshot } from '../../../shared/contracts';
 import { COMPUTER_DETAIL_FACTORS, COMPUTER_OVERVIEW_FACTORS } from '../../../shared/computer-views';
 import { COMPUTER_IMAGE_RETENTION_CALLS, COMPUTER_WORKING_MEMORY_CALLS } from '../../../shared/computer-task-settings';
@@ -25,6 +26,7 @@ export interface SettingsVoicePort {
 
 export interface SettingsViewProps {
   state?: Snapshot;
+  navigationRequest?: { tab: SettingsTab; requestId: number };
   workBusy: boolean;
   summaryInProgress: boolean;
   voice: SettingsVoicePort;
@@ -36,9 +38,10 @@ export interface SettingsViewProps {
 const tabs = [
   { id: 'models', label: 'Modelle & Zugänge', icon: KeyRound },
   { id: 'speech', label: 'Sprache & Geräte', icon: AudioLines },
+  { id: 'personality', label: 'Persönlichkeit', icon: UserRound },
   { id: 'behavior', label: 'Bedienung', icon: SlidersHorizontal },
 ] as const;
-type SettingsTab = typeof tabs[number]['id'];
+export type SettingsTab = typeof tabs[number]['id'];
 const phaseLabels: Record<AudioPhase, string> = {
   idle: 'Audio bereit', opening: 'Mikrofon wird geöffnet', recording: 'Aufnahme läuft', 'mic-test': 'Mikrofontest',
   transcribing: 'Sprache wird erkannt', synthesizing: 'Ausgabe wird vertont', playing: 'Ausgabe wird abgespielt',
@@ -47,12 +50,17 @@ const phaseLabels: Record<AudioPhase, string> = {
 function Spinner() { return <LoaderCircle size={15} className="spin" aria-hidden="true" />; }
 
 /** The App keeps this feature mounted: tabs and unsaved access fields belong to this view. */
-export function SettingsView({ state, workBusy, summaryInProgress, voice, onPreference, onError, onNotice }: SettingsViewProps) {
-  const [tab, setTab] = useState<SettingsTab>('models');
+export function SettingsView({ state, navigationRequest, workBusy, summaryInProgress, voice, onPreference, onError, onNotice }: SettingsViewProps) {
+  const [tab, setTab] = useState<SettingsTab>(navigationRequest?.tab ?? 'models');
   const [speechKey, setSpeechKey] = useState('');
   const [busyAction, setBusyAction] = useState('');
   const actionPending = useRef(false);
   const tabButtons = useRef<Array<HTMLButtonElement | null>>([]);
+  useEffect(() => {
+    if (!navigationRequest) return;
+    const index = tabs.findIndex(destination => destination.id === navigationRequest.tab);
+    setTab(navigationRequest.tab); tabButtons.current[index]?.focus();
+  }, [navigationRequest?.tab, navigationRequest?.requestId]);
   const id = useId();
   const recording = voice.phase === 'recording' || voice.phase === 'mic-test';
   const ready = state !== undefined;
@@ -90,7 +98,7 @@ export function SettingsView({ state, workBusy, summaryInProgress, voice, onPref
 
   return <main className="settings-feature settings-scroll" aria-label="Einstellungen">
     <div className="settings-content">
-      <header className="settings-feature-heading"><div className="eyebrow">DEIN openHiatus</div><h1>Deine Einstellungen.</h1><p className="settings-lead">Modelle verbinden, Sprache einrichten und die Bedienung anpassen.</p></header>
+      <header className="settings-feature-heading"><div className="eyebrow">DEIN openHiatus</div><h1>Deine Einstellungen.</h1><p className="settings-lead">Modellzugänge, Sprache, Persönlichkeit und Bedienung an einem Ort.</p></header>
       <div className="settings-tabs" role="tablist" aria-label="Einstellungsbereiche">
         {tabs.map(({ id: value, label, icon: Icon }, index) => <button key={value} ref={button => { tabButtons.current[index] = button; }}
           id={`${id}-tab-${value}`} role="tab" aria-selected={tab === value} aria-controls={`${id}-panel-${value}`} tabIndex={tab === value ? 0 : -1}
@@ -135,6 +143,12 @@ export function SettingsView({ state, workBusy, summaryInProgress, voice, onPref
           <p className="billing-note">Die Geräteauswahl wird automatisch gespeichert. Getrennte Geräte bleiben vorgemerkt und werden beim Wiederverbinden erneut verwendet. Nur Windows-Standardgerät folgt der aktuellen Windows-Auswahl.</p>
           <p className="billing-note">Gerätenamen erscheinen, sobald der Browser auf das Mikrofon zugreifen darf. Der lokale Mikrofontest benötigt keinen Sprachzugang.</p>
         </section>
+      </section>
+
+      <section id={`${id}-panel-personality`} role="tabpanel" aria-labelledby={`${id}-tab-personality`} hidden={tab !== 'personality'} className="settings-tab-panel">
+        <p className="settings-panel-intro">Hier bestimmst du Rufname und Antwortstil deines Assistenten. Wähle eine Persönlichkeit oder gestalte eigene Vorlagen.</p>
+        <AssistantProfileCard profile={state?.preferences.assistantProfile} ready={ready}
+          onSave={async profile => { await window.openhiatus.savePreferences({ assistantProfile: profile }); }} onError={onError} />
       </section>
 
       <section id={`${id}-panel-behavior`} role="tabpanel" aria-labelledby={`${id}-tab-behavior`} hidden={tab !== 'behavior'} className="settings-tab-panel">

@@ -3,6 +3,7 @@ import { parseSkillFavorites } from '../../shared/skill-favorites';
 import { computerDetailDivisor, computerOverviewDivisor } from '../../shared/computer-views';
 import { computerImageRetentionCalls, computerWorkingMemoryCalls } from '../../shared/computer-task-settings';
 import { activityOverlaySize, sidebarMode } from '../../shared/workspace-preferences';
+import { parseAssistantProfile } from '../../shared/assistant-profile';
 import { command, inputObject, inputText, noArgs, type HandlerMap } from './command';
 import type { IpcPorts } from './ports';
 
@@ -10,8 +11,9 @@ const booleanPreferences = ['speakReplies', 'voiceConversation', 'earcons', 'mem
 const textPreferences = ['inputDeviceId', 'outputDeviceId', 'voiceId', 'model', 'dialogModel', 'memoryModel', 'computerModel'] as const;
 const deviceMetadata = ['inputDeviceLabel', 'inputDeviceGroupId', 'outputDeviceLabel', 'outputDeviceGroupId'] as const;
 function preferences(value: unknown): PreferencesPatch {
-  const input = inputObject(value, [...booleanPreferences, ...textPreferences, ...deviceMetadata, 'skillFavorites', 'computerOverviewScaleDivisor', 'computerDetailScaleDivisor', 'computerImageRetentionCalls', 'computerWorkingMemoryCalls', 'sidebarMode', 'activityOverlaySize'], 'Ungültige Einstellungen.');
+  const input = inputObject(value, [...booleanPreferences, ...textPreferences, ...deviceMetadata, 'skillFavorites', 'computerOverviewScaleDivisor', 'computerDetailScaleDivisor', 'computerImageRetentionCalls', 'computerWorkingMemoryCalls', 'sidebarMode', 'activityOverlaySize', 'assistantProfile'], 'Ungültige Einstellungen.');
   const patch: PreferencesPatch = {};
+  if (Object.hasOwn(input, 'assistantProfile')) patch.assistantProfile = parseAssistantProfile(input.assistantProfile);
   for (const key of booleanPreferences) if (Object.hasOwn(input, key)) {
     const item = input[key]; if (typeof item !== 'boolean') throw new Error('Ungültige Einstellung.'); patch[key] = item;
   }

@@ -4,6 +4,7 @@ import { parseSkillFavorites } from '../skill-favorites';
 import { computerImageRetentionCalls, computerWorkingMemoryCalls, parseComputerTaskSettings } from '../computer-task-settings';
 import { parseModelRequestSummaries } from '../model-requests';
 import { activityOverlaySize, sidebarMode } from '../workspace-preferences';
+import { parseAssistantProfile } from '../assistant-profile';
 import { array, boolean, choice, integer, invalidPayload, number, object, optional, text, type Decoder } from './decode';
 
 const id = text(1024), at = text(100), short = text(4096), body = text();
@@ -24,7 +25,7 @@ export const decodeSnapshot: Decoder<Snapshot> = object({
   messages: array(object(messageFields), 10000),
   activity: array(object({ id, at, kind: choice(['system', 'command', 'file', 'error']), title: body, detail: optional(body) }), 20000),
   task: object({ id, status: taskStatus, threadId: optional(body), turnId: optional(body), error: optional(body) }),
-  preferences: object({ sidebarMode: optional(sidebarMode), activityOverlayEnabled: optional(boolean), activityOverlaySize: optional(activityOverlaySize), inputDeviceId: short, outputDeviceId: short, speakReplies: boolean, voiceId: short, model: short, dialogModel: short, memoryModel: short,
+  preferences: object({ assistantProfile: optional(parseAssistantProfile), sidebarMode: optional(sidebarMode), activityOverlayEnabled: optional(boolean), activityOverlaySize: optional(activityOverlaySize), inputDeviceId: short, outputDeviceId: short, speakReplies: boolean, voiceId: short, model: short, dialogModel: short, memoryModel: short,
     inputDeviceLabel: optional(text(1000)), inputDeviceGroupId: optional(text(1000)), outputDeviceLabel: optional(text(1000)), outputDeviceGroupId: optional(text(1000)),
     memoryAutoSummarize: optional(boolean), voiceConversation: optional(boolean), earcons: optional(boolean), skillFavorites: optional(parseSkillFavorites),
     fullAccessAcknowledged: optional(boolean), chatgptBackgroundUsage: optional(boolean), computerOverviewScaleDivisor: optional(overviewPreference),

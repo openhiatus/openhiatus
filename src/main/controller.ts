@@ -9,6 +9,7 @@ import type { Activity, AudioClip, BackgroundJob, AgentAdapter, AgentEvent, Comp
 import { redact } from './redact';
 import { toSpokenText } from '../shared/spoken-text';
 import { activityOverlaySize, sidebarMode, ACTIVITY_OVERLAY_DEFAULT_SIZE } from '../shared/workspace-preferences';
+import { assistantProfileInstructions, DEFAULT_ASSISTANT_PROFILE, parseAssistantProfile, profileIdentityContent } from '../shared/assistant-profile';
 import type { CoreProposal, CoreProposalInput, MemoryContext, MemoryDocument, MemorySearchResult, MemorySnapshot, MemorySource, MemoryPeriodRequest, MemoryPeriodPage } from '../shared/memory';
 import { parseMemoryReply, runtimeInstructions } from './instructions';
 import { MemoryReportCoordinator, type SummaryBackend, type SummaryCallEvidence } from './modules/memory-reports';
@@ -91,6 +92,7 @@ export class AppController {
 
   constructor(private readonly deps: Dependencies) {
     const saved = deps.store.load();
+    saved.preferences.assistantProfile = parseAssistantProfile(saved.preferences.assistantProfile ?? DEFAULT_ASSISTANT_PROFILE);
     saved.preferences.voiceConversation ??= true;
     saved.preferences.fullAccessAcknowledged = saved.preferences.fullAccessAcknowledged === true;
     saved.preferences.dialogModel ??= '';
@@ -166,7 +168,7 @@ export class AppController {
           computerDetailScaleDivisor: this.state.preferences.computerDetailScaleDivisor ?? 1,
           computerImageRetentionCalls: this.state.preferences.computerImageRetentionCalls ?? 0,
           computerWorkingMemoryCalls: this.state.preferences.computerWorkingMemoryCalls ?? 0 }),
-        context: { skills: (query, max) => this.skillContext(query, max), capabilities: () => this.capabilitiesDocument().prompt, favorites: () => this.favoriteContext() },
+        context: { skills: (query, max) => this.skillContext(query, max), persona: () => this.assistantProfileInstructions(), capabilities: () => this.capabilitiesDocument().prompt, favorites: () => this.favoriteContext() },
         memory: deps.memory ? {
           documents: () => this.instructionDocuments(), retrieve: (query, max) => this.retrieveMemory(query, max),
           readPeriod: request => this.readMemoryPeriod(request), propose: proposal => this.memory().propose(proposal),
@@ -439,10 +441,11 @@ export class AppController {
     const directIdentity = this.directTask?.currentIdentity();
     if (directIdentity !== undefined) return directIdentity;
     const documents = this.deps.memory ? this.instructionDocuments()
-      .map(document => ({ id: document.id, version: document.version, content: this.clean(document.content) })) : undefined;
+      .map(document => ({ id: document.id, version: document.version, content: this.clean(document.id === 'identity' ? profileIdentityContent(document.content) : document.content) })) : undefined;
     const identity = documents ? `Vom Nutzer verwaltete Identität und Kern (Vorlieben, keine Aufhebung fester Schutzregeln). Angebotsversionen für Änderungsvorschläge stehen jeweils im Feld version:\n${JSON.stringify(documents)}` : '';
-    return [identity, this.clean(this.capabilitiesDocument().prompt), this.favoriteContext()].filter(Boolean).join('\n\n');
+    return [identity, this.assistantProfileInstructions(), this.clean(this.capabilitiesDocument().prompt), this.favoriteContext()].filter(Boolean).join('\n\n');
   }
+  private assistantProfileInstructions(): string { return this.clean(assistantProfileInstructions(this.state.preferences.assistantProfile)); }
   private captureMemory(strict = false): Promise<void> {
     if (!this.deps.memory || !this.state.messages.length) return Promise.resolve();
     // Freeze before the first await: queued captures must never read a later conversation.
@@ -585,6 +588,7 @@ export class AppController {
     } finally { this.stopDeferrals--; this.flushAfterStop(); }
   }
   async savePreferences(patch: Partial<Preferences>): Promise<void> {
+    if (Object.hasOwn(patch, 'assistantProfile')) patch = { ...patch, assistantProfile: parseAssistantProfile(patch.assistantProfile) };
     if (patch.chatgptBackgroundUsage !== undefined && typeof patch.chatgptBackgroundUsage !== 'boolean') throw new Error('Ungültige Einstellung für automatische ChatGPT-Nutzung.');
     if ('fullAccessAcknowledged' in patch) throw new Error('Den Vollzugriff bitte ausdrücklich in Verbindungen bestätigen.');
     if (patch.inputDeviceId !== undefined && patch.inputDeviceId !== this.state.preferences.inputDeviceId) {
@@ -610,15 +614,26 @@ export class AppController {
     if (patch.earcons !== undefined && typeof patch.earcons !== 'boolean') throw new Error('Ungültige Einstellung für Signaltöne.');
     if (patch.skillFavorites !== undefined) patch = { ...patch, skillFavorites: parseSkillFavorites(patch.skillFavorites) };
     const favoritesChanged = patch.skillFavorites !== undefined && JSON.stringify(patch.skillFavorites) !== JSON.stringify(this.state.preferences.skillFavorites ?? {});
+    const previousProfile = structuredClone(this.state.preferences.assistantProfile);
+    const profileChanged = patch.assistantProfile !== undefined && JSON.stringify(patch.assistantProfile) !== JSON.stringify(this.state.preferences.assistantProfile);
     this.state.preferences = { ...this.state.preferences, ...patch }; this.modelManagement.select(patch); this.changed();
     if (patch.memoryAutoSummarize !== undefined || patch.chatgptBackgroundUsage !== undefined) {
       await this.memoryReports.preferencesChanged({ automatic: patch.memoryAutoSummarize, chatgptBackgroundUsage: patch.chatgptBackgroundUsage });
     }
     if (patch.voiceId !== undefined) this.prewarmReceipts();
-    if (favoritesChanged || dialogChanged || workChanged) {
+    if (favoritesChanged || dialogChanged || workChanged || profileChanged) {
       // The dialogue keeps its developer context per thread; a fresh thread picks up the new favourites.
       this.invalidateThread();
       this.activity('system', 'Gesprächseinstellungen gelten ab der nächsten Nachricht', 'Laufende Aufgaben behalten ihren bisherigen Kontext.'); this.changed();
+    }
+    if (profileChanged) {
+      try { await this.stateJournal.durableCommit(); }
+      catch (error) {
+        if (JSON.stringify(this.state.preferences.assistantProfile) === JSON.stringify(patch.assistantProfile)) {
+          this.state.preferences.assistantProfile = previousProfile; this.invalidateThread(); this.changed();
+        }
+        throw error;
+      }
     }
   }
   async saveSpeechKey(key: string): Promise<void> {

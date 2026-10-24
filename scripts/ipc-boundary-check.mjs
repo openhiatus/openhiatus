@@ -113,7 +113,7 @@ try {
   const draft = 'Diesen Entwurf während der Arbeit behalten.';
   await page.getByRole('textbox', { name: 'Dein Auftrag', exact: true }).fill(draft);
   const callsBeforeNavigation = requests.length;
-  for (const name of [/^Aufgaben/, 'Dienste', 'Gedächtnis & Identität', 'Skills', 'Einstellungen', 'Gespräch']) {
+  for (const name of [/^Aufgaben/, 'Dienste', 'Gedächtnis', 'Skills', 'Einstellungen', 'Gespräch']) {
     const destination = navigation.getByRole('button', { name, exact: typeof name === 'string' });
     await destination.click();
     await expect(destination).toHaveAttribute('aria-current', 'page');

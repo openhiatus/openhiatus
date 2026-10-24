@@ -59,7 +59,7 @@ try {
   await expect(page.getByText('Vollzugriff', { exact: true })).toBeVisible();
 
   const navigation = page.getByRole('navigation', { name: 'Hauptnavigation' });
-  for (const name of ['Aufgaben', 'Dienste', 'Gedächtnis & Identität', 'Einstellungen', 'Gespräch']) {
+  for (const name of ['Aufgaben', 'Dienste', 'Gedächtnis', 'Einstellungen', 'Gespräch']) {
     const destination = navigation.getByRole('button', { name, exact: true });
     await destination.click();
     await expect(destination).toHaveAttribute('aria-current', 'page');
@@ -205,8 +205,8 @@ try {
   assert.equal(await restarted.locator('.workspace-shell').evaluate(element => [...element.querySelectorAll('*')].every(child => {
     const style = getComputedStyle(child); return style.animationName === 'none' && style.transitionDuration.split(',').every(value => parseFloat(value) === 0);
   })), true, 'Reduced-motion preference must disable workspace animation and transitions.');
-  await restarted.getByRole('button', { name: /Gedächtnis & Identität/ }).first().click();
-  await expect(restarted.getByRole('heading', { name: 'Gedächtnis & Identität.', exact: true })).toBeVisible();
+  await restarted.getByRole('button', { name: /Gedächtnis/ }).first().click();
+  await expect(restarted.getByRole('heading', { name: 'Gedächtnis.', exact: true })).toBeVisible();
   assert.deepEqual(errors, []);
   console.log(JSON.stringify({ status: 'passed', profile, checked: ['first-run full access acknowledgement and restart persistence', 'fresh profile has no preinstalled skills', 'user skill content and discovery survive restart', 'navigation preserves draft and unsaved credentials', 'settings keyboard tabs and retained selection', 'provider password fields', 'local provider without a key', 'provider test through a loopback SSE server', 'independent model roles', 'Windows DPAPI credential roundtrip and secret exclusion', 'provider and speech credential removal', 'skills with Unicode paths preserve drafts and never send', 'synthetic microphone capture survives navigation, Escape stops it', 'compact layout', 'reduced-motion preference', 'no renderer exceptions'] }, null, 2));
 } finally { if (instance) await instance.close(); await new Promise(resolve => modelServer.close(resolve)); }

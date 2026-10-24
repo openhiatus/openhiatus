@@ -26,7 +26,7 @@ const destinations = [
   { id: 'chat', label: 'Gespräch', icon: MessageSquare },
   { id: 'tasks', label: 'Aufgaben', icon: ListTodo },
   { id: 'services', label: 'Dienste', icon: Unplug },
-  { id: 'memory', label: 'Gedächtnis & Identität', icon: BookOpen },
+  { id: 'memory', label: 'Gedächtnis', icon: BookOpen },
   { id: 'skills', label: 'Skills', icon: Puzzle },
   { id: 'settings', label: 'Einstellungen', icon: Settings2 },
 ] as const;

@@ -58,6 +58,17 @@ test('workspace appearance preferences cross the typed boundary only with valid 
   assert.deepEqual(decodeResponse('snapshot', await f.router.dispatch('snapshot', [])).preferences, f.snapshot.preferences);
 });
 
+test('the selected personality and complete custom templates cross the profile boundary atomically', async () => {
+  const f = fixture(), profile = { name: 'Mira', personalityId: 'custom-office', templates: [{ id: 'custom-office', label: 'Büro', instructions: 'Klar und knapp.' }] };
+  assert.equal((await f.router.dispatch('savePreferences', [{ assistantProfile: profile }])).ok, true);
+  assert.deepEqual(f.calls.at(-1), { name: 'savePreferences', args: [{ assistantProfile: profile }] });
+  for (const invalid of [null, undefined, { ...profile, personalityId: 'unknown' }, { ...profile, templates: [] }, { ...profile, extra: 'unknown' }]) {
+    assert.equal((await f.router.dispatch('savePreferences', [{ assistantProfile: invalid }])).ok, false);
+  }
+  assert.equal(f.calls.length, 1); f.snapshot.preferences.assistantProfile = profile;
+  assert.deepEqual(decodeResponse('snapshot', await f.router.dispatch('snapshot', [])).preferences.assistantProfile, profile);
+});
+
 test('every known command validates and produces its declared result through the same router/client contract', async () => {
   const f = fixture();
   for (const name of Object.keys(validArgs)) {

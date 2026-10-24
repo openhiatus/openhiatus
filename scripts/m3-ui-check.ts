@@ -70,7 +70,7 @@ try {
   assert.match(source!.text, /12. Oktober/);
   const search = await page.evaluate(() => window.openhiatus.searchMemory('Bewässerung'));
   assert.ok(search.length > 0);
-  await page.getByRole('button', { name: 'Gedächtnis & Identität', exact: true }).click();
+  await page.getByRole('button', { name: 'Gedächtnis', exact: true }).click();
   await expect(page.getByRole('heading', { name: /Gedächtnis/ }).first()).toBeVisible();
   await expect(page.getByRole('button', { name: 'Berichte aktualisieren', exact: true })).toBeVisible();
   const autoCheckbox = page.getByRole('checkbox', { name: /^Abgeschlossene Zeiträume automatisch aufbereiten/ });
@@ -146,15 +146,17 @@ try {
   await expect.poll(() => page.evaluate(async () => (await window.openhiatus.snapshot()).preferences.memoryAutoSummarize)).toBe(true);
   assert.equal((await page.evaluate(() => window.openhiatus.snapshot())).summary?.calls, 0);
 
-  await page.getByRole('button', { name: 'Laufzeit-Vorgaben', exact: true }).click();
+  await page.getByRole('button', { name: 'Technische Vorgaben', exact: true }).click();
   await expect(page.getByRole('heading', { name: /Agent-Anweisungen/ })).toBeVisible();
   await page.screenshot({ path: 'artifacts/m3-laufzeitvorgaben.png' });
-  await page.getByRole('button', { name: 'Identität & Kern', exact: true }).click();
+  await page.getByRole('button', { name: 'Langzeitnotizen', exact: true }).click();
+  await page.getByRole('checkbox', { name: 'Erweiterte Hintergrundnotiz anzeigen', exact: true }).check();
+  await page.locator('.memory-index-item').filter({ hasText: 'Erweiterte Hintergrundnotiz' }).click();
   await page.getByRole('button', { name: 'Bearbeiten', exact: true }).click();
   await page.locator('#memory-document-editor').fill('Ich bin openHiatus. Ich antworte auf Deutsch und nenne Unsicherheit klar.');
   // A navigation roundtrip must not lose an unsaved identity edit.
   await page.getByRole('button', { name: 'Gespräch', exact: true }).click();
-  await page.getByRole('button', { name: 'Gedächtnis & Identität', exact: true }).click();
+  await page.getByRole('button', { name: 'Gedächtnis', exact: true }).click();
   await expect(page.locator('#memory-document-editor')).toHaveValue('Ich bin openHiatus. Ich antworte auf Deutsch und nenne Unsicherheit klar.');
   await page.getByRole('button', { name: 'Änderung speichern', exact: true }).click();
   await expect(page.locator('#memory-document-editor')).toHaveCount(0);
@@ -204,7 +206,7 @@ try {
   assert.equal((await restarted.evaluate(() => window.openhiatus.snapshot())).summary?.calls, 0);
   assert.equal(restored.documents.find(item => item.id === 'day:2026-10-05')!.content, octoberLatest);
   assert.equal(restored.documents.find(item => item.id === 'day:2026-10-05')!.summary?.model, fixtureModel);
-  await restarted.getByRole('button', { name: 'Gedächtnis & Identität', exact: true }).click();
+  await restarted.getByRole('button', { name: 'Gedächtnis', exact: true }).click();
   await expect(restarted.getByRole('checkbox', { name: /^Abgeschlossene Zeiträume automatisch aufbereiten/ })).toBeChecked();
   const disk = await readFile(restored.storagePath, 'utf8');
   assert.ok(disk.includes('Bewässerung') && disk.includes('Zuständigkeit'));
