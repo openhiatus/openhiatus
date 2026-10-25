@@ -14,6 +14,10 @@ assert.equal(manifest.productName, 'openHiatus');
 assert.equal(manifest.version, sourceManifest.version);
 assert.equal(manifest.dependencies['@earendil-works/pi-coding-agent'], '1.3.0');
 assert.ok(!existsSync(path.join(appDirectory, 'skills')), 'Repository skills must not ship with the app.');
+for (const file of ['.github', 'resources/windows-installer.iss', 'resources/openhiatus-icon.cs']) {
+  assert.ok(!existsSync(path.join(appDirectory, file)), 'Build-only installer files must not ship with the app.');
+}
+for (const file of ['dist/openhiatus.ico', 'dist/openhiatus.png']) await access(path.join(appDirectory, file));
 for (const file of [executable, path.join(appDirectory, 'dist', 'agent-host.mjs'), path.join(appDirectory, 'dist', 'activity-overlay-preload.cjs'), path.join(directory, 'resources', 'native', 'openhiatus-process-host.exe'), path.join(directory, 'resources', 'native', 'openhiatus-input-guard.exe')]) await access(file);
 async function inventory(root) {
   const files = [];

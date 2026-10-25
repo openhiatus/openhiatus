@@ -5,12 +5,12 @@
 openHiatus is a desktop app that operates visible Windows applications with your choice of AI models. You describe a task by voice or text, keep the conversation going while up to two tasks run in the background, and each task returns a result you can trace. The project focuses on reliable, affordable computer use on your own device; see [Direction](#direction).
 
 ![Status: alpha](https://img.shields.io/badge/status-alpha-orange)
-![Version 0.0.19](https://img.shields.io/badge/version-0.0.19-blue)
+![Version 0.0.20](https://img.shields.io/badge/version-0.0.20-blue)
 ![Platform: Windows x64](https://img.shields.io/badge/platform-Windows%20x64-0078D6)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green)
 
 > [!WARNING]
-> openHiatus is an **early public alpha**. Features, the interface, and data formats may change, and you should expect bugs and unfinished areas. This repository contains the source code only; there are no prebuilt Windows packages yet.
+> openHiatus is an **early public alpha**. Features, the interface, and data formats may change, and you should expect bugs and unfinished areas. The Windows installer is currently unsigned. Public release downloads have not been published yet; maintainers can build the Setup file below.
 
 ## Features
 
@@ -26,9 +26,17 @@ openHiatus is built on Electron, React, and TypeScript. It uses [Pi](https://www
 
 ## Getting started
 
-### Requirements
+### Install on Windows
 
-- Windows x64
+Use `openHiatus-Setup-<version>-x64.exe` on Windows 10 (2004 or newer) or Windows 11, x64. Open Setup, optionally select a Desktop icon, and click **Installieren** (Install). It installs for your Windows account without administrator rights and adds openHiatus to the Start menu. Node.js, Git and separate agent runtimes are not required to use the installed app.
+
+The app stays in `%LOCALAPPDATA%\Programs\openHiatus`. To update, close openHiatus and open the newer Setup file. Settings, credentials, memory and the Windows autostart choice are preserved. Remove the app through Windows **Installed apps**; your profile in `%APPDATA%\openhiatus` stays available. Setup never enables autostart automatically.
+
+These alpha builds are unsigned, so Windows may show a SmartScreen warning. See the [Windows installation guide](docs/windows-installation.md) for installation, updates, removal and building Setup.
+
+### Development requirements
+
+- Windows 10 (2004 or newer) or Windows 11, x64
 - Node.js 24 with npm
 - Windows PowerShell and the .NET Framework 4 64-bit C# compiler (`%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`). The build uses it for the native process and hotkey helpers.
 
@@ -85,7 +93,7 @@ In the Windows package, open **Einstellungen → Bedienung → Windows-Autostart
 
 The switch reads the actual Windows registration, including a disable action in Task Manager or Windows Settings. Enabling it explicitly reactivates the entry; merely opening the app does not rewrite it. Turning it off removes the app's login entry for the current Windows user. No administrator rights are required. The setting belongs to this computer and is not copied into agent preferences.
 
-Keep the complete package in a stable folder. After moving it or switching packages, enable the option in the new copy to update the executable path. Turn it off before removing the package. Source/development runs and launches with a separate `--data-dir` profile cannot change your normal Windows autostart. The minimized launch uses the fixed `--autostart` argument; debug and profile arguments are never registered.
+Setup updates use the same install folder and preserve this registration, including a disable action in Windows. When switching from a portable folder to the installed app, enable the option in the installed copy once to update its path. For portable use, keep the complete package in a stable folder, re-enable the option after moving it, and turn it off before deleting it. The uninstaller removes only an autostart entry pointing to its own copy. Source/development runs and launches with a separate `--data-dir` profile cannot change your normal Windows autostart. The minimized launch uses the fixed `--autostart` argument; debug and profile arguments are never registered.
 
 ### Keyboard shortcuts
 
@@ -200,7 +208,7 @@ npm run test:autostart
 
 </details>
 
-- **Packaging:** `npm run package` creates a local Windows development package, and `npm run test:package` checks it. Builds, packages, test profiles, and run reports are not committed.
+- **Packaging:** `npm run package` creates a portable Windows folder, and `npm run test:package` checks it. `npm run installer` builds a single Setup executable and SHA-256 file in `release/<version>/installer`. The first build downloads a pinned, hash-verified Inno Setup compiler into `.tmp`; no global compiler installation is needed. `npm run test:installer` checks installation, upgrade, running-app protection, shortcuts, profile preservation, installed workflows and removal with isolated folders and registry entries. It briefly opens its own test windows. See the [installation guide](docs/windows-installation.md) for details. Builds, packages, test profiles, and run reports are not committed.
 - **Benchmarks:** Synthetic desktop tasks are available under [benchmarks](benchmarks/README.md).
 - **Architecture:** The [architecture overview](docs/architekturpruefung.md) explains the module boundaries.
 - **Test results:** The [test report](docs/openhiatus-testprotokoll.md) records dated local checks. Older documents describe the state at the time they were written.

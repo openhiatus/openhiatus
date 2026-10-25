@@ -181,7 +181,7 @@ async function createApp(): Promise<void> {
   await controller.initialize();
   await memory.initializeProfile(controller.snapshot().preferences.assistantProfile ?? { name: '', personalityId: 'balanced', templates: [] });
   const rendererFile = path.join(__dirname, 'renderer', 'index.html'), rendererUrl = pathToFileURL(rendererFile).href;
-  window = new BrowserWindow({ width: 1360, height: 900, minWidth: 560, minHeight: 440, show: !startedAtLogin, title: APP_DISPLAY_NAME, backgroundColor: '#131714', autoHideMenuBar: true,
+  window = new BrowserWindow({ width: 1360, height: 900, minWidth: 560, minHeight: 440, show: !startedAtLogin, title: APP_DISPLAY_NAME, icon: path.join(__dirname, 'openhiatus.png'), backgroundColor: '#131714', autoHideMenuBar: true,
     webPreferences: { preload: path.join(__dirname, 'preload.cjs'), nodeIntegration: false, contextIsolation: true, sandbox: true, webSecurity: true, spellcheck: false, backgroundThrottling: false } });
   window.removeMenu();
   guidanceOverlay = new GuidanceOverlay(() => {
