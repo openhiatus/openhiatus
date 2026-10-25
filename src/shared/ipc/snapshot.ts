@@ -37,6 +37,7 @@ export const decodeSnapshot: Decoder<Snapshot> = object({
     error: optional(body), authType: optional(choice(['api-key', 'chatgpt'])), account: optional(body) }), 1000)),
   chatgpt: optional(object({ status: choice(['signed-out', 'signing-in', 'signed-in', 'error']), account: optional(body), planUsage: boolean, error: optional(body) })),
   hotkeys: optional(object({ recording: boolean, submit: boolean, stop: boolean })),
+  desktopControl: optional(choice(['free', 'preparing', 'active', 'stopping', 'error'])),
   workspace: short, version: short,
   jobs: optional(array(object({ id, requestId: short, title: body, prompt: body, status: choice(['queued', 'running', 'stopping', 'completed', 'interrupted', 'failed']),
     createdAt: at, updatedAt: at, model: short, resources: array(short, 24), threadId: optional(body), turnId: optional(body), result: optional(body), error: optional(body),

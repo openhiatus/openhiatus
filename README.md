@@ -5,7 +5,7 @@
 openHiatus is a desktop app that operates visible Windows applications with your choice of AI models. You describe a task by voice or text, keep the conversation going while up to two tasks run in the background, and each task returns a result you can trace. The project focuses on reliable, affordable computer use on your own device; see [Direction](#direction).
 
 ![Status: alpha](https://img.shields.io/badge/status-alpha-orange)
-![Version 0.0.17](https://img.shields.io/badge/version-0.0.17-blue)
+![Version 0.0.18](https://img.shields.io/badge/version-0.0.18-blue)
 ![Platform: Windows x64](https://img.shields.io/badge/platform-Windows%20x64-0078D6)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green)
 
@@ -75,6 +75,10 @@ Enable **Arbeitsanzeige im Hintergrund** (Background activity indicator) under *
 
 Choose **Größe der Arbeitsanzeige** (Indicator size) in the same settings card, or drag the symbol's right-hand grip down to enlarge it and up to shrink it. The size is saved. The indicator stays out of keyboard focus, and desktop operations temporarily hide it before input and capture.
 
+Background tasks show **Hintergrundarbeit · Arbeitsplatz frei** in the app: you can keep using your mouse and keyboard. When the agent actually acquires desktop control, a mandatory amber frame and a large **Agent steuert deinen PC** banner appear on every connected display. Your ordinary physical mouse and keyboard input is blocked while the agent owns the desktop, including pauses between model requests. The banner remains visible even when the optional background indicator is disabled. Screen help that only observes and marks a target leaves input available.
+
+Press **Esc** to stop the agent and take over; the banner displays this shortcut throughout the takeover. **Ctrl+Alt+F12** also stops it. Registered **F8/F9** voice shortcuts remain available. Completion or Stop releases the input lock. A separate Windows helper releases it if the app exits or stops responding; the watchdog is about two seconds. Already admitted input may have taken effect. This prevents ordinary input conflicts on the current desktop; it is not a security boundary against other software injecting input and does not cover Windows secure desktops. See the [desktop-control contract](docs/desktop-control.md).
+
 ### Keyboard shortcuts
 
 Choose a specific microphone and speaker to keep using those devices. A disconnected choice remains selected and is marked as unavailable; reconnecting the device restores its use when it can be identified. If several identical devices cannot be distinguished, select the intended device again. Choose **Windows-Standardgerät** (Windows default device) only when you want to follow the current Windows selection.
@@ -87,6 +91,8 @@ Choose a specific microphone and speaker to keep using those devices. A disconne
 | <kbd>Esc</kbd> / <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>F12</kbd> | Stop the conversation and managed execution |
 
 You can also stop individual tasks in the task view. If another program already uses a global hotkey, the app shows a notice, and the buttons in the window keep working.
+
+During desktop takeover, use **Esc** from any program. Outside takeover, Esc works in the openHiatus window; **Ctrl+Alt+F12** is the global Stop shortcut.
 
 ### Experimental desktop views (source builds)
 
@@ -179,6 +185,8 @@ npm run test:memory-ui
 npm run test:computer-images
 npm run test:computer-preview
 npm run test:computer-model-ui
+npm run test:input-guard
+npm run test:desktop-control
 ```
 
 </details>

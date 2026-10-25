@@ -34,6 +34,8 @@ import { installHelpSkill, readHelpSkill } from './platform/screen-help/skill';
 import { createScreenHelpTools } from './platform/tools/screen-help-tools';
 import { createComputerImageProcessor } from './computer-images';
 import { sharedDesktopCoordinator } from './desktop-coordinator';
+import { DesktopControlOverlay } from './desktop-control-overlay';
+import { startDesktopProtection, type ProtectDesktop } from './desktop-protection';
 
 app.setName(APP_DISPLAY_NAME);
 app.setAppUserModelId('local.openhiatus.assistant');
@@ -44,6 +46,8 @@ const locked = app.requestSingleInstanceLock();
 if (!locked) app.quit();
 let window: BrowserWindow | undefined, controller: AppController | undefined;
 let activityOverlay: ActivityOverlay | undefined;
+let desktopControlOverlay: DesktopControlOverlay | undefined;
+let unsubscribeDesktop: (() => void) | undefined;
 let guidanceOverlay: GuidanceOverlay | undefined, screenHelp: ScreenHelpService | undefined, screenMonitor: ScreenMonitor | undefined;
 let voicePresence: ActivityPresence = { phase: 'idle' };
 function stopActivityPresence(): void { voicePresence = { phase: 'idle' }; activityOverlay?.stop(); screenHelp?.clear(); void googleCalendarAuth?.cancelLogin(); }
@@ -60,6 +64,11 @@ let stateWriter: WorkerStateStore | undefined;
 let memoryWriter: WorkerMemoryStore | undefined;
 let quitting = false, disposed = false;
 let voiceHotkeys: Awaited<ReturnType<typeof startNativeVoiceHotkeys>> | undefined;
+function stopDesktopControl(error?: Error): void {
+  stopActivityPresence(); window?.webContents.send('openhiatus:emergency-stop');
+  void controller?.stop().catch(failure => controller?.reportError(failure));
+  if (error) controller?.reportError(error);
+}
 
 async function createApp(): Promise<void> {
   const workspace = path.join(dataDirectory, 'Arbeitsbereich'), home = path.join(dataDirectory, 'pi');
@@ -100,6 +109,13 @@ async function createApp(): Promise<void> {
   const serviceBroker = services;
   serviceBroker.register(calendar.adapter()); syncCalendarConnection();
   const nativeDirectory = app.isPackaged ? path.join(process.resourcesPath, 'native') : path.join(__dirname, 'native');
+  const protectDesktop: ProtectDesktop = async signal => {
+    if (!desktopControlOverlay || quitting) throw Error('Die Desktopübernahme ist noch nicht verfügbar.');
+    await desktopControlOverlay.ready(); signal.throwIfAborted();
+    return startDesktopProtection({ executable: path.join(nativeDirectory, 'openhiatus-input-guard.exe'), signal,
+      voiceKeys: controller?.snapshot().hotkeys, onStop: stopDesktopControl,
+      onVoice: key => { if (!quitting && window && !window.isDestroyed()) window.webContents.send(key === 'F8' ? 'openhiatus:toggle-recording' : 'openhiatus:submit-draft'); } });
+  };
   const monitor = screenMonitor = new ScreenMonitor(path.join(nativeDirectory, 'openhiatus-screen-watch.exe'), () => screenHelp?.clear());
   const help = screenHelp = new ScreenHelpService({
     skill: async () => redact(await readHelpSkill(helpSkill), controller?.redactionSecrets() ?? initialSecrets), processor: createComputerImageProcessor, busy: () => sharedDesktopCoordinator.isBusy,
@@ -113,6 +129,7 @@ async function createApp(): Promise<void> {
   });
   const runDesktopOperation = <T>(operation: () => Promise<T>): Promise<T> => { help.clear(); return activityOverlay?.runHidden(operation) ?? operation(); };
   const computerTools = () => createComputerToolContribution({
+    protectDesktop,
     getOverviewScaleDivisor: () => controller?.snapshot().preferences.computerOverviewScaleDivisor ?? 1,
     getDetailScaleDivisor: () => controller?.snapshot().preferences.computerDetailScaleDivisor ?? 1,
     runDesktopOperation,
@@ -132,14 +149,14 @@ async function createApp(): Promise<void> {
   const createWorker = (onEvent: (event: AgentEvent) => void, job: BackgroundJob) => {
     // Admission captured these values before asynchronous memory lookup/queueing.
     const computer = job.computer;
-    const desktop = computer?.delegationEnabled ? createDelegatedComputerToolContribution({ model: computer.model, fast: computer.fast,
+    const desktop = computer?.delegationEnabled ? createDelegatedComputerToolContribution({ model: computer.model, fast: computer.fast, protectDesktop,
       getOverviewScaleDivisor: () => computer.overviewScaleDivisor,
       getDetailScaleDivisor: () => computer.detailScaleDivisor ?? 1,
       runDesktopOperation,
       createWorker: (onEvent, tools, instructions) => new PiAdapter({ ...runtimeOptions, role: 'worker', computerOnly: true, instructions, tools,
         computerImageRetentionCalls: computer.imageRetentionCalls ?? 0,
         computerWorkingMemoryCalls: computer.workingMemoryCalls ?? 0, onEvent }),
-    }) : createComputerToolContribution({ getOverviewScaleDivisor: () => computer?.overviewScaleDivisor ?? 1,
+    }) : createComputerToolContribution({ protectDesktop, getOverviewScaleDivisor: () => computer?.overviewScaleDivisor ?? 1,
       getDetailScaleDivisor: () => computer?.detailScaleDivisor ?? 1, runDesktopOperation });
     return new PiAdapter({ ...runtimeOptions, role: 'worker',
       computerImageRetentionCalls: computer?.imageRetentionCalls ?? 0,
@@ -189,6 +206,20 @@ async function createApp(): Promise<void> {
     },
   });
   activityOverlay.update(activityOverlayState(controller.snapshot(), voicePresence));
+  desktopControlOverlay = new DesktopControlOverlay({ displays: () => screen.getAllDisplays(), createWindow: () => {
+    const overlay = new BrowserWindow({ title: `${APP_DISPLAY_NAME} · Desktopübernahme`, show: false, transparent: true,
+      frame: false, focusable: false, alwaysOnTop: true, skipTaskbar: true, hasShadow: false,
+      resizable: false, movable: false, minimizable: false, maximizable: false, closable: false, backgroundColor: '#00000000',
+      webPreferences: { nodeIntegration: false, contextIsolation: true, sandbox: true, webSecurity: true, spellcheck: false, backgroundThrottling: false } });
+    overlay.removeMenu(); overlay.setIgnoreMouseEvents(true); overlay.setAlwaysOnTop(true, 'screen-saver'); overlay.setContentProtection(true);
+    overlay.webContents.setWindowOpenHandler(() => ({ action: 'deny' })); overlay.webContents.on('will-navigate', event => event.preventDefault());
+    overlay.webContents.on('render-process-gone', () => stopDesktopControl(Error('Die Übernahmeanzeige wurde unterbrochen.')));
+    return overlay;
+  } });
+  unsubscribeDesktop = sharedDesktopCoordinator.subscribe(phase => {
+    controller?.updateDesktopControl(phase);
+    void desktopControlOverlay?.update(phase).catch(error => stopDesktopControl(error));
+  });
   window.on('close', event => {
     // Keep the window available until process termination and both durable stores
     // confirm shutdown; a failed flush must leave a visible way to retry closing.
@@ -198,9 +229,9 @@ async function createApp(): Promise<void> {
   const refreshActivityOverlay = () => activityOverlay?.refresh();
   window.on('blur', refreshActivityOverlay); window.on('minimize', refreshActivityOverlay); window.on('restore', refreshActivityOverlay);
   window.on('show', refreshActivityOverlay); window.on('hide', refreshActivityOverlay); window.on('move', refreshActivityOverlay); window.on('resize', refreshActivityOverlay);
-  const displayChanged = () => { help.clear(); refreshActivityOverlay(); };
+  const displayChanged = () => { help.clear(); refreshActivityOverlay(); if (sharedDesktopCoordinator.isBusy) stopDesktopControl(); void desktopControlOverlay?.refresh().catch(error => stopDesktopControl(error)); };
   screen.on('display-added', displayChanged); screen.on('display-removed', displayChanged); screen.on('display-metrics-changed', displayChanged);
-  window.on('closed', () => { activityOverlay?.dispose(); void voiceHotkeys?.dispose().catch(() => {}); });
+  window.on('closed', () => { unsubscribeDesktop?.(); desktopControlOverlay?.dispose(); activityOverlay?.dispose(); void voiceHotkeys?.dispose().catch(() => {}); });
   session.defaultSession.setPermissionRequestHandler((contents, permission, callback, details) => {
     callback(contents === window?.webContents && contents.getURL() === rendererUrl && permission === 'media' && 'mediaTypes' in details && !!details.mediaTypes?.includes('audio') && !details.mediaTypes.includes('video'));
   });

@@ -61,9 +61,11 @@ async function checkHistory(page, count, answer, stage) {
     await expect(meter.locator('strong')).toHaveText('–');
     if (requireContext && stage !== 'restart') throw new Error('The completed SDK dialogue did not report current context usage.');
   }
-  const stored = JSON.parse(await readFile(path.join(profile, 'state.json'), 'utf8')).state;
-  assert.equal(stored.messages.length, count);
-  assert.equal(stored.messages.at(-1).text, answer);
+  // Renderer completion can precede the asynchronous journal flush to state.json.
+  await expect.poll(async () => {
+    const stored = JSON.parse(await readFile(path.join(profile, 'state.json'), 'utf8')).state;
+    return { count: stored.messages.length, text: stored.messages.at(-1)?.text };
+  }).toEqual({ count, text: answer });
   diagnostics.push({ stage, messages: snapshot.messages.length, threadId: snapshot.task.threadId, context: snapshot.context, meterText: await meter.innerText(), hotkeys: snapshot.hotkeys });
 }
 try {

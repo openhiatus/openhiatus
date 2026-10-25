@@ -269,6 +269,10 @@ export class AppController {
   updateHotkeys(hotkeys: NonNullable<Snapshot['hotkeys']>): void {
     this.state.hotkeys = { ...hotkeys }; this.changed(false);
   }
+  updateDesktopControl(phase: NonNullable<Snapshot['desktopControl']>): void {
+    if (this.state.desktopControl === phase) return;
+    this.state.desktopControl = phase; this.changed(false);
+  }
   jobsBusy(): boolean { return this.tasks?.busy() ?? false; }
   async listSkills(): Promise<SkillCatalog> {
     if (this.closing || this.shuttingDown) throw new Error(`${APP_DISPLAY_NAME} wird beendet.`);

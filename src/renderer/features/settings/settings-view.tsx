@@ -169,7 +169,8 @@ export function SettingsView({ state, navigationRequest, onOpenIdentity, workBus
             <option value="auto">Automatisch nach Fensterbreite</option><option value="expanded">Ausgeklappt</option><option value="collapsed">Eingeklappt</option>
           </select><ChevronDown size={15} aria-hidden="true" /></div>
           <p className="billing-note" id={`${id}-sidebar-mode-description`}>Die Automatik zeigt bei wenig Platz nur die Symbole. Unten rechts an der Leiste kannst du die Navigation auch selbst ein- und ausklappen.</p>
-          <label className="settings-toggle"><span><strong>Arbeitsanzeige im Hintergrund</strong><small>Zeigt das runde Symbol mit Status beim Zuhören, Denken, Arbeiten und Sprechen, solange ein anderes Fenster aktiv ist.</small></span>
+          <p className="billing-note">Bei PC-Übernahme zeigt openHiatus immer einen auffälligen Bildschirmrand. Deine Maus- und Tastatureingaben sind dann gesperrt. Esc stoppt den Agenten und gibt den Arbeitsplatz wieder frei. Reine Hintergrundarbeit sperrt keine Eingaben.</p>
+          <label className="settings-toggle"><span><strong>Arbeitsanzeige im Hintergrund</strong><small>Zeigt das runde Symbol beim Zuhören, Denken und Sprechen, solange ein anderes Fenster aktiv ist. Die Übernahmeanzeige bleibt unabhängig davon aktiv.</small></span>
             <input type="checkbox" checked={state?.preferences.activityOverlayEnabled === true} disabled={!ready} onChange={event => preference({ activityOverlayEnabled: event.target.checked })} /></label>
           <label className="field-label" htmlFor={`${id}-overlay-size`}>Größe der Arbeitsanzeige</label>
           <div className="select-wrap"><select id={`${id}-overlay-size`} value={state?.preferences.activityOverlaySize ?? ACTIVITY_OVERLAY_DEFAULT_SIZE} disabled={!ready}

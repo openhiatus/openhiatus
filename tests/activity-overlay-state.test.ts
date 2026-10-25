@@ -42,3 +42,13 @@ test('audio stays active beyond model completion and its phase wins until playba
   state.jobs[0].status = 'completed';
   assert.equal(activityOverlayState(state, { phase: 'idle' }).working, false);
 });
+
+test('desktop takeover suppresses the optional background symbol even while conversation or speech continues', () => {
+  const state: Pick<Snapshot, 'preferences' | 'task' | 'desktopControl'> = defaultState();
+  state.preferences.activityOverlayEnabled = true; state.task.status = 'running';
+  for (const phase of ['preparing', 'active', 'stopping', 'error'] as const) {
+    state.desktopControl = phase;
+    assert.equal(activityOverlayState(state, { phase: 'speaking' }).enabled, false);
+  }
+  state.desktopControl = 'free'; assert.equal(activityOverlayState(state).enabled, true);
+});

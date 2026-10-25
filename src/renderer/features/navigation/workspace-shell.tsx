@@ -104,7 +104,9 @@ export function WorkspaceShell({ view, onNavigate, state, ready, speechReady, ne
           <button className="stop-all" onClick={() => void onStop()} title="openHiatus stoppen: Esc oder Strg + Alt + F12. Eigenständige Arbeitsfenster laufen weiter."><Square size={12} fill="currentColor" /> Stopp <kbd>Esc</kbd></button>
         </div>
       </header>
+      <DesktopControlNotice state={state} onStop={onStop} />
       <div className="workspace-content" ref={content} tabIndex={-1}>{children}</div>
     </div>
   </div>;
 }
+import { DesktopControlNotice } from '../../components/DesktopControlNotice';

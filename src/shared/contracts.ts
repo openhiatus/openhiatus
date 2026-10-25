@@ -1,6 +1,7 @@
 import type { SkillFavorites } from './skill-favorites';
 import type { SidebarMode } from './workspace-preferences';
 import type { ActivityPresence } from './activity-presence';
+import type { DesktopControlPhase } from './desktop-control';
 import type { AssistantProfile } from './assistant-profile';
 import type { GoogleCalendarApi } from './calendar';
 import type { MemorySnapshot, MemorySource, MemorySearchResult, MemoryPeriodRequest, MemoryPeriodPage, SummaryJobState } from './memory';
@@ -52,7 +53,7 @@ export interface ProviderInput { id: string; apiKey?: string; baseUrl?: string; 
 export interface SkillEntry { name: string; displayName?: string; description: string; path: string; enabled: boolean; scope: 'user' | 'repo' | 'system' | 'admin'; }
 export interface SkillIssue { path: string; message: string; }
 export interface SkillCatalog { skills: SkillEntry[]; errors: SkillIssue[]; directory: string; }
-export interface Snapshot { messages: Message[]; activity: Activity[]; task: Task; preferences: Preferences; connections: Connections; models: ModelOption[]; providers?: ProviderView[]; chatgpt?: ChatGPTConnection; hotkeys?: { recording: boolean; submit: boolean; stop: boolean }; workspace: string; version: string; jobs?: BackgroundJobView[]; speech?: SpeechCue[]; summary?: SummaryJobState; context?: ContextUsage; usage?: Usage; }
+export interface Snapshot { messages: Message[]; activity: Activity[]; task: Task; preferences: Preferences; connections: Connections; models: ModelOption[]; providers?: ProviderView[]; chatgpt?: ChatGPTConnection; hotkeys?: { recording: boolean; submit: boolean; stop: boolean }; desktopControl?: DesktopControlPhase; workspace: string; version: string; jobs?: BackgroundJobView[]; speech?: SpeechCue[]; summary?: SummaryJobState; context?: ContextUsage; usage?: Usage; }
 /** Fill of the conversation thread's model context, as last reported by the agent. */
 export interface ContextUsage { threadId: string; usedTokens: number; windowTokens?: number; at: string; }
 export interface AudioClip { base64: string; mimeType: string; }

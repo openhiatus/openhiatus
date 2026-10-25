@@ -538,6 +538,46 @@ test('desktop coordinator grants FIFO ownership and stale release cannot release
   third.release();
 });
 
+test('desktop protection covers model gaps and remains reserved until native cleanup and unlock both confirm', async () => {
+  const coordinator = new DesktopCoordinator(), session = new FakeSession(), prepared = deferred(), unlocked = deferred(), disposed = deferred();
+  const phases: string[] = []; coordinator.subscribe(phase => phases.push(phase));
+  const abort = new AbortController(); let halts = 0;
+  session.beforeDispose = () => disposed.promise;
+  const computer = new NativeComputer({ desktopCoordinator: coordinator, createSession: async () => session,
+    protectDesktop: async () => { await prepared.promise; return { signal: abort.signal, halt: () => { halts++; }, dispose: () => unlocked.promise }; } });
+  const first = computer.execute({ action: 'screenshot' });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(coordinator.phase, 'preparing'); assert.deepEqual(session.calls, []);
+  prepared.resolve(); await first; assert.equal(coordinator.phase, 'active');
+  await new Promise(resolve => setImmediate(resolve)); assert.equal(coordinator.phase, 'active');
+  const stopping = computer.stop(); assert.equal(coordinator.phase, 'stopping'); assert.equal(halts, 1);
+  disposed.resolve(); await new Promise(resolve => setImmediate(resolve)); assert.equal(coordinator.isBusy, true);
+  unlocked.resolve(); await stopping; assert.equal(coordinator.phase, 'free');
+  assert.deepEqual(phases, ['free', 'preparing', 'active', 'stopping', 'free']);
+});
+
+test('protection interruption prevents the next desktop input and failed native cleanup still unlocks the user', async () => {
+  const coordinator = new DesktopCoordinator(), session = new FakeSession(), abort = new AbortController(); let unlocks = 0;
+  const computer = new NativeComputer({ desktopCoordinator: coordinator, createSession: async () => session,
+    protectDesktop: async () => ({ signal: abort.signal, halt() {}, dispose: async () => { unlocks++; } }) });
+  const frame = await computer.execute({ action: 'screenshot' }); abort.abort();
+  await assert.rejects(computer.execute({ action: 'click', frameId: frame.frameId, x: 0, y: 0 }), /unterbrochen/);
+  assert.equal(session.inputs.length, 0); session.failDispose = true;
+  await assert.rejects(computer.stop(), /nicht bestätigt/);
+  assert.equal(unlocks, 1); assert.equal(coordinator.phase, 'error'); assert.equal(coordinator.isBusy, true);
+  session.failDispose = false; await computer.stop(); assert.equal(coordinator.phase, 'free');
+});
+
+test('desktop reservation handover never reports a free workstation between queued owners', async () => {
+  const coordinator = new DesktopCoordinator(), phases: string[] = [];
+  coordinator.subscribe(phase => phases.push(phase));
+  const first = await coordinator.acquire(new AbortController().signal); first.setPhase('active');
+  const next = coordinator.acquire(new AbortController().signal); first.release();
+  const second = await next; first.setPhase('error');
+  assert.deepEqual(phases, ['free', 'preparing', 'active', 'preparing']);
+  second.release(); assert.equal(phases.at(-1), 'free');
+});
+
 test('failed cleanup during initialization keeps ownership blocked even without a returned session', async () => {
   const desktopCoordinator = new DesktopCoordinator();
   const first = new NativeComputer({ desktopCoordinator, createSession: async () => {

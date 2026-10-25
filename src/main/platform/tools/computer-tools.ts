@@ -1,8 +1,10 @@
 import { COMPUTER_TOOL, ComputerDriverError, NativeComputer, computerReplyMetadata, parseComputerInput, type ComputerAdapter, type ComputerResult } from '../../computer';
 import { defineTool, type ToolContribution } from '../../modules/tools';
+import type { ProtectDesktop } from '../../desktop-protection';
 
 /** Concrete desktop contribution. Every adapter owns its lazy computer and confirms turn release. */
 export function createComputerToolContribution(options: { computer?: ComputerAdapter; createComputer?: () => ComputerAdapter; getOverviewScaleDivisor?: () => number; getDetailScaleDivisor?: () => number;
+  protectDesktop?: ProtectDesktop;
   runDesktopOperation?: <T>(operation: () => Promise<T>) => Promise<T> } = {}): ToolContribution {
   let computer = options.computer;
   return {
@@ -13,7 +15,7 @@ export function createComputerToolContribution(options: { computer?: ComputerAda
           definition: { type: 'function', name: COMPUTER_TOOL.name, description: COMPUTER_TOOL.description, inputSchema: COMPUTER_TOOL.inputSchema },
           audience: 'worker', validate: parseComputerInput,
           async execute(args, context) {
-            computer ??= options.createComputer?.() ?? new NativeComputer({ getOverviewScaleDivisor: options.getOverviewScaleDivisor, getDetailScaleDivisor: options.getDetailScaleDivisor });
+            computer ??= options.createComputer?.() ?? new NativeComputer({ getOverviewScaleDivisor: options.getOverviewScaleDivisor, getDetailScaleDivisor: options.getDetailScaleDivisor, protectDesktop: options.protectDesktop });
             let result: ComputerResult, failure: ComputerDriverError | undefined;
             try { result = await (options.runDesktopOperation ? options.runDesktopOperation(() => computer!.execute(args, context.signal)) : computer.execute(args, context.signal)); }
             catch (error) {
