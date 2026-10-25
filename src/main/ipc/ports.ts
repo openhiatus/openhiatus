@@ -3,13 +3,15 @@ import type { CommandName, CommandResult } from '../../shared/ipc';
 import type { GoogleCalendarApi } from '../../shared/calendar';
 
 export type MaybePromise<Value> = Value | Promise<Value>;
-type PlatformCommand = 'openWorkspace' | 'openSkillsFolder' | 'openChatGPTUsage' | 'revealFile';
+type PlatformCommand = 'openWorkspace' | 'openSkillsFolder' | 'openChatGPTUsage' | 'revealFile' | 'autostartSettings' | 'setAutostart';
 type PublicArgs<Name extends CommandName> = OpenhiatusApi[Name] extends (...args: infer Args) => Promise<unknown> ? Args : never;
 /** Structural port: the IPC layer has no dependency on the concrete AppController. */
 export type IpcControllerPort = {
   [Name in Exclude<CommandName, PlatformCommand | keyof GoogleCalendarApi>]: (...args: PublicArgs<Name>) => MaybePromise<CommandResult<Name>>;
 };
 export interface IpcPlatformPort {
+  autostartSettings(): MaybePromise<CommandResult<'autostartSettings'>>;
+  setAutostart(enabled: boolean): MaybePromise<CommandResult<'setAutostart'>>;
   stopActivityPresence(): void;
   openWorkspace(): Promise<void>;
   openSkillsFolder(): Promise<void>;

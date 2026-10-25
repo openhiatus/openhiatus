@@ -10,6 +10,8 @@ const skills: Decoder<SkillCatalog> = object({ skills: array(object({ name: text
   enabled: boolean, scope: choice(['user', 'repo', 'system', 'admin']) }), 10000), errors: array(object({ path: text(4096), message: text() }), 10000), directory: text(4096) });
 /** Exhaustive map: a new public async command must choose its result decoder. */
 const results: { [Name in CommandName]: Decoder<CommandResult<Name>> } = {
+  autostartSettings: object({ available: boolean, enabled: boolean, disabledByWindows: boolean, unavailableReason: optional(text(1000)) }),
+  setAutostart: object({ available: boolean, enabled: boolean, disabledByWindows: boolean, unavailableReason: optional(text(1000)) }),
   googleCalendarSnapshot: decodeGoogleCalendarSnapshot, saveGoogleCalendarClient: decodeGoogleCalendarSnapshot, connectGoogleCalendar: decodeGoogleCalendarSnapshot,
   cancelGoogleCalendarLogin: decodeGoogleCalendarSnapshot, disconnectGoogleCalendar: decodeGoogleCalendarSnapshot, selectGoogleCalendar: decodeGoogleCalendarSnapshot,
   googleCalendarEvents: decodeCalendarEvents, openGoogleCalendarSetup: nothing,

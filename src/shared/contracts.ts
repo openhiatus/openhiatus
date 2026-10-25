@@ -2,6 +2,7 @@ import type { SkillFavorites } from './skill-favorites';
 import type { SidebarMode } from './workspace-preferences';
 import type { ActivityPresence } from './activity-presence';
 import type { DesktopControlPhase } from './desktop-control';
+import type { AutostartSettings } from './autostart';
 import type { AssistantProfile } from './assistant-profile';
 import type { GoogleCalendarApi } from './calendar';
 import type { MemorySnapshot, MemorySource, MemorySearchResult, MemoryPeriodRequest, MemoryPeriodPage, SummaryJobState } from './memory';
@@ -70,6 +71,8 @@ export interface OpenhiatusApi extends GoogleCalendarApi {
   stop(): Promise<void>;
   stopJob(id: string): Promise<void>;
   savePreferences(preferences: PreferencesPatch): Promise<void>;
+  autostartSettings(): Promise<AutostartSettings>;
+  setAutostart(enabled: boolean): Promise<AutostartSettings>;
   acknowledgeFullAccess(): Promise<void>;
   signInChatGPT(): Promise<void>;
   cancelChatGPTSignIn(): Promise<void>;

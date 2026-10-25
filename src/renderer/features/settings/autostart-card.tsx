@@ -1,0 +1,43 @@
+import { useEffect, useRef, useState } from 'react';
+import { Power } from 'lucide-react';
+import type { AutostartSettings } from '../../../shared/autostart';
+
+export function AutostartCard({ active, onError }: { active: boolean; onError(error: unknown): void }) {
+  const [settings, setSettings] = useState<AutostartSettings>();
+  const [pending, setPending] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const changing = useRef(false), request = useRef(0), report = useRef(onError);
+  report.current = onError;
+  async function refresh() {
+    if (changing.current) return;
+    const current = ++request.current;
+    try {
+      const state = await window.openhiatus.autostartSettings();
+      if (current === request.current) { setSettings(state); setFailed(false); }
+    } catch (error) {
+      if (current === request.current) { setFailed(true); report.current(error); }
+    }
+  }
+  useEffect(() => {
+    if (!active) return;
+    void refresh(); window.addEventListener('focus', refresh);
+    return () => { request.current++; window.removeEventListener('focus', refresh); };
+  }, [active]);
+  async function change(enabled: boolean) {
+    if (changing.current) return;
+    changing.current = true; request.current++; setPending(true);
+    try { setSettings(await window.openhiatus.setAutostart(enabled)); setFailed(false); }
+    catch (error) { report.current(error); }
+    finally { changing.current = false; setPending(false); await refresh(); }
+  }
+  return <section className="settings-card settings-autostart" aria-busy={pending}>
+    <div className="settings-card-head"><span className="service-icon"><Power size={22} aria-hidden="true" /></span><div><h2>Windows-Autostart</h2><p>Nach der Anmeldung für dich bereit</p></div></div>
+    <label className="settings-toggle"><span><strong>Mit Windows starten</strong><small>Startet openHiatus nach deiner Anmeldung minimiert in der Taskleiste.</small></span>
+      <input type="checkbox" checked={settings?.enabled === true} disabled={!settings?.available || pending || failed} onChange={event => void change(event.target.checked)} /></label>
+    <p className="billing-note" role="status">{failed ? 'Autostart-Status konnte nicht gelesen werden.' : !settings ? 'Autostart-Status wird geladen …' : pending ? 'Windows-Autostart wird geändert …'
+      : !settings.available ? settings.unavailableReason : settings.disabledByWindows ? 'In Windows deaktiviert. Einschalten aktiviert den Autostart wieder.'
+        : settings.enabled ? 'Autostart ist eingeschaltet. Ein Klick auf das Taskleistensymbol öffnet das Fenster.' : 'Autostart ist ausgeschaltet.'}</p>
+    {failed && <button className="text-button" onClick={() => void refresh()}>Erneut prüfen</button>}
+    {settings?.available && <p className="billing-note">Lass den App-Ordner an seinem Platz. Nach einem Verschieben oder Wechsel des Pakets hier erneut einschalten. Mikrofon und Aufträge starten erst durch deine Eingabe.</p>}
+  </section>;
+}
