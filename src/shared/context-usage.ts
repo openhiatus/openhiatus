@@ -1,3 +1,4 @@
+import { uiLocale } from './i18n';
 import type { ContextUsage } from './contracts';
 
 export const CONTEXT_WARN_PERCENT = 60;
@@ -14,5 +15,5 @@ export function contextFill(context: ContextUsage | undefined, threadId: string 
 }
 
 export function formatTokens(tokens: number): string {
-  return tokens < 1000 ? String(tokens) : `${new Intl.NumberFormat('de-DE', { maximumFractionDigits: tokens < 10_000 ? 1 : 0 }).format(tokens / 1000)} k`;
+  return tokens < 1000 ? String(tokens) : `${new Intl.NumberFormat(uiLocale(), { maximumFractionDigits: tokens < 10_000 ? 1 : 0 }).format(tokens / 1000)} k`;
 }

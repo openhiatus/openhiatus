@@ -34,16 +34,27 @@ RestartApplications=no
 SetupMutex={#SetupAppId}.Setup
 UninstallLogMode=append
 UsePreviousTasks=yes
+ShowLanguageDialog=yes
 VersionInfoVersion={#AppVersion}.0
 VersionInfoDescription={#ProductName} Setup
 
 [Languages]
-Name: german; MessagesFile: compiler:Languages\German.isl
 Name: english; MessagesFile: compiler:Default.isl
+Name: spanish; MessagesFile: compiler:Languages\Spanish.isl
+Name: french; MessagesFile: compiler:Languages\French.isl
+Name: german; MessagesFile: compiler:Languages\German.isl
+Name: chinesesimp; MessagesFile: compiler:Languages\ChineseSimplified.isl
+Name: japanese; MessagesFile: compiler:Languages\Japanese.isl
+Name: brazilianportuguese; MessagesFile: compiler:Languages\BrazilianPortuguese.isl
 
 [Messages]
 german.SelectTasksLabel2=Du kannst zusätzlich zum Startmenü-Eintrag ein Desktop-Symbol erstellen. Klicke danach auf Installieren.
 english.SelectTasksLabel2=You can add a Desktop icon alongside the Start menu entry. Then click Install.
+spanish.SelectTasksLabel2=Puedes añadir un icono en el escritorio además de la entrada en el menú Inicio. Después haz clic en Instalar.
+french.SelectTasksLabel2=Vous pouvez ajouter une icône sur le Bureau en plus de l'entrée du menu Démarrer. Cliquez ensuite sur Installer.
+chinesesimp.SelectTasksLabel2=除开始菜单入口外，你还可以创建桌面图标。然后点击“安装”。
+japanese.SelectTasksLabel2=スタートメニューの項目に加えて、デスクトップアイコンを作成できます。その後「インストール」をクリックしてください。
+brazilianportuguese.SelectTasksLabel2=Você pode adicionar um ícone na área de trabalho além da entrada no menu Iniciar. Depois clique em Instalar.
 
 [Tasks]
 Name: desktopicon; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
@@ -59,19 +70,56 @@ Name: "{autodesktop}\{#ProductName}"; Filename: "{app}\openHiatus.exe"; WorkingD
 [Run]
 Filename: "{app}\openHiatus.exe"; Description: "{cm:LaunchProgram,{#ProductName}}"; Flags: nowait postinstall skipifsilent
 
+[Registry]
+Root: HKCU; Subkey: "Software\{#SetupAppId}"; ValueType: string; ValueName: "InstallerLanguage"; ValueData: "{code:InstallerLanguage}"; Flags: uninsdeletevalue uninsdeletekeyifempty
+
 [CustomMessages]
 german.AppInUse=openHiatus kann gerade nicht ersetzt werden. Beende die App zuerst über das Fenster und versuche es erneut. Laufende Arbeit wird durch Setup nicht abgebrochen.
 english.AppInUse=openHiatus cannot be replaced right now. Close its window, then try again. Setup does not interrupt running work.
+spanish.AppInUse=No se puede reemplazar openHiatus ahora. Cierra la aplicación y vuelve a intentarlo. El instalador no interrumpe el trabajo en curso.
+french.AppInUse=openHiatus ne peut pas être remplacé pour le moment. Fermez l'application, puis réessayez. L'installation n'interrompt pas le travail en cours.
+chinesesimp.AppInUse=目前无法替换 openHiatus。请先关闭应用窗口，然后重试。安装程序不会中断正在进行的工作。
+japanese.AppInUse=現在 openHiatus を置き換えられません。アプリのウィンドウを閉じて、もう一度お試しください。実行中の作業をインストーラーが中断することはありません。
+brazilianportuguese.AppInUse=Não é possível substituir o openHiatus agora. Feche o aplicativo e tente novamente. O instalador não interrompe o trabalho em andamento.
 german.KeepData=Deine Einstellungen, Zugänge, dein Gedächtnis und eigene Dateien bleiben bei Updates und bei der Deinstallation erhalten.
 english.KeepData=Your settings, connections, memory and personal files are preserved during updates and uninstallation.
+spanish.KeepData=Tus ajustes, conexiones, memoria y archivos personales se conservan durante las actualizaciones y la desinstalación.
+french.KeepData=Vos paramètres, connexions, mémoire et fichiers personnels sont conservés lors des mises à jour et de la désinstallation.
+chinesesimp.KeepData=更新和卸载时，你的设置、连接、记忆和个人文件都会保留。
+japanese.KeepData=更新時やアンインストール時も、設定、接続情報、メモリー、個人ファイルは保持されます。
+brazilianportuguese.KeepData=Suas configurações, conexões, memória e arquivos pessoais são preservados nas atualizações e na desinstalação.
 german.InstallIntro=Setup installiert openHiatus für dein Windows-Benutzerkonto und legt einen Eintrag im Startmenü an. Du benötigst keine Administratorrechte.
 english.InstallIntro=Setup installs openHiatus for your Windows account and adds a Start menu entry. Administrator rights are not required.
+spanish.InstallIntro=El instalador instala openHiatus para tu cuenta de Windows y añade una entrada en el menú Inicio. No se requieren permisos de administrador.
+french.InstallIntro=L'installation ajoute openHiatus à votre compte Windows et au menu Démarrer. Les droits d'administrateur ne sont pas nécessaires.
+chinesesimp.InstallIntro=安装程序将为你的 Windows 账户安装 openHiatus，并添加开始菜单入口。无需管理员权限。
+japanese.InstallIntro=お使いの Windows アカウントに openHiatus をインストールし、スタートメニューに項目を追加します。管理者権限は不要です。
+brazilianportuguese.InstallIntro=O instalador instala o openHiatus para sua conta do Windows e adiciona uma entrada no menu Iniciar. Não são necessários direitos de administrador.
 german.NewerInstalled=Eine neuere openHiatus-Version ist bereits installiert. Verwende bitte ein aktuelles Setup.
 english.NewerInstalled=A newer version of openHiatus is already installed. Please use a current Setup.
+spanish.NewerInstalled=Ya hay instalada una versión más reciente de openHiatus. Usa un instalador actualizado.
+french.NewerInstalled=Une version plus récente d'openHiatus est déjà installée. Utilisez un programme d'installation à jour.
+chinesesimp.NewerInstalled=已安装更新版本的 openHiatus。请使用最新的安装程序。
+japanese.NewerInstalled=新しいバージョンの openHiatus がすでにインストールされています。最新のインストーラーを使用してください。
+brazilianportuguese.NewerInstalled=Uma versão mais recente do openHiatus já está instalada. Use um instalador atualizado.
 
 [Code]
 var
   PreviousFiles: TStringList;
+
+function InstallerLanguage(Param: String): String;
+begin
+  case ActiveLanguage of
+    'german': Result := 'de';
+    'spanish': Result := 'es';
+    'french': Result := 'fr';
+    'chinesesimp': Result := 'zh-CN';
+    'japanese': Result := 'ja';
+    'brazilianportuguese': Result := 'pt-BR';
+  else
+    Result := 'en';
+  end;
+end;
 
 function GetFileAttributesW(Name: String): LongWord;
   external 'GetFileAttributesW@kernel32.dll stdcall';

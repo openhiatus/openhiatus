@@ -1,3 +1,4 @@
+import { t } from './i18n';
 export interface PersonalityTemplate { id: string; label: string; instructions: string; }
 export interface AssistantProfile { name: string; personalityId: string; templates: PersonalityTemplate[]; }
 
@@ -62,7 +63,7 @@ export function resolvePersonality(profile: AssistantProfile = DEFAULT_ASSISTANT
   return BUILTIN_PERSONALITIES.find(template => template.id === profile.personalityId)
     ?? profile.templates.find(template => template.id === profile.personalityId) ?? BUILTIN_PERSONALITIES[0];
 }
-export function assistantDisplayName(profile?: AssistantProfile): string { return profile?.name.trim() || 'Assistent'; }
+export function assistantDisplayName(profile?: AssistantProfile): string { return profile?.name.trim() || t('Assistent'); }
 
 /** Profile affects voice and character; the application's capabilities and execution rules stay authoritative. */
 export function assistantProfileInstructions(profile: AssistantProfile = DEFAULT_ASSISTANT_PROFILE): string {

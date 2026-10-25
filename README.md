@@ -53,7 +53,7 @@ npm start
 
 ### First-time setup
 
-The app interface is currently in German. English meanings are shown in parentheses.
+The app and Windows Setup support English, Spanish, French, German, Simplified Chinese, Japanese and Brazilian Portuguese. Choose **Settings → Interface language** (**Einstellungen → Sprache der Oberfläche**) to switch immediately, including before acknowledging the access notice. The choice is saved; running tasks and unsaved drafts are preserved. Setup's language seeds a new profile; existing profiles keep their choice (German for older profiles). Without Setup, a new normal profile follows the Windows locale, with English as fallback. Messages, files, model replies and editable agent instructions retain their original content. The interface language does not select the assistant's reply language or speech voice. See [localization](docs/localization.md).
 
 1. **Permissions:** On first launch, read and acknowledge the access permissions notice.
 2. **Models:** Under **Einstellungen → Modelle & Zugänge** (Settings → Models & access), sign in with ChatGPT or set up your own provider. Then pick models for conversation, work, and memory. For a local server, enter its base URL and model ID.
@@ -209,6 +209,7 @@ npm run test:autostart
 </details>
 
 - **Packaging:** `npm run package` creates a portable Windows folder, and `npm run test:package` checks it. `npm run installer` builds a single Setup executable and SHA-256 file in `release/<version>/installer`. The first build downloads a pinned, hash-verified Inno Setup compiler into `.tmp`; no global compiler installation is needed. `npm run test:installer` checks installation, upgrade, running-app protection, shortcuts, profile preservation, installed workflows and removal with isolated folders and registry entries. It briefly opens its own test windows. See the [installation guide](docs/windows-installation.md) for details. Builds, packages, test profiles, and run reports are not committed.
+- **Languages:** `npm run test:i18n-ui` checks all seven languages, six workspaces at compact and full widths, draft preservation, live task continuity, background overlay refresh and restart persistence. `npm run test:desktop-control` also switches all seven languages during an actual desktop reservation. `npm run test:installer` checks each wizard language and its new-profile language registration. All use isolated test profiles.
 - **Benchmarks:** Synthetic desktop tasks are available under [benchmarks](benchmarks/README.md).
 - **Architecture:** The [architecture overview](docs/architekturpruefung.md) explains the module boundaries.
 - **Test results:** The [test report](docs/openhiatus-testprotokoll.md) records dated local checks. Older documents describe the state at the time they were written.

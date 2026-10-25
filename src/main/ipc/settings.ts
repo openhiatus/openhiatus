@@ -1,4 +1,5 @@
 import type { PreferencesPatch, ProviderInput } from '../../shared/contracts';
+import { parseUiLanguage } from '../../shared/ui-language';
 import { parseSkillFavorites } from '../../shared/skill-favorites';
 import { computerDetailDivisor, computerOverviewDivisor } from '../../shared/computer-views';
 import { computerImageRetentionCalls, computerWorkingMemoryCalls } from '../../shared/computer-task-settings';
@@ -11,8 +12,9 @@ const booleanPreferences = ['speakReplies', 'voiceConversation', 'earcons', 'mem
 const textPreferences = ['inputDeviceId', 'outputDeviceId', 'voiceId', 'model', 'dialogModel', 'memoryModel', 'computerModel'] as const;
 const deviceMetadata = ['inputDeviceLabel', 'inputDeviceGroupId', 'outputDeviceLabel', 'outputDeviceGroupId'] as const;
 function preferences(value: unknown): PreferencesPatch {
-  const input = inputObject(value, [...booleanPreferences, ...textPreferences, ...deviceMetadata, 'skillFavorites', 'computerOverviewScaleDivisor', 'computerDetailScaleDivisor', 'computerImageRetentionCalls', 'computerWorkingMemoryCalls', 'sidebarMode', 'activityOverlaySize', 'assistantProfile'], 'Ungültige Einstellungen.');
+  const input = inputObject(value, [...booleanPreferences, ...textPreferences, ...deviceMetadata, 'uiLanguage', 'skillFavorites', 'computerOverviewScaleDivisor', 'computerDetailScaleDivisor', 'computerImageRetentionCalls', 'computerWorkingMemoryCalls', 'sidebarMode', 'activityOverlaySize', 'assistantProfile'], 'Ungültige Einstellungen.');
   const patch: PreferencesPatch = {};
+  if (Object.hasOwn(input, 'uiLanguage')) patch.uiLanguage = parseUiLanguage(input.uiLanguage);
   if (Object.hasOwn(input, 'assistantProfile')) patch.assistantProfile = parseAssistantProfile(input.assistantProfile);
   for (const key of booleanPreferences) if (Object.hasOwn(input, key)) {
     const item = input[key]; if (typeof item !== 'boolean') throw new Error('Ungültige Einstellung.'); patch[key] = item;

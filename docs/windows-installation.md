@@ -6,11 +6,13 @@ Die Alpha-Setup-Datei ist noch nicht digital signiert. Windows kann deshalb eine
 
 ## Installation
 
-1. Die für diese Version gebaute Setup-Datei öffnen.
+1. Die für diese Version gebaute Setup-Datei öffnen und eine Sprache wählen: Englisch, Spanisch, Französisch, Deutsch, Chinesisch (vereinfacht), Japanisch oder Portugiesisch (Brasilien).
 2. Nach der Begrüßung bei Bedarf **Desktop-Symbol erstellen** auswählen. Der Eintrag im Startmenü wird immer angelegt.
 3. **Installieren** wählen. Am Ende kann openHiatus direkt geöffnet werden.
 
 Setup installiert ausschließlich für das aktuelle Windows-Benutzerkonto unter `%LOCALAPPDATA%\Programs\openHiatus`. Administratorrechte und eine Auswahl von Installationsordnern sind im normalen Ablauf nicht erforderlich. Die App erhält ein eigenes Symbol für Setup, Startmenü und Taskleiste.
+
+Ab Version 0.0.21 stehen diese sieben Sprachen auch in der App unter **Einstellungen → Sprache der Oberfläche** zur Verfügung. Die Auswahl wirkt sofort und bleibt gespeichert. Setup gibt seine Sprache nur für ein neues Profil vor. Eine bestehende App-Auswahl wird beim Update nicht überschrieben; ältere Profile beginnen weiterhin auf Deutsch. Nachrichten, eigene Dateien und laufende Aufgaben bleiben beim Wechsel erhalten. Details stehen unter [Mehrsprachigkeit](localization.md).
 
 Beim ersten App-Start den Zugriffshinweis bestätigen und unter **Einstellungen → Modelle & Zugänge** einen Anbieter einrichten. Eine vorhandene Anmeldung und ein bestehendes Profil derselben Windows-Anmeldung werden weiterverwendet. Eigene Daten liegen außerhalb des Programmordners unter `%APPDATA%\openhiatus`. Die [README](../README.md#first-time-setup) beschreibt die weitere Einrichtung.
 
@@ -54,6 +56,6 @@ Der Build lädt einmalig den offiziellen [Inno-Setup-Compiler 7.1.0](https://git
 
 `npm run test:installer` baut eigene Test-Setups mit eindeutiger App-ID, eigenem Windows-Registrierungseintrag, eigenen Verknüpfungen und Ordnern unter `.test-data`. Es verwendet synthetische Daten und ein separates App-Profil. Das normale openHiatus-Profil und seine Autostartregistrierung werden nicht verändert.
 
-Geprüft werden Neuinstallation, Upgrade von einem synthetischen älteren Paket, erneute Installation, Verhinderung von Downgrades, Erhalt von Einstellungen und einer in Windows deaktivierten Autostartregistrierung, Startmenü und optionaler Desktop-Eintrag, Schutz einer laufenden App sowie Deinstallation. Eine beschädigte alte Dateiliste darf weder über relative Pfade noch über Verzeichnisverknüpfungen außerhalb des Installationsordners löschen. Die installierte App führt vorhandene Gesprächs-/Worker- und Desktopprüfungen ohne globales Node oder Codex in ihrem Suchpfad aus. Der eigene deutsche Setup-Assistent wird bis zur Installationsauswahl bedient und anschließend abgebrochen.
+Geprüft werden Neuinstallation, Upgrade von einem synthetischen älteren Paket, erneute Installation, Verhinderung von Downgrades, Erhalt von Einstellungen und einer in Windows deaktivierten Autostartregistrierung, Startmenü und optionaler Desktop-Eintrag, Schutz einer laufenden App sowie Deinstallation. Eine beschädigte alte Dateiliste darf weder über relative Pfade noch über Verzeichnisverknüpfungen außerhalb des Installationsordners löschen. Die installierte App führt vorhandene Gesprächs-/Worker- und Desktopprüfungen ohne globales Node oder Codex in ihrem Suchpfad aus. Der eigene Setup-Assistent wird in allen sieben Sprachen bis zur Installationsauswahl bedient und anschließend abgebrochen. Die Sprachregistrierung wird für jede Sprache installiert und deinstalliert; ein Update in einer anderen Setup-Sprache muss die bereits gespeicherte App-Sprache erhalten.
 
 Generierte Nachweise stehen unter `artifacts`; Pakete, Compiler, synthetische Profile und Bilder bleiben ignoriert. Diese lokale Prüfung ersetzt weder Tests auf frischen Windows-Versionen noch eine signierte Veröffentlichung.

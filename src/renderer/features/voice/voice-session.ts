@@ -1,3 +1,4 @@
+import { t } from '../../../shared/i18n';
 import type { OpenhiatusApi, AudioClip, Snapshot, SpeechCue } from '../../../shared/contracts';
 import { physicalAudioDevices, resolveAudioDevice } from '../../../shared/audio-devices';
 import { SpeechCueQueue } from '../../speech-queue';
@@ -130,14 +131,14 @@ export class VoiceSession {
 
   startRecording = async (test = false): Promise<void> => {
     if (this.disposed) return;
-    if (this.phase === 'opening') { this.cancelAudio(); this.events.notice('Aufnahme abgebrochen. Deine Aufträge arbeiten weiter.'); return; }
+    if (this.phase === 'opening') { this.cancelAudio(); this.events.notice(t("Aufnahme abgebrochen. Deine Aufträge arbeiten weiter.")); return; }
     if (this.phase === 'recording' || this.phase === 'mic-test') { await this.finishRecording(this.phase === 'mic-test'); return; }
     const current = this.snapshot;
     if (!current) return;
     if (!test && current.summary?.mode === 'manual' && ['running', 'stopping'].includes(current.summary.status)) return;
     if (!['idle', 'playing', 'synthesizing'].includes(this.phase)) return;
     if (!test && current.connections.speech === 'missing') {
-      this.events.connectionsRequired(); this.events.notice('Verbinde zuerst Inworld in den Einstellungen unter Sprache & Geräte, damit openHiatus deine Aufnahme transkribieren kann.'); return;
+      this.events.connectionsRequired(); this.events.notice(t("Verbinde zuerst Inworld in den Einstellungen unter Sprache & Geräte, damit openHiatus deine Aufnahme transkribieren kann.")); return;
     }
     this.cancelAudio(); const epoch = this.epoch;
     this.events.inputStarted(); this.change({ phase: 'opening' });
@@ -172,7 +173,7 @@ export class VoiceSession {
       const clip = await this.environment.api.testSpeech();
       if (!this.current(epoch)) return;
       await this.play(clip, epoch);
-      if (this.current(epoch)) this.events.notice('Die Verbindung liefert eine echte Sprachausgabe. Die Spracherkennung prüfst du mit einem gesprochenen Auftrag.');
+      if (this.current(epoch)) this.events.notice(t("Die Verbindung liefert eine echte Sprachausgabe. Die Spracherkennung prüfst du mit einem gesprochenen Auftrag."));
     } catch (error) { this.fail(epoch, error); }
   };
 
@@ -208,7 +209,7 @@ export class VoiceSession {
           && !physicalAudioDevices(devices, 'audiooutput').some(device => device.deviceId === this.playback?.deviceId);
         if (inputGone || outputGone) {
           this.stopEarcons(); this.cancelAudio();
-          this.events.notice('Das gewählte Audiogerät wurde getrennt. Die Auswahl bleibt gespeichert und wird beim Wiederverbinden erneut verwendet.');
+          this.events.notice(t("Das gewählte Audiogerät wurde getrennt. Die Auswahl bleibt gespeichert und wird beim Wiederverbinden erneut verwendet."));
         }
       }
     } catch { /* Device labels are optional; capture reports actionable microphone errors. */ }
@@ -232,17 +233,17 @@ export class VoiceSession {
     const epoch = this.epoch; this.stopRecordingClock(); this.change({ level: 0 });
     try {
       const clip = capture.stop();
-      if (!clip) { this.change({ phase: 'idle' }); this.events.notice('Die Aufnahme war sehr kurz. Halte einen Moment inne und versuche es erneut.'); return; }
+      if (!clip) { this.change({ phase: 'idle' }); this.events.notice(t("Die Aufnahme war sehr kurz. Halte einen Moment inne und versuche es erneut.")); return; }
       if (test) {
         await this.play(clip, epoch);
-        if (this.current(epoch)) this.events.notice('Mikrofontest: Du hörst jetzt deine Aufnahme. Es wurde nichts an einen Anbieter gesendet.');
+        if (this.current(epoch)) this.events.notice(t("Mikrofontest: Du hörst jetzt deine Aufnahme. Es wurde nichts an einen Anbieter gesendet."));
         return;
       }
       this.events.transcribing(); this.change({ phase: 'transcribing' }); this.cue('heard');
       const text = await this.environment.api.transcribe(clip);
       if (!this.current(epoch)) return;
       this.change({ phase: 'idle' });
-      if (!text.trim()) this.events.notice('Keine Sprache erkannt. Versuche es noch einmal oder schreibe deinen Auftrag.');
+      if (!text.trim()) this.events.notice(t("Keine Sprache erkannt. Versuche es noch einmal oder schreibe deinen Auftrag."));
       await this.events.transcript(text.trim(), this.snapshot?.preferences.voiceConversation !== false);
     } catch (error) { this.fail(epoch, error); }
   }
@@ -272,12 +273,12 @@ export class VoiceSession {
     player.onended = () => { if (active()) { this.releasePlayback(); this.change({ phase: 'idle' }); } };
     player.onerror = () => {
       if (!active()) return;
-      reject(new Error('Die Audioantwort konnte nicht abgespielt werden. Die Textantwort bleibt im Gespräch.'));
+      reject(new Error(t("Die Audioantwort konnte nicht abgespielt werden. Die Textantwort bleibt im Gespräch.")));
       this.releasePlayback();
     };
     try {
       if (output && output !== 'default') {
-        if (!player.setSinkId) throw new Error('Die gewählte Audioausgabe wird auf diesem System nicht unterstützt. Wähle das Standardgerät.');
+        if (!player.setSinkId) throw new Error(t("Die gewählte Audioausgabe wird auf diesem System nicht unterstützt. Wähle das Standardgerät."));
         await player.setSinkId(output);
       }
       if (!active()) { await ended; return; }
@@ -292,8 +293,8 @@ export class VoiceSession {
     const choice = resolveAudioDevice(this.snapshot.preferences, 'audiooutput', this.state.devices);
     if (this.devicesKnown && !choice.connected) {
       throw new Error(choice.ambiguous
-        ? 'Der gespeicherte Lautsprecher ist nicht eindeutig erkennbar. Wähle ihn unter Sprache & Geräte erneut aus.'
-        : 'Der gewählte Lautsprecher ist nicht angeschlossen. Die Auswahl bleibt gespeichert; verbinde das Gerät erneut.');
+        ? t("Der gespeicherte Lautsprecher ist nicht eindeutig erkennbar. Wähle ihn unter Sprache & Geräte erneut aus.")
+        : t("Der gewählte Lautsprecher ist nicht angeschlossen. Die Auswahl bleibt gespeichert; verbinde das Gerät erneut."));
     }
     return choice.deviceId;
   }

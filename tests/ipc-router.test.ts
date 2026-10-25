@@ -4,6 +4,7 @@ import { createIpcRouter, type IpcControllerPort, type IpcPorts } from '../src/m
 import { createOpenhiatusApi, decodeResponse, isCommandName, type CommandArgs, type CommandName } from '../src/shared/ipc';
 import type { MemoryPeriodPage } from '../src/shared/memory';
 import { memoryFixture, snapshotFixture } from './ipc-fixtures';
+import { UI_LANGUAGES } from '../src/shared/ui-language';
 
 function fixture() {
   const calls: { name: string; args: readonly unknown[] }[] = [], errors: unknown[] = [];
@@ -43,6 +44,17 @@ const validArgs: { [Name in CommandName]: CommandArgs<Name> } = {
   openWorkspace: [], revealFile: ['result.txt'], newConversation: [], memorySnapshot: [], rebuildMemory: [], startMemorySummary: [], readMemoryPeriod: [{}],
   editMemory: [{ id: 'core', content: 'Neue Fassung', expectedVersion: 1 }], decideMemoryProposal: ['proposal', 'approve'], memorySource: ['source'], searchMemory: ['Grüße'],
 };
+
+test('language updates cross IPC without unrelated preference changes and reject unsupported values', async () => {
+  const f = fixture();
+  for (const { id } of UI_LANGUAGES) {
+    assert.equal((await f.router.dispatch('savePreferences', [{ uiLanguage: id }])).ok, true);
+    assert.deepEqual(f.calls.at(-1), { name: 'savePreferences', args: [{ uiLanguage: id }] });
+  }
+  const count = f.calls.length;
+  for (const value of [null, 'zh', 'pt', 'en-US', '__proto__', {}, 0]) assert.equal((await f.router.dispatch('savePreferences', [{ uiLanguage: value }])).ok, false);
+  assert.equal(f.calls.length, count);
+});
 
 test('autostart crosses IPC as a boolean only; the renderer cannot choose a path, name or startup arguments', async () => {
   const f = fixture();

@@ -1,5 +1,18 @@
 # openHiatus – Testprotokoll
 
+## 0.0.21: Sieben Sprachen für App und Windows-Setup – 25. Oktober 2026
+
+Die Oberfläche bietet Englisch, Spanisch, Französisch, Deutsch, vereinfachtes Chinesisch, Japanisch und brasilianisches Portugiesisch. Die Sprachwahl unter Einstellungen wird über den bestehenden IPC-Vertrag gespeichert und wirkt ohne Neuaufbau der Ansichten. Setup gibt seine Sprache nur für neue normale Profile vor; bestehende Präferenzen bleiben erhalten. Die [Dokumentation zur Mehrsprachigkeit](localization.md) beschreibt Grenzen und Pflege des lokalen Katalogs.
+
+- `npm run check`: Architekturprüfung, TypeScript und **821 bestandene Tests**. Neu geprüft werden Sprachvalidierung, alte Profile, Setup-/Systemvorgabe, vollständige Katalogzeilen, unveränderte Parameter und fehlende Übersetzungsschlüssel.
+- `npm run build` und `npm run installer`: erfolgreich; Setup 0.0.21 enthält alle sieben Sprachen. Die erzeugte SHA-256-Datei stimmt mit dem Installer überein.
+- `npm run test:i18n-ui`: alle sieben Sprachen in sechs Arbeitsbereichen bei 560 und 1360 Pixel Fensterbreite. Unbestätigter Vollzugriff, Navigation, Gesprächsentwurf, ungespeicherter Anbieterzugang, Gedächtnisentwurf, unveränderte Nutzertexte und Neustart wurden geprüft. Eine laufende lokale Testaufgabe wurde beim Wechsel weder neu gestartet noch abgebrochen; auch die Hintergrundanzeige wechselte bei gleichbleibender Arbeitsphase ihre Sprache.
+- `npm run test:desktop-control`: reale native Reservierung, Eingabesicherung, Aufnahme ohne Übernahmerahmen, Agentenklick und Freigabe bestanden. Während derselben Reservierung wurden alle sieben Sperrtexte und Esc-Anweisungen geprüft. Die Screenshotkontrolle umfasste unter anderem Französisch, Japanisch und Chinesisch.
+- `npm run test:installer`: vollständiger Installationslebenszyklus bestanden. Alle sieben Setup-Sprachen wurden tatsächlich angezeigt, bis zur Installationsauswahl bedient und abgebrochen. Jede Sprachzuordnung wurde in einer eigenen Testregistrierung installiert und wieder entfernt. Ein französisches Update erhielt die zuvor in der App gespeicherte japanische Auswahl. Der Abbruchtest identifiziert den nativen Windows-Bestätigungsbutton sprachunabhängig über seine Kennung.
+- `npm run test:package`: alle elf Prüfläufe bestanden, einschließlich des neuen Sprachtests mit der fertig verpackten App. Geprüft wurden außerdem Gesprächs-/Worker-Abläufe, Kontext und Verlauf, Audiogeräte, Hintergrundanzeige, Persönlichkeit, Fast-Auswahl, Kalender-Einrichtung, Bildschirmhilfe, Desktopübernahme und Autostart ohne globales Node oder Codex im Suchpfad.
+
+Alle Aufgaben und Daten waren synthetisch. Die Prüfungen verwendeten getrennte Profile; sie benötigen keine Cloudzugänge. Bearbeitbare Nutzer- und Anweisungstexte sowie technische Protokollinhalte werden durch die Sprachwahl nicht nachträglich übersetzt. Das Setup bleibt unsigniert; die lokalen Prüfungen ersetzen keine Abnahme auf einer frisch installierten Windows-VM.
+
 ## 0.0.20: Installation, Update und Deinstallation unter Windows – 25. Oktober 2026
 
 Der neue Inno-Setup-Build erzeugt eine einzelne, noch unsignierte x64-Setup-Datei mit SHA-256-Prüfsumme. Die Installation erfolgt pro Benutzer ohne angeforderte Rechteerhöhung, mit Startmenü-Eintrag und optionalem Desktop-Symbol. Updates verwenden denselben Programmpfad; das bestehende Profil bleibt außerhalb des Installationsbesitzes. Anleitung und Prüfbefehle stehen unter [Windows-Installation](windows-installation.md).

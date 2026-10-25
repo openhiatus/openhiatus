@@ -1,3 +1,4 @@
+import { t } from '../shared/i18n';
 import { useState } from 'react';
 import { Activity as ActivityIcon, ArrowRight, AudioLines, BookOpen, FileText, Mic, X } from 'lucide-react';
 import { withFavoriteLevel } from '../shared/skill-favorites';
@@ -29,28 +30,28 @@ export default function App() {
     newConversationDisabled={session.workBusy || session.summaryInProgress || session.busyAction === 'new'}
     onNewConversation={() => void session.newConversation()} onStop={session.stopAll} onError={session.report}
     headerActions={view === 'chat' && <button className={`icon-button activity-toggle ${showActivity ? 'selected' : ''}`}
-      onClick={() => setShowActivity(current => !current)} aria-label={showActivity ? 'Aktivität ausblenden' : 'Aktivität einblenden'} title="Aktivität"><ActivityIcon size={18} /></button>}>
+      onClick={() => setShowActivity(current => !current)} aria-label={showActivity ? t("Aktivität ausblenden") : t("Aktivität einblenden")} title={t("Aktivität")}><ActivityIcon size={18} /></button>}>
     <HotkeyWarning hotkeys={state?.hotkeys} />
     {state && !session.acknowledged && <FullAccessNotice acknowledged={false} busy={!!session.busyAction}
-      onAcknowledge={() => void session.action('full-access', () => window.openhiatus.acknowledgeFullAccess(), 'Vollzugriff bestätigt. Richte jetzt deinen Modellanbieter ein.')} />}
+      onAcknowledge={() => void session.action('full-access', () => window.openhiatus.acknowledgeFullAccess(), t("Vollzugriff bestätigt. Richte jetzt deinen Modellanbieter ein."))} />}
     {(session.error || session.notice) && <div role={session.error ? 'alert' : 'status'} className={`banner ${session.error ? 'error' : ''}`}>
-      <span>{session.error || session.notice}</span><button className="icon-button" aria-label="Hinweis schließen" onClick={() => { session.setError(''); session.setNotice(''); }}><X size={15} /></button>
+      <span>{session.error || session.notice}</span><button className="icon-button" aria-label={t("Hinweis schließen")} onClick={() => { session.setError(''); session.setNotice(''); }}><X size={15} /></button>
     </div>}
     <div className="speech-mode-bar" hidden={view !== 'chat'}>
-      <div className="speech-mode-choice" role="group" aria-label="Gesprächsmodus">
+      <div className="speech-mode-choice" role="group" aria-label={t("Gesprächsmodus")}>
         <button className={session.voiceConversation ? 'selected' : ''} aria-pressed={session.voiceConversation}
-          disabled={!state || session.isRecording || session.phase === 'transcribing'} onClick={() => session.preference({ voiceConversation: true })}><Mic size={13} /> Sprachgespräch</button>
+          disabled={!state || session.isRecording || session.phase === 'transcribing'} onClick={() => session.preference({ voiceConversation: true })}><Mic size={13} />{t(" Sprachgespräch")}</button>
         <button className={!session.voiceConversation ? 'selected' : ''} aria-pressed={!session.voiceConversation}
-          disabled={!state || session.isRecording || session.phase === 'transcribing'} onClick={() => session.preference({ voiceConversation: false })}><FileText size={13} /> Transkript prüfen</button>
+          disabled={!state || session.isRecording || session.phase === 'transcribing'} onClick={() => session.preference({ voiceConversation: false })}><FileText size={13} />{t(" Transkript prüfen")}</button>
       </div><div className="conversation-mode-hint" />
     </div>
     {view !== 'chat' && session.phase !== 'idle' && <div className="session-audio-bar" role="status">
       <AudioLines size={15} /><span>{session.voiceStatus}{session.isRecording ? ` · ${session.seconds}s` : ''}</span>
-      <button onClick={() => navigate('chat')}>{state?.preferences.itSupporter ? 'Zum Protokoll' : 'Zum Gespräch'}</button><button onClick={session.cancelAudio}>Audio beenden</button>
+      <button onClick={() => navigate('chat')}>{state?.preferences.itSupporter ? t("Zum Protokoll") : t("Zum Gespräch")}</button><button onClick={session.cancelAudio}>{t("Audio beenden")}</button>
     </div>}
     {session.summaryInProgress && view !== 'memory' && <div className="summary-work-bar" role="status"><BookOpen size={14} />
-      <span>{state?.summary?.status === 'stopping' ? 'Gedächtnisberichte werden gestoppt' : 'openHiatus erstellt Gedächtnisberichte'}<small>{state?.summary?.completed} / {state?.summary?.total} gespeichert · {state?.summary?.calls} Modellaufrufe</small></span>
-      <button onClick={() => navigate('memory')}>Fortschritt ansehen <ArrowRight size={13} /></button>
+      <span>{state?.summary?.status === 'stopping' ? t("Gedächtnisberichte werden gestoppt") : t("openHiatus erstellt Gedächtnisberichte")}<small>{state?.summary?.completed} / {state?.summary?.total}{t(" gespeichert · ")}{state?.summary?.calls}{t(" Modellaufrufe")}</small></span>
+      <button onClick={() => navigate('memory')}>{t("Fortschritt ansehen ")}<ArrowRight size={13} /></button>
     </div>}
     <div className="workspace-view conversation-view-host" hidden={view !== 'chat'}>
       <ConversationView session={session} active={view === 'chat'} showActivity={showActivity} onOpenTasks={() => navigate('tasks')} onOpenSettings={() => navigate('settings')} />

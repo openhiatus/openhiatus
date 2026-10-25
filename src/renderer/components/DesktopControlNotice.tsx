@@ -1,3 +1,4 @@
+import { t } from '../../shared/i18n';
 import { Monitor, Square } from 'lucide-react';
 import type { Snapshot } from '../../shared/contracts';
 import { desktopControlCopy } from '../../shared/desktop-control';
@@ -10,8 +11,8 @@ export function DesktopControlNotice({ state, onStop }: { state?: Snapshot; onSt
   if (!active && !background) return null;
   return <section className={`desktop-control-notice ${active ? 'reserved' : 'background'} ${phase}`} role="status" aria-live={active ? 'assertive' : 'polite'}>
     <Monitor size={22} aria-hidden="true" />
-    <div><strong>{active ? desktopControlCopy[phase].title : 'Hintergrundarbeit · Arbeitsplatz frei'}</strong>
-      <span>{active ? desktopControlCopy[phase].detail : 'Maus und Tastatur bleiben für dich verfügbar.'}</span></div>
-    {active && <button onClick={() => void onStop()}><Square size={13} fill="currentColor" /> Stopp &amp; übernehmen <kbd>Esc</kbd></button>}
+    <div><strong>{active ? desktopControlCopy[phase].title : t("Hintergrundarbeit · Arbeitsplatz frei")}</strong>
+      <span>{active ? desktopControlCopy[phase].detail : t("Maus und Tastatur bleiben für dich verfügbar.")}</span></div>
+    {active && <button onClick={() => void onStop()}><Square size={13} fill="currentColor" />{t(" Stopp & übernehmen ")}<kbd>Esc</kbd></button>}
   </section>;
 }

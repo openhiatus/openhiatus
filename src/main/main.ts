@@ -1,5 +1,7 @@
 import { app, BrowserWindow, dialog, globalShortcut, ipcMain, powerMonitor, safeStorage, screen, session, shell } from 'electron';
 import path from 'node:path';
+import { getUiLanguage, setUiLanguage, t, translateDiagnostic } from '../shared/i18n';
+import { initialUiLanguage } from './windows-language';
 import { mkdirSync, existsSync, copyFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { ChatGPTAuth } from './chatgpt-auth';
@@ -82,6 +84,10 @@ async function createApp(): Promise<void> {
   if (!existsSync(demoFile)) copyFileSync(path.join(__dirname, 'demo', 'projektnotizen.md'), demoFile);
   const initialStore = new StateStore(dataDirectory), credentials = new CredentialStore(dataDirectory, safeStorage);
   const initialState = initialStore.load();
+  if (!['state.json', 'state.backup.json', 'state.json.tmp'].some(file => existsSync(path.join(dataDirectory, file)))) {
+    initialState.preferences.uiLanguage = profileArg ? 'de' : initialUiLanguage(app.getLocale());
+  }
+  setUiLanguage(initialState.preferences.uiLanguage ?? 'de');
   stateWriter = new WorkerStateStore(dataDirectory, { workerPath: path.join(__dirname, 'state-worker.cjs') });
   const writer = stateWriter;
   const store = { load: () => structuredClone(initialState), save: (state: ReturnType<StateStore['load']>) => writer.commit(state) };
@@ -174,7 +180,12 @@ async function createApp(): Promise<void> {
     serviceContext: { instructions: () => calendar.instructions(), secrets: () => calendarAuth.secrets() },
     publishComputerFrame: frame => { if (window && !window.isDestroyed()) window.webContents.send('openhiatus:computer-frame', decodeComputerFrame(frame)); },
     publish: state => {
+      const language = state.preferences.uiLanguage ?? 'de';
+      const languageChanged = getUiLanguage() !== language;
+      setUiLanguage(language);
+      if (languageChanged) void desktopControlOverlay?.refresh().catch(error => stopDesktopControl(error));
       activityOverlay?.update(activityOverlayState(state, voicePresence));
+      if (languageChanged) activityOverlay?.refresh();
       if (window && !window.isDestroyed()) window.webContents.send('openhiatus:state', decodeSnapshot(state));
     },
   });
@@ -185,7 +196,7 @@ async function createApp(): Promise<void> {
     webPreferences: { preload: path.join(__dirname, 'preload.cjs'), nodeIntegration: false, contextIsolation: true, sandbox: true, webSecurity: true, spellcheck: false, backgroundThrottling: false } });
   window.removeMenu();
   guidanceOverlay = new GuidanceOverlay(() => {
-    const overlay = new BrowserWindow({ title: `${APP_DISPLAY_NAME} · Bildschirmhilfe`, show: false, transparent: true,
+    const overlay = new BrowserWindow({ title: t('{0} · Bildschirmhilfe', APP_DISPLAY_NAME), show: false, transparent: true,
       frame: false, focusable: false, alwaysOnTop: true, skipTaskbar: true, hasShadow: false,
       resizable: false, movable: false, minimizable: false, maximizable: false, backgroundColor: '#00000000',
       webPreferences: { nodeIntegration: false, contextIsolation: true, sandbox: true, webSecurity: true, spellcheck: false, backgroundThrottling: false } });
@@ -199,7 +210,7 @@ async function createApp(): Promise<void> {
     workArea: () => window && !window.isDestroyed() ? screen.getDisplayMatching(window.getBounds()).workArea : screen.getPrimaryDisplay().workArea,
     onSizeChange: async size => { try { await controller?.savePreferences({ activityOverlaySize: size }); } catch (error) { controller?.reportError(error); throw error; } },
     createWindow: () => {
-      const overlay = new BrowserWindow({ width: 144, height: 144, title: `${APP_DISPLAY_NAME} · Arbeitsanzeige`,
+      const overlay = new BrowserWindow({ width: 144, height: 144, title: t('{0} · Arbeitsanzeige', APP_DISPLAY_NAME),
         show: false, transparent: true, frame: false, focusable: false, alwaysOnTop: true, skipTaskbar: true,
         resizable: false, movable: false, minimizable: false, maximizable: false, closable: false, backgroundColor: '#00000000', autoHideMenuBar: true,
         webPreferences: { preload: path.join(__dirname, 'activity-overlay-preload.cjs'), nodeIntegration: false, contextIsolation: true, sandbox: true, webSecurity: true, spellcheck: false } });
@@ -211,7 +222,7 @@ async function createApp(): Promise<void> {
   });
   activityOverlay.update(activityOverlayState(controller.snapshot(), voicePresence));
   desktopControlOverlay = new DesktopControlOverlay({ displays: () => screen.getAllDisplays(), createWindow: () => {
-    const overlay = new BrowserWindow({ title: `${APP_DISPLAY_NAME} · Desktopübernahme`, show: false, transparent: true,
+    const overlay = new BrowserWindow({ title: t('{0} · Desktopübernahme', APP_DISPLAY_NAME), show: false, transparent: true,
       frame: false, focusable: false, alwaysOnTop: true, skipTaskbar: true, hasShadow: false,
       resizable: false, movable: false, minimizable: false, maximizable: false, closable: false, backgroundColor: '#00000000',
       webPreferences: { nodeIntegration: false, contextIsolation: true, sandbox: true, webSecurity: true, spellcheck: false, backgroundThrottling: false } });
@@ -272,7 +283,8 @@ async function createApp(): Promise<void> {
   });
   ipcMain.handle('openhiatus:call', async (event, method: unknown, args: unknown): Promise<IpcResponse> => {
     if (!trustedRenderer(event)) return { ok: false, error: 'Unzulässiger Aufruf.' };
-    return ipc.dispatch(method, args);
+    const response = await ipc.dispatch(method, args);
+    return response.ok ? response : { ...response, error: translateDiagnostic(response.error) };
   });
   await window.loadFile(rendererFile);
   // Show without taking focus, then keep the normal window minimized in the taskbar.
@@ -311,7 +323,7 @@ app.on('before-quit', event => {
   if (disposed) return; event.preventDefault(); if (quitting) return; quitting = true; stopActivityPresence();
   void (controller?.dispose() ?? Promise.resolve()).then(async () => { await googleCalendarAuth?.dispose(); await memoryWriter?.dispose(); await stateWriter?.dispose(); services?.dispose(); guidanceOverlay?.dispose(); activityOverlay?.dispose(); await screenMonitor?.dispose(); await voiceHotkeys?.dispose(); disposed = true; globalShortcut.unregisterAll(); app.quit(); }).catch(() => {
     quitting = false; if (controller) activityOverlay?.update(activityOverlayState(controller.snapshot(), voicePresence));
-    void dialog.showMessageBox({ type: 'error', title: `${APP_DISPLAY_NAME} konnte die Arbeit nicht sicher beenden`, message: `Die laufende Arbeit oder das Speichern konnte nicht sicher abgeschlossen werden. ${APP_DISPLAY_NAME} bleibt geöffnet. Bitte erneut versuchen.` });
+    void dialog.showMessageBox({ type: 'error', title: t('{0} konnte die Arbeit nicht sicher beenden', APP_DISPLAY_NAME), message: t('Die laufende Arbeit oder das Speichern konnte nicht sicher abgeschlossen werden. {0} bleibt geöffnet. Bitte erneut versuchen.', APP_DISPLAY_NAME) });
   });
 });
-if (locked) app.whenReady().then(createApp).catch(() => { void dialog.showMessageBox({ type: 'error', title: APP_DISPLAY_NAME, message: `${APP_DISPLAY_NAME} konnte nicht starten. Bitte prüfen, ob das vollständige App-Paket und das lokale Datenverzeichnis zugänglich sind.` }).then(async () => { await Promise.allSettled([memoryWriter?.dispose(), stateWriter?.dispose()]); disposed = true; app.quit(); }); });
+if (locked) app.whenReady().then(createApp).catch(() => { void dialog.showMessageBox({ type: 'error', title: APP_DISPLAY_NAME, message: t('{0} konnte nicht starten. Bitte prüfen, ob das vollständige App-Paket und das lokale Datenverzeichnis zugänglich sind.', APP_DISPLAY_NAME) }).then(async () => { await Promise.allSettled([memoryWriter?.dispose(), stateWriter?.dispose()]); disposed = true; app.quit(); }); });

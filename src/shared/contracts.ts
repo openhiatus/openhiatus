@@ -1,5 +1,6 @@
 import type { SkillFavorites } from './skill-favorites';
 import type { SidebarMode } from './workspace-preferences';
+import type { UiLanguage } from './ui-language';
 import type { ActivityPresence } from './activity-presence';
 import type { DesktopControlPhase } from './desktop-control';
 import type { AutostartSettings } from './autostart';
@@ -26,6 +27,7 @@ export interface Message { id: string; role: 'user' | 'assistant'; text: string;
 export interface Activity { id: string; at: string; kind: 'system' | 'command' | 'file' | 'error'; title: string; detail?: string; }
 export interface Task { id: string; status: TaskStatus; threadId?: string; turnId?: string; error?: string; }
 export interface Preferences {
+  uiLanguage?: UiLanguage;
   assistantProfile?: AssistantProfile;
   itSupporter?: boolean;
   sidebarMode?: SidebarMode; activityOverlayEnabled?: boolean; activityOverlaySize?: number;
