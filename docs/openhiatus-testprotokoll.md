@@ -1,5 +1,18 @@
 # openHiatus – Testprotokoll
 
+## 0.0.22: Sprachwahl direkt in der Seitenleiste – 25. Oktober 2026
+
+Der Sprachschalter steht direkt über **Arbeitsordner**. Das Sprachsymbol A/文 und **Language · 语言** machen ihn unabhängig von der eingestellten Sprache erkennbar. Das Menü zeigt alle sieben Sprachen in ihrer eigenen Schrift mit lokalen SVG-Flaggen. Die Auswahl bleibt beim Wechsel der Ansicht erreichbar; die bisherige Auswahlkarte in den Einstellungen entfällt.
+
+- `npm run check`: Architekturprüfung, TypeScript und **821 Tests bestanden**.
+- `npm run build`: erfolgreich.
+- `npm run test:i18n-ui`: alle sieben Sprachen über das neue Menü gewählt, ohne in die Einstellungen zu navigieren. Die aktuelle Ansicht, Entwürfe und die laufende synthetische Aufgabe blieben erhalten. Geprüft wurden außerdem die Flaggen, Tastaturauswahl mit Pfeiltasten/Pos1/Ende/Enter, Schließen mit Esc und Außenklick sowie das vollständige Menü bei eingeklappter Seitenleiste und kleinster normaler Fenstergröße.
+- `npm run test:responsive-ui`: Navigation und Einstellungen bei 560 × 440, 760 × 560 und 1360 × 900 sowie manueller Aus-/Einklappung bestanden.
+- `npm run test:i18n-ui` mit `OPENHIATUS_TEST_APP` auf das Windows-Paket 0.0.22: derselbe Sprach-, Entwurfs- und Laufzeittest bestanden. Die Prüfung wartet vor der ersten Bedienung ausdrücklich auf die verfügbare App-Oberfläche.
+- Paket und Setup 0.0.22 mit `node scripts/package.mjs` und `node scripts/installer.mjs` gebaut; die Setup-Prüfsumme wurde verifiziert. Der Installationsablauf selbst bleibt gegenüber 0.0.21 unverändert.
+
+Die Prüfungen verwenden isolierte Profile und synthetische Daten. Esc behält auch bei geöffnetem Sprachmenü seine globale Stopp-Funktion. Die Flaggen benötigen weder Emoji-Schriften noch externe Bildabrufe.
+
 ## 0.0.21: Sieben Sprachen für App und Windows-Setup – 25. Oktober 2026
 
 Die Oberfläche bietet Englisch, Spanisch, Französisch, Deutsch, vereinfachtes Chinesisch, Japanisch und brasilianisches Portugiesisch. Die Sprachwahl unter Einstellungen wird über den bestehenden IPC-Vertrag gespeichert und wirkt ohne Neuaufbau der Ansichten. Setup gibt seine Sprache nur für neue normale Profile vor; bestehende Präferenzen bleiben erhalten. Die [Dokumentation zur Mehrsprachigkeit](localization.md) beschreibt Grenzen und Pflege des lokalen Katalogs.

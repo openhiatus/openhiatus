@@ -1,7 +1,7 @@
 {
   "name": "openhiatus",
   "productName": "openHiatus",
-  "version": "0.0.21",
+  "version": "0.0.22",
   "private": true,
   "description": "Eigenständiger Windows-Sprachassistent mit Pi, mehreren Modellanbietern und persönlichem Gedächtnis",
   "author": "openHiatus contributors",

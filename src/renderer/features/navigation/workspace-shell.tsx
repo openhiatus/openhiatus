@@ -8,6 +8,7 @@ import { OpenhiatusMark } from '../../components/OpenhiatusMark';
 import { ComputerPreview } from '../../ComputerPreview';
 import { FullAccessNotice } from '../../FullAccessNotice';
 import { isSidebarCollapsed, SIDEBAR_COMPACT_QUERY } from './sidebar-layout';
+import { LanguageSwitcher } from './language-switcher';
 
 export type AppView = 'chat' | 'tasks' | 'services' | 'memory' | 'skills' | 'settings';
 export interface WorkspaceShellProps {
@@ -81,6 +82,7 @@ export function WorkspaceShell({ view, onNavigate, state, ready, speechReady, ne
           {id === 'settings' && !ready && <span className="setup-dot" aria-hidden="true" />}
         </button>); })}</nav>
       <div className="sidebar-bottom">
+        <LanguageSwitcher language={state?.preferences.uiLanguage ?? 'de'} ready={!!state} onError={onError} />
         <button className="workspace-link" aria-label={t("Arbeitsordner öffnen")} title={t("Arbeitsordner öffnen")} onClick={() => void window.openhiatus.openWorkspace().catch(onError)}><FolderOpen size={16} /><span className="sidebar-label">{t("Arbeitsordner")}</span><ArrowRight size={13} /></button>
         <button className="connection-summary" onClick={() => onNavigate('settings')} aria-label={t("Modell- und Sprachzugänge verwalten")} title={`${connected ? t("Modell verbunden") : t("Einrichtung öffnen")} · ${speechReady ? t("Sprache verbunden") : t("Sprache einrichten")}`}>
           <span className={`status-dot ${ready ? 'good' : 'warning'}`} /><span className="sidebar-label">{connected ? t("Modell verbunden") : t("Einrichtung öffnen")}<small>{speechReady ? t("Sprache verbunden") : t("Sprache einrichten")}</small></span><Unplug className="connection-icon" size={18} /><ChevronRight className="connection-chevron" size={15} />

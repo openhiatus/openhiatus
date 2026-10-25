@@ -43,22 +43,41 @@ try {
   const main = await instance.browserWindow(page);
   page.on('pageerror', error => errors.push(error.message));
   const nav = index => page.locator('.sidebar nav button').nth(index);
-  const selector = page.locator('select[id$="-ui-language"]');
+  const selector = page.locator('.language-trigger');
+  const menu = page.locator('.language-menu');
   const snapshot = () => page.evaluate(() => window.openhiatus.snapshot());
   const settleSidebar = () => expect.poll(() => page.locator('.sidebar-region').evaluate(element =>
     Math.abs(element.getBoundingClientRect().width - parseFloat(getComputedStyle(document.querySelector('.workspace-shell')).getPropertyValue('--sidebar-width'))))).toBeLessThan(1);
   const change = async language => {
-    await nav(5).click(); await selector.selectOption(language);
+    const view = await page.locator('.sidebar nav [aria-current="page"]').getAttribute('aria-label');
+    const selectedView = await page.locator('.sidebar nav [aria-current="page"]').evaluate(element => [...element.parentElement.children].indexOf(element));
+    await selector.click(); await expect(menu).toBeVisible();
+    await expect(menu.getByRole('menuitemradio')).toHaveCount(7);
+    await expect(menu.locator('svg[data-language-flag]')).toHaveCount(7);
+    await menu.locator(`button[lang="${language}"]`).click();
+    await expect(menu).not.toBeVisible(); await expect(selector).toBeFocused();
     await expect(page.locator('html')).toHaveAttribute('lang', language);
     await expect.poll(async () => (await snapshot()).preferences.uiLanguage).toBe(language);
+    assert.ok(view); await expect(nav(selectedView)).toHaveAttribute('aria-current', 'page');
   };
+  await expect(selector).toBeEnabled({ timeout: 30000 });
+  assert.equal(await page.locator('.sidebar-language').evaluate(element => element.nextElementSibling?.classList.contains('workspace-link')), true);
+  // The menu must be discoverable from the conversation even before consent.
+  await expect(selector).toContainText('Language'); await expect(selector).toContainText('语言');
+  await selector.click(); await menu.getByRole('menuitemradio', { name: 'Deutsch', exact: true }).focus();
+  await page.keyboard.press('Home'); await expect(menu.getByRole('menuitemradio', { name: 'English', exact: true })).toBeFocused();
+  await page.keyboard.press('End'); await expect(menu.getByRole('menuitemradio', { name: 'Português (Brasil)', exact: true })).toBeFocused();
+  await page.keyboard.press('ArrowUp'); await expect(menu.getByRole('menuitemradio', { name: '日本語', exact: true })).toBeFocused();
+  await page.keyboard.press('Enter'); await expect(page.locator('html')).toHaveAttribute('lang', 'ja');
+  await expect(menu).not.toBeVisible(); await expect(selector).toBeFocused();
+  await selector.click(); await expect(menu.getByRole('menuitemradio', { name: '日本語', exact: true })).toBeFocused();
+  await page.keyboard.press('Escape'); await expect(menu).not.toBeVisible(); await expect(selector).toBeFocused();
   // A language can be chosen before consenting to full access.
   for (const language of languages) {
     await change(language);
     await expect(page.locator('#full-access-title')).toHaveText(tr(language, 'openHiatus arbeitet mit Vollzugriff'));
     const navigation = ['Gespräch', 'Aufgaben', 'Dienste', 'Gedächtnis', 'Skills', 'Einstellungen'];
     for (const [index, source] of navigation.entries()) await expect(nav(index)).toHaveAccessibleName(tr(language, source));
-    await expect(selector.locator('option')).toHaveCount(7);
   }
   await page.evaluate(async baseUrl => {
     await window.openhiatus.acknowledgeFullAccess();
@@ -66,7 +85,7 @@ try {
     await window.openhiatus.savePreferences({ model: 'local/language-worker', dialogModel: 'local/language-dialog', memoryModel: 'local/language-dialog',
       memoryAutoSummarize: false, speakReplies: false, earcons: false, activityOverlayEnabled: true });
   }, `http://127.0.0.1:${server.address().port}/v1`);
-  await page.locator('#anthropic-key').fill('synthetic-unsaved-value');
+  await nav(5).click(); await page.locator('#anthropic-key').fill('synthetic-unsaved-value');
   await page.evaluate(text => window.openhiatus.send(text, 'language-task'), userText);
   await expect.poll(() => workerCalls).toBe(1);
   const jobId = (await snapshot()).jobs[0].id;
@@ -125,15 +144,33 @@ try {
     await expect(page.locator('#memory-document-editor')).toHaveValue(userText + ' memory draft');
   }
   await change('ja');
+  // A clipped sidebar must never clip the language menu. Test the smallest normal window too.
+  for (const [width, height] of [[1360, 900], [560, 440]]) {
+    await main.evaluate((window, size) => window.setSize(...size), [width, height]); await settleSidebar();
+    await selector.click(); await expect(menu).toBeVisible();
+    const bounds = await menu.evaluate(element => { const rect = element.getBoundingClientRect(); return { x: rect.x, y: rect.y, right: rect.right, bottom: rect.bottom, width: innerWidth, height: innerHeight }; });
+    assert.ok(bounds.x >= 0 && bounds.y >= 0 && bounds.right <= bounds.width && bounds.bottom <= bounds.height);
+    await page.screenshot({ path: `artifacts/openhiatus-language-menu-${width}.png` });
+    const header = page.locator('.topbar'), headerBounds = await header.boundingBox();
+    await header.click({ position: { x: headerBounds.width - 2, y: 2 } }); await expect(menu).not.toBeVisible();
+  }
   assert.deepEqual(errors, []);
   await instance.close(); instance = undefined;
   instance = await electron.launch(options); page = await instance.firstWindow();
   await expect(page.locator('html')).toHaveAttribute('lang', 'ja');
   const restored = await snapshot(); assert.equal(restored.preferences.uiLanguage, 'ja');
   assert.equal(restored.jobs[0].title, userText);
-  const proof = { status: 'passed', languages, checks: ['seven real UI selections before consent', 'navigation and full-access disclosure', 'six workspaces at 560px and 1360px',
+  const proof = { status: 'passed', languages, checks: ['sidebar language menu directly above the workspace folder', 'seven native names with local vector flags', 'keyboard selection, Escape and outside dismissal', 'menu fits expanded and collapsed sidebar at minimum window size', 'language changes preserve the current view', 'seven real UI selections before consent', 'navigation and full-access disclosure', 'six workspaces at 560px and 1360px',
     'conversation, credentials and memory drafts survive changes', 'user content preserved verbatim', 'running worker is neither replayed nor cancelled',
     'background overlay language changes without a phase change', 'preference survives restart'], limitation: 'Synthetic local provider; no cloud credentials or normal user profile.' };
   await writeFile('artifacts/openhiatus-i18n.json', JSON.stringify(proof, null, 2)); console.log(JSON.stringify(proof, null, 2));
+} catch (error) {
+  if (instance) for (const page of instance.windows()) {
+    if (page.url().startsWith('file:')) {
+      await page.screenshot({ path: 'artifacts/openhiatus-language-failure.png' }).catch(() => {});
+      console.error({ url: page.url(), pageErrors: errors, visibleText: (await page.locator('body').innerText().catch(() => '')).slice(0, 1500) });
+    }
+  }
+  throw error;
 } finally { release(); if (instance) await instance.close(); server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }
 

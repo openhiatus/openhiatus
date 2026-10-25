@@ -1,5 +1,4 @@
 import { localized, t } from '../../../shared/i18n';
-import { UI_LANGUAGES, parseUiLanguage } from '../../../shared/ui-language';
 import { AudioDeviceSelect } from './audio-device-select';
 import { isFastModelSelection, modelOptionLabel } from '../../../shared/model-selection';
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
@@ -104,14 +103,6 @@ export function SettingsView({ state, navigationRequest, onOpenIdentity, workBus
   return <main className="settings-feature settings-scroll" aria-label={t("Einstellungen")}>
     <div className="settings-content">
       <header className="settings-feature-heading"><div className="eyebrow">{t("DEIN openHiatus")}</div><h1>{t("Deine Einstellungen.")}</h1><p className="settings-lead">{t("Modellzugänge, Sprache, Persönlichkeit und Bedienung an einem Ort.")}</p></header>
-      <section className="settings-card interface-language-card">
-        <label className="field-label" htmlFor={`${id}-ui-language`}>{t('Sprache der Oberfläche')}</label>
-        <div className="select-wrap"><select id={`${id}-ui-language`} value={state?.preferences.uiLanguage ?? 'de'} disabled={!ready}
-          onChange={event => preference({ uiLanguage: parseUiLanguage(event.target.value) })}>
-          {UI_LANGUAGES.map(language => <option key={language.id} value={language.id} lang={language.id}>{language.name}</option>)}
-        </select><ChevronDown size={15} aria-hidden="true" /></div>
-        <p className="billing-note">{t('Die Sprache ändert sich sofort. Deine Nachrichten, Dateien und laufenden Aufträge bleiben erhalten.')}</p>
-      </section>
       <div className="settings-tabs" role="tablist" aria-label={t("Einstellungsbereiche")}>
         {tabs.map(({ id: value, label, icon: Icon }, index) => <button key={value} ref={button => { tabButtons.current[index] = button; }}
           id={`${id}-tab-${value}`} role="tab" aria-selected={tab === value} aria-controls={`${id}-panel-${value}`} tabIndex={tab === value ? 0 : -1}
