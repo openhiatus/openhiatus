@@ -30,33 +30,38 @@ test('onboarding migration leaves configured profiles alone; incomplete and defe
   snapshot.preferences.fullAccessAcknowledged = true;
   snapshot.providers = [{ id: 'local', label: 'Local', configured: true, verified: false, models: [] }];
   assert.equal(needsOnboarding(snapshot), false);
-  snapshot.preferences.onboarding = { version: 1, step: 3, status: 'later' };
-  assert.equal(needsOnboarding(snapshot), true); assert.equal(onboardingStep(snapshot), 1);
+  snapshot.preferences.onboarding = { version: 2, step: 4, status: 'later' };
+  assert.equal(needsOnboarding(snapshot), true); assert.equal(onboardingStep(snapshot), 2);
   snapshot.models = [{ id: 'local/test', label: 'Test' }];
-  assert.equal(onboardingStep(snapshot), 3);
+  assert.equal(onboardingStep(snapshot), 4);
+  assert.equal(onboardingStep(snapshot, true), 0);
   snapshot.preferences.onboarding.status = 'complete'; assert.equal(needsOnboarding(snapshot), false);
+  assert.equal(onboardingStep(snapshot), 0);
+  snapshot.preferences.onboarding = parseOnboarding({ version: 1, step: 3, status: 'later' });
+  assert.equal(onboardingStep(snapshot), 1);
+  assert.deepEqual(parseOnboarding({ version: 1, step: 3, status: 'complete' }), { version: 2, step: 4, status: 'complete' });
 });
 
 test('progress survives disk and IPC without accepting arbitrary data', () => {
   const directory = mkdtempSync(path.join(tmpdir(), 'openhiatus-onboarding-'));
   const store = new StateStore(directory), saved = defaultState(), snapshot = snapshotFixture();
   for (const status of ['active', 'later', 'complete'] as const) {
-    saved.preferences.onboarding = snapshot.preferences.onboarding = { version: 1, step: 2, status };
+    saved.preferences.onboarding = snapshot.preferences.onboarding = { version: 2, step: 4, status };
     store.save(saved);
     assert.deepEqual(new StateStore(directory).load().preferences.onboarding, saved.preferences.onboarding);
     assert.deepEqual(decodeSnapshot(snapshot).preferences.onboarding, saved.preferences.onboarding);
   }
-  for (const value of [null, [], {}, { version: 2, step: 1, status: 'active' }, { version: 1, step: 4, status: 'active' }, { version: 1, step: 1, status: 'unknown' }, { version: 1, step: 1, status: 'active', key: 'secret' }]) assert.throws(() => parseOnboarding(value));
+  for (const value of [null, [], {}, { version: 3, step: 1, status: 'active' }, { version: 1, step: 4, status: 'active' }, { version: 2, step: 5, status: 'active' }, { version: 1, step: 1, status: 'unknown' }, { version: 2, step: 1, status: 'active', key: 'secret' }]) assert.throws(() => parseOnboarding(value));
 });
 
 test('progress is durable before acknowledgement and rolls back when disk persistence fails', async () => {
   const f = fixture();
   try {
-    await f.app.savePreferences({ onboarding: { version: 1, step: 1, status: 'active' } });
+    await f.app.savePreferences({ onboarding: { version: 2, step: 1, status: 'active' } });
     assert.equal(f.saved().preferences.onboarding?.step, 1);
     const save = f.store.save;
     f.store.save = () => { throw new Error('Synthetic disk failure'); };
-    await assert.rejects(f.app.savePreferences({ onboarding: { version: 1, step: 3, status: 'complete' } }), /disk failure/);
+    await assert.rejects(f.app.savePreferences({ onboarding: { version: 2, step: 4, status: 'complete' } }), /disk failure/);
     assert.equal(f.app.snapshot().preferences.onboarding?.step, 1);
     f.store.save = save;
     await assert.rejects(f.app.savePreferences({ onboarding: { version: 1, step: 9, status: 'active' } } as never));
