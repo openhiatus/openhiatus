@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Activity as ActivityIcon, ArrowRight, AudioLines, Check, CheckCheck, ChevronRight, CircleHelp, FileText, MessageSquare, Mic, ShieldCheck, Square, Terminal, Volume2, VolumeX } from 'lucide-react';
 import type { Activity, TaskStatus } from '../../../shared/contracts';
 import { assistantDisplayName } from '../../../shared/assistant-profile';
+import { desktopControlCopy } from '../../../shared/desktop-control';
 import type { AppSession } from '../session';
 import { OpenhiatusMark as Mark } from '../../components/OpenhiatusMark';
 import { Spinner } from '../../components/Spinner';
@@ -33,6 +34,8 @@ export function ConversationView({ session, active, showActivity, onOpenTasks, o
   const assistantName = assistantDisplayName(state?.preferences.assistantProfile);
   const support = state?.preferences.itSupporter === true;
   const presence: { state: PresenceState; label: string; detail: string } = !state ? { state: 'offline', label: 'Verbinde …', detail: 'openHiatus wird vorbereitet.' }
+    : state.desktopControl && state.desktopControl !== 'free' ? { state: state.desktopControl === 'error' ? 'error' : 'working', label: desktopControlCopy[state.desktopControl].title,
+      detail: `${desktopControlCopy[state.desktopControl].detail}${state.desktopControl === 'error' ? '' : ' Esc: stoppen & übernehmen.'}` }
     : phase === 'opening' ? { state: 'listening', label: 'Mikrofon öffnet …', detail: 'Gleich kannst du sprechen.' }
     : phase === 'recording' ? { state: 'listening', label: 'Ich höre zu', detail: `${duration(seconds)} · F8 ${voiceConversation ? 'beendet und sendet' : 'beendet die Aufnahme'}` }
     : phase === 'mic-test' ? { state: 'listening', label: 'Mikrofontest', detail: `${seconds}s / 4s · bleibt lokal` }
@@ -41,9 +44,9 @@ export function ConversationView({ session, active, showActivity, onOpenTasks, o
     : phase === 'playing' ? { state: 'speaking', label: 'Ich spreche', detail: activeJobs ? `${activeJobs === 1 ? 'Ein Auftrag läuft' : `${activeJobs} Aufträge laufen`} weiter.` : 'F8 unterbricht mich jederzeit.' }
     : phase === 'synthesizing' ? { state: 'thinking', label: 'Gleich spreche ich', detail: 'Die Antwort wird vertont.' }
     : taskStatus === 'stopping' ? { state: 'thinking', label: 'Halte an …', detail: 'Warte auf bestätigten Abbruch.' }
-    : taskBusy ? { state: 'thinking', label: 'Denke nach …', detail: 'Du kannst trotzdem weitersprechen.' }
+    : taskBusy ? { state: 'thinking', label: 'Denke nach …', detail: 'Dein Arbeitsplatz bleibt frei. Du kannst weitersprechen.' }
     : manualSummaryBusy ? { state: 'working', label: 'Gedächtnisberichte laufen', detail: 'Zum Schreiben zuerst stoppen.' }
-    : activeJobs ? { state: 'working', label: 'Arbeite im Hintergrund', detail: `${activeJobs === 1 ? 'Ein Auftrag' : `${activeJobs} Aufträge`} aktiv · du kannst weiter sprechen.` }
+    : activeJobs ? { state: 'working', label: 'Arbeite im Hintergrund', detail: `${activeJobs === 1 ? 'Ein Auftrag' : `${activeJobs} Aufträge`} aktiv · dein Arbeitsplatz bleibt frei.` }
     : error ? { state: 'error', label: 'Da hakt etwas', detail: 'Details stehen oben im Hinweis.' }
     : !ready ? { state: 'offline', label: 'Noch nicht eingerichtet', detail: 'Vollzugriff bestätigen und einen Modellanbieter verbinden.' }
     : { state: 'idle', label: 'Bereit', detail: taskDetails[taskStatus] ?? (summaryInProgress ? 'Gedächtnis wird im Hintergrund aufbereitet.' : speechReady ? '' : support ? 'Verbinde die Sprache unter Einstellungen → Sprache & Geräte.' : 'Schreib mir oder verbinde die Sprache.') };

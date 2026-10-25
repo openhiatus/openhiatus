@@ -3,6 +3,7 @@ export { COMPUTER_TOOL, ComputerError, parseComputerInput, type ComputerInput } 
 import { createHash, randomUUID } from 'node:crypto';
 import { loadComputerDriver } from './computer-driver-loader';
 import { sharedDesktopCoordinator, type DesktopCoordinator, type DesktopLease } from './desktop-coordinator';
+import type { DesktopProtection, ProtectDesktop } from './desktop-protection';
 import type { CuaDriverSessionLike, PressKeyInput, ToolResult } from '@trycua/cua-driver';
 import type { ComputerObservation } from '../shared/computer-views';
 import { ComputerObservations } from './computer-observations';
@@ -152,6 +153,7 @@ export class NativeComputer implements ComputerAdapter {
   private generation = new AbortController();
   private session?: ComputerSession;
   private desktopLease?: DesktopLease;
+  private protection?: DesktopProtection;
   private frame?: Frame;
   private stopping?: Promise<void>;
   private closed = false;
@@ -160,7 +162,7 @@ export class NativeComputer implements ComputerAdapter {
   private pending = 0;
   private readonly observations: ComputerObservations;
   constructor(private readonly options: { createSession?: ComputerSessionFactory; now?: () => number; timeoutMs?: number;
-    desktopCoordinator?: DesktopCoordinator; captureTiming?: ComputerCaptureTiming;
+    desktopCoordinator?: DesktopCoordinator; captureTiming?: ComputerCaptureTiming; protectDesktop?: ProtectDesktop;
     overviewScaleDivisor?: number; getOverviewScaleDivisor?: () => number;
     detailScaleDivisor?: number; getDetailScaleDivisor?: () => number;
     createImageProcessor?: () => Promise<ComputerImageProcessor> } = {}) {
@@ -204,7 +206,7 @@ export class NativeComputer implements ComputerAdapter {
     const generation = this.generation;
     this.pending++;
     const result = this.tail.then(async (): Promise<ComputerResult> => {
-      const signal = AbortSignal.any([generation.signal, AbortSignal.timeout(this.options.timeoutMs ?? 30000), ...(externalSignal ? [externalSignal] : [])]);
+      let signal = AbortSignal.any([generation.signal, AbortSignal.timeout(this.options.timeoutMs ?? 30000), ...(externalSignal ? [externalSignal] : [])]);
       let driverFailure: ComputerDriverError | undefined;
       try {
         check(signal);
@@ -215,6 +217,12 @@ export class NativeComputer implements ComputerAdapter {
             this.options.getDetailScaleDivisor?.() ?? this.options.detailScaleDivisor ?? 1);
           check(signal);
         }
+        if (this.options.protectDesktop && !this.protection) {
+          this.protection = await this.options.protectDesktop(AbortSignal.any([generation.signal, ...(externalSignal ? [externalSignal] : [])]));
+        }
+        if (this.protection) signal = AbortSignal.any([signal, this.protection.signal]);
+        check(signal);
+        this.desktopLease.setPhase('active');
         if (!this.session) {
           this.session = await (this.options.createSession ?? createNativeComputerSession)(signal);
           check(signal);
@@ -306,18 +314,27 @@ export class NativeComputer implements ComputerAdapter {
   stop(): Promise<void> {
     if (this.stopping) return this.stopping;
     this.generation.abort();
+    this.desktopLease?.setPhase('stopping');
+    this.protection?.halt();
     this.frame = undefined;
     this.observations.reset();
     const stopping = this.tail.then(async () => {
-      if (this.initializationCleanupFailed) throw new ComputerCleanupError('Desktop-Treiber konnte nicht vollständig beendet werden.');
-      if (this.session) await this.session.dispose();
-      this.session = undefined;
+      let failed = false;
+      try {
+        if (this.initializationCleanupFailed) throw new ComputerCleanupError('Desktop-Treiber konnte nicht vollständig beendet werden.');
+        if (this.session) await this.session.dispose();
+        this.session = undefined;
+      } catch { failed = true; }
+      // Human input must be restored even when the driver cannot confirm cleanup.
+      try { await this.protection?.dispose(); this.protection = undefined; } catch { failed = true; }
+      if (failed) throw new ComputerCleanupError('Desktop-Treiber konnte nicht vollständig beendet werden.');
       // No handover until admitted calls and native disposal have both settled successfully.
       this.desktopLease?.release();
       this.desktopLease = undefined;
     }).then(() => { this.stopFailed = false; }, () => {
       this.stopFailed = true;
-      throw new ComputerError('Das Beenden der Desktopsteuerung konnte nicht bestätigt werden. Weitere Eingaben bleiben gesperrt.');
+      this.desktopLease?.setPhase('error');
+      throw new ComputerError('Das Beenden der Desktopsteuerung konnte nicht bestätigt werden. Weitere Agenteneingaben bleiben gesperrt.');
     }).finally(() => {
       this.generation = new AbortController();
       this.stopping = undefined;

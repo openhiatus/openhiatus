@@ -2,6 +2,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 import './styles.css';
+import './components/desktop-control.css';
 import './standard-conversation.css';
 import './providers.css';
 import './computer-preview.css';

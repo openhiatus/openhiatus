@@ -2,6 +2,7 @@ import type { AgentAdapter, AgentEvent, DynamicToolResponse, Usage } from '../..
 import { COMPUTER_TOOL, parseComputerInput, type ComputerAdapter } from '../../computer';
 import { createToolRegistry, defineTool, type BoundToolset, type ToolContribution, type ToolRunContext, type ToolsetPort } from '../../modules/tools';
 import { createComputerToolContribution } from './computer-tools';
+import type { ProtectDesktop } from '../../desktop-protection';
 
 export const COMPUTER_DELEGATION_INSTRUCTIONS = `You are the bounded computer operator for another agent.
 Use the offered computer tool for the supplied UI objective and report_computer_task for the final handoff. You have no file, shell, extension, memory, service or delegation tools.
@@ -24,6 +25,7 @@ export interface DelegatedComputerOptions {
   readonly fast?: boolean;
   readonly createWorker: (onEvent: (event: AgentEvent) => void, tools: ToolsetPort, instructions: string) => AgentAdapter;
   readonly computer?: ComputerAdapter;
+  readonly protectDesktop?: ProtectDesktop;
   readonly getOverviewScaleDivisor?: () => number;
   readonly getDetailScaleDivisor?: () => number;
   readonly runDesktopOperation?: <T>(operation: () => Promise<T>) => Promise<T>;
@@ -120,7 +122,7 @@ function taskInput(value: unknown): TaskInput {
 export function createDelegatedComputerToolContribution(options: DelegatedComputerOptions): ToolContribution {
   const maxActions = bounded(options.maxActions, 40, 1000), maxDurationMs = bounded(options.maxDurationMs, 240000, 1800000);
   if (!options.model.trim()) throw new Error('A computer worker model is required.');
-  const base = createToolRegistry([createComputerToolContribution({ computer: options.computer, getOverviewScaleDivisor: options.getOverviewScaleDivisor,
+  const base = createToolRegistry([createComputerToolContribution({ computer: options.computer, protectDesktop: options.protectDesktop, getOverviewScaleDivisor: options.getOverviewScaleDivisor,
     getDetailScaleDivisor: options.getDetailScaleDivisor, runDesktopOperation: options.runDesktopOperation })]);
   const states = new Set<BindingState>(), retained = new Set<ChildRun>();
   let active: ChildRun | undefined, viewBusy = false, baseBinding: BoundToolset | undefined, baseState: BindingState | undefined;

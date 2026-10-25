@@ -35,14 +35,19 @@ Persönliche Skill-Sammlungen werden nicht mitgeliefert.
 F8 startet/beendet die Aufnahme. F9 sendet den Entwurf bei aktiviertem „Transkript prüfen“.
 Belegt eine andere App die Tasten, zeigt openHiatus einen sichtbaren Hinweis.
 Die andere Anwendung bei Bedarf schließen und openHiatus neu starten oder die Schaltflächen im Fenster verwenden.
-Strg+Enter sendet im openHiatus-Fenster. Escape oder Strg+Alt+F12 stoppt openHiatus global.
+Strg+Enter sendet im openHiatus-Fenster. Strg+Alt+F12 stoppt openHiatus global.
+Escape stoppt im openHiatus-Fenster und während einer Desktopübernahme aus jedem Programm.
 Gespräch und höchstens zwei unabhängige Arbeitsaufträge können gleichzeitig laufen.
 Stopp beendet die Agentsteuerung und den verwalteten Prozessbaum; bereits erfolgte
 Dateiänderungen und Desktop-Eingaben werden dadurch nicht rückgängig gemacht.
 Ausdrücklich eigenständig übergebene Nutzerfenster bleiben dabei geöffnet.
 
 openHiatus arbeitet nach Bestätigung mit den Rechten des Windows-Benutzerkontos.
-Die App bietet keine Sandbox. Bei Desktopsteuerung Maus und Tastatur ruhen lassen.
+Die App bietet keine Sandbox. Hintergrundarbeit lässt deinen Arbeitsplatz frei.
+Bei Desktopsteuerung zeigt ein gelber Rahmen die Übernahme an; eigene Maus- und
+Tastatureingaben sind vorübergehend gesperrt. Esc stoppt den Agenten und gibt sie frei.
+Registrierte F8-/F9-Sprachbefehle bleiben verfügbar. Die Sperre dient der Vermeidung
+von Bedienkonflikten auf dem normalen Desktop und ist keine Windows-Sicherheitsgrenze.
 Text wird üblicherweise über die Zwischenablage eingefügt und ersetzt deren Inhalt.
 Unterbrochene Arbeit wird nach einem Neustart nicht automatisch wiederholt.
 /goal und Live-Audio sind in dieser Version nicht verfügbar.
