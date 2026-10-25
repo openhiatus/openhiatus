@@ -1,5 +1,5 @@
 import { _electron as electron } from '@playwright/test';
-import { access, copyFile, mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
+import { access, copyFile, mkdir, mkdtemp, readFile, rename, writeFile } from 'node:fs/promises';
 import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import path from 'node:path';
 import assert from 'node:assert/strict';
@@ -12,6 +12,7 @@ const directory = await mkdtemp(path.resolve('.test-data/installer-'));
 const id = `openhiatus.installer.test.${path.basename(directory)}`, name = `openHiatus Setup Test ${path.basename(directory)}`;
 const manifest = JSON.parse(await readFile('package.json', 'utf8'));
 const installDirectory = path.join(directory, 'Programme ä', 'openHiatus'), profile = path.join(directory, 'Profil ä');
+const manualProfile = path.join(directory, 'Erster Start');
 const executable = path.join(installDirectory, 'openHiatus.exe');
 const waitScript = path.join(directory, 'wait-for-app-exit.ps1');
 await writeFile(waitScript, `param([string]$Executable)
@@ -23,6 +24,25 @@ while ([DateTime]::UtcNow -lt $deadline) {
 throw 'The owned test application did not release its executable.'
 `);
 const waitForAppExit = () => run('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', waitScript, '-Executable', executable]);
+const closeLaunchedAppScript = path.join(directory, 'close-finished-app.ps1');
+await writeFile(closeLaunchedAppScript, `param([string]$Executable,[string]$Profile)
+$deadline = [DateTime]::UtcNow.AddSeconds(30)
+while ([DateTime]::UtcNow -lt $deadline) {
+  $owned = @(Get-CimInstance Win32_Process -Filter "Name='openHiatus.exe'" | Where-Object { $_.ExecutablePath -eq $Executable -and $_.CommandLine.Contains('--data-dir="' + $Profile + '"') -and !$_.CommandLine.Contains('--type=') })
+  if ($owned.Count -gt 1) { throw 'Ambiguous test app process.' }
+  if ($owned.Count -eq 1) {
+    $process = Get-Process -Id $owned[0].ProcessId
+    if ($process.MainWindowHandle -ne 0 -and (Test-Path -LiteralPath (Join-Path $Profile 'Arbeitsbereich'))) {
+      if (!$process.CloseMainWindow()) { throw 'Owned test app refused the close request.' }
+      if (!$process.WaitForExit(15000)) { throw 'Owned test app did not finish closing.' }
+      Write-Output 'Finish launched the installed application with the isolated profile.'
+      exit 0
+    }
+  }
+  Start-Sleep -Milliseconds 100
+}
+throw 'Finish did not launch the installed application with its isolated profile.'
+`);
 const reg = path.join(process.env.SystemRoot || 'C:/Windows', 'System32/reg.exe');
 const uninstallKey = `HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\${id}_is1`;
 const languageKey = `HKCU\\Software\\${id}`;
@@ -59,8 +79,13 @@ execFileSync(path.join(process.env.WINDIR || 'C:/Windows', 'Microsoft.NET/Framew
 await copyFile(path.join(legacy, 'openHiatus.exe'), path.join(legacy, 'resources/native/openhiatus-input-guard.exe'));
 await writeFile(path.join(legacy, 'obsolete-owned.txt'), 'synthetic former application asset');
 const config = { appId: id, displayName: name, autostartName: id, outputDirectory: path.join(directory, 'setups') };
+for (const options of [
+  { testProfileDirectory: manualProfile },
+  { appId: id, testProfileDirectory: path.resolve('not-test-data') },
+  { appId: id, testProfileDirectory: path.resolve('.test-data') },
+]) await assert.rejects(buildInstaller(options), /isolated test installer/);
 const older = await buildInstaller({ ...config, packageDirectory: legacy, version: '0.0.0', suffix: '-old-fixture' });
-const current = await buildInstaller({ ...config, suffix: '-test' });
+const current = await buildInstaller({ ...config, suffix: '-test', testProfileDirectory: manualProfile });
 assert.ok((await readFile(current)).includes(Buffer.from('level="asInvoker"')), 'installer must not request elevation');
 const installedManifest = path.join(installDirectory, '.openhiatus-install-files.txt');
 let uninstaller;
@@ -73,6 +98,20 @@ try {
     assert.equal(await setup(registeredUninstaller()), 0);
     assert.equal(query(languageKey).status, 1, 'uninstall cleans only the test language registration');
   }
+  // One continuous path: real wizard installation, installed app, first-run setup and first reply.
+  await inspectInstaller(current, name, directory, { installDirectory });
+  assert.equal(await exists(executable), true);
+  assert.equal(readRegistryString(languageKey, 'InstallerLanguage'), 'de');
+  await run('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', closeLaunchedAppScript, '-Executable', executable, '-Profile', manualProfile]);
+  await waitForAppExit();
+  await run(process.execPath, [path.resolve('scripts/onboarding-ui-check.mjs')], { env: { ...env, OPENHIATUS_TEST_APP: executable, OPENHIATUS_TEST_PROFILE: manualProfile } });
+  await waitForAppExit();
+  // Archive only the owned synthetic test profile, leaving a fresh start for the user.
+  const archivedProfile = path.join(directory, 'Automatischer Einrichtungsnachweis');
+  for (const target of [manualProfile, archivedProfile]) assert.ok(path.resolve(target).startsWith(path.resolve('.test-data') + path.sep));
+  await rename(manualProfile, archivedProfile);
+  assert.equal(await setup(registeredUninstaller()), 0);
+  assert.equal(query(uninstallKey).status, 1);
   assert.equal(await setup(older), 0);
   assert.equal(query(uninstallKey).status, 0); assert.equal(query(uninstallKey.replace('HKCU', 'HKLM')).status, 1);
   uninstaller = registeredUninstaller();
@@ -102,9 +141,9 @@ try {
   assert.ok(query(uninstallKey, 'DisplayVersion').stdout.includes(manifest.version));
 
   const inspectLinks = path.join(directory, 'links.ps1');
-  await writeFile(inspectLinks, `param([string]$Name)\n[Console]::OutputEncoding = [Text.UTF8Encoding]::new()\n$ws = New-Object -ComObject WScript.Shell\n$paths = @((Join-Path ([Environment]::GetFolderPath('Programs')) ($Name + '.lnk')), (Join-Path ([Environment]::GetFolderPath('DesktopDirectory')) ($Name + '.lnk')))\n$result = foreach ($p in $paths) { if (!(Test-Path -LiteralPath $p)) { throw 'Missing test shortcut' }; $l = $ws.CreateShortcut($p); @{ path=$p; target=$l.TargetPath; workdir=$l.WorkingDirectory } }\nConvertTo-Json -InputObject @($result) -Compress\n`);
+  await writeFile(inspectLinks, `param([string]$Name)\n[Console]::OutputEncoding = [Text.UTF8Encoding]::new()\n$ws = New-Object -ComObject WScript.Shell\n$paths = @((Join-Path ([Environment]::GetFolderPath('Programs')) ($Name + '.lnk')), (Join-Path ([Environment]::GetFolderPath('DesktopDirectory')) ($Name + '.lnk')))\n$result = foreach ($p in $paths) { if (!(Test-Path -LiteralPath $p)) { throw 'Missing test shortcut' }; $l = $ws.CreateShortcut($p); @{ path=$p; target=$l.TargetPath; workdir=$l.WorkingDirectory; arguments=$l.Arguments } }\nConvertTo-Json -InputObject @($result) -Compress\n`);
   const links = JSON.parse(execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', inspectLinks, '-Name', name], { windowsHide: true, encoding: 'utf8' }));
-  assert.equal(links.length, 2); for (const link of links) { assert.equal(link.target.toLowerCase(), executable.toLowerCase()); assert.equal(link.workdir.toLowerCase(), installDirectory.toLowerCase()); }
+  assert.equal(links.length, 2); for (const link of links) { assert.equal(link.target.toLowerCase(), executable.toLowerCase()); assert.equal(link.workdir.toLowerCase(), installDirectory.toLowerCase()); assert.equal(link.arguments, `--data-dir="${manualProfile}"`); }
 
   const launch = { executablePath: executable, args: [`--data-dir=${profile}`], env };
   instance = await electron.launch(launch); let page = await instance.firstWindow();
@@ -137,6 +176,11 @@ try {
   assert.equal(await setup(registeredUninstaller()), 0); assert.equal(query(runKey, id).status, 0, 'uninstall must not remove another copy\'s autostart');
   const evidence = { status: 'passed', version: manifest.version, checks: ['asInvoker per-user installation', 'Start menu and optional Desktop shortcuts target installed executable', 'upgrade from synthetic older installation', 'running application blocks update and uninstall without being killed', 'downgrade rejected', 'obsolete owned files removed', 'unknown files, personal profile and Windows-disabled autostart preserved', 'corrupt manifest cannot escape or follow a junction', 'installed UI persists settings', 'installed real dialog/worker and native desktop workflows without global Node/Codex', 'uninstall removes owned shortcuts, registration, program and matching autostart', 'personal files survive uninstall', 'clean reinstall with no desktop shortcut', 'another copy\'s autostart is retained'], limitation: 'Tested locally in isolated folders and registrations; not a clean Windows VM or a signed distribution.' };
   await inspectInstaller(current, name, directory); evidence.checks.push('seven actual wizard languages: welcome, optional Desktop icon, direct Install and Cancel', 'all seven registry language mappings and uninstall cleanup', 'updates preserve a different saved app language');
+  evidence.checks.push('real wizard Install and Finish buttons complete installation', 'installed app first-run setup: consent, account, optional voice, first answer, failures, Escape, restart and resume', 'test installer launches and shortcuts use only a separate test profile');
+  assert.equal(await exists(manualProfile), false, 'a fresh profile remains available for the subsequent hands-on test');
+  const manualInstallDirectory = path.join(directory, 'Manueller Test', 'openHiatus');
+  assert.equal(await exists(manualInstallDirectory), false);
+  await writeFile('artifacts/openhiatus-installation-handson.json', JSON.stringify({ version: manifest.version, setup: current, name, id, directory, installDirectory: manualInstallDirectory, executable: path.join(manualInstallDirectory, 'openHiatus.exe'), profile: manualProfile }, null, 2));
   await writeFile('artifacts/openhiatus-installer.json', JSON.stringify(evidence, null, 2)); console.log(JSON.stringify(evidence, null, 2));
 } catch (error) {
   console.error('Installer lifecycle check failed:', error);

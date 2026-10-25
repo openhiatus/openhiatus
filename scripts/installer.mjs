@@ -4,10 +4,15 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { innoCompiler, run } from './inno-compiler.mjs';
 
-export async function buildInstaller({ packageDirectory, outputDirectory, appId = 'openhiatus.desktop', displayName = 'openHiatus', autostartName = 'openHiatus', version, suffix = '' } = {}) {
+export async function buildInstaller({ packageDirectory, outputDirectory, appId = 'openhiatus.desktop', displayName = 'openHiatus', autostartName = 'openHiatus', version, suffix = '', testProfileDirectory } = {}) {
   const manifest = JSON.parse(await readFile('package.json', 'utf8'));
   version ??= manifest.version;
   if (!/^\d+\.\d+\.\d+$/.test(version) || !/^[\w.-]+$/.test(appId) || /["\r\n{}]/.test(displayName + autostartName + suffix)) throw Error('Invalid installer identity.');
+  if (testProfileDirectory !== undefined) {
+    testProfileDirectory = path.resolve(testProfileDirectory);
+    const relative = path.relative(path.resolve('.test-data'), testProfileDirectory);
+    if (!appId.startsWith('openhiatus.installer.test.') || !relative || relative.startsWith('..') || path.isAbsolute(relative) || /["\r\n{}]/.test(testProfileDirectory)) throw Error('A test profile requires an isolated test installer and .test-data directory.');
+  }
   packageDirectory = path.resolve(packageDirectory ?? path.join('release', manifest.version, `${manifest.productName}-win32-x64`));
   outputDirectory = path.resolve(outputDirectory ?? path.join('release', manifest.version, 'installer'));
   const packaged = JSON.parse(await readFile(path.join(packageDirectory, 'resources/app/package.json'), 'utf8'));
@@ -27,7 +32,8 @@ export async function buildInstaller({ packageDirectory, outputDirectory, appId 
   await writeFile(manifestFile, '\ufeff# openhiatus:' + appId + '\r\n' + files.join('\r\n') + '\r\n', 'utf8');
   const basename = `openHiatus-Setup-${version}-x64${suffix}`;
   await run(await innoCompiler(), ['/Qp', `/DAppVersion=${version}`, `/DSetupAppId=${appId}`, `/DProductName=${displayName}`, `/DAutostartValueName=${autostartName}`,
-    `/DPackageDir=${packageDirectory}`, `/DOutputDir=${outputDirectory}`, `/DOutputName=${basename}`, `/DManifestFile=${manifestFile}`, path.resolve('resources/windows-installer.iss')]);
+    `/DPackageDir=${packageDirectory}`, `/DOutputDir=${outputDirectory}`, `/DOutputName=${basename}`, `/DManifestFile=${manifestFile}`,
+    ...(testProfileDirectory ? [`/DTestProfileDirectory=${testProfileDirectory}`] : []), path.resolve('resources/windows-installer.iss')]);
   const executable = path.join(outputDirectory, basename + '.exe');
   const digest = createHash('sha256').update(await readFile(executable)).digest('hex');
   await writeFile(executable + '.sha256', `${digest}  ${path.basename(executable)}\n`, 'utf8');

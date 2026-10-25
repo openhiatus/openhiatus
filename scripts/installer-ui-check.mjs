@@ -3,15 +3,20 @@ import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { run } from './inno-compiler.mjs';
-export async function inspectInstaller(executable, name, directory) {
+export async function inspectInstaller(executable, name, directory, { installDirectory } = {}) {
   const root = path.resolve('.test-data') + path.sep;
   if (!path.resolve(executable).startsWith(root) || !path.resolve(directory).startsWith(root) || !name.startsWith('openHiatus Setup Test ')) throw Error('UI check requires an isolated test installer.');
+  if (installDirectory && !path.resolve(installDirectory).startsWith(root)) throw Error('UI installation must stay within .test-data.');
   const framework = path.join(process.env.WINDIR || 'C:/Windows', 'Microsoft.NET/Framework64/v4.0.30319');
   const probe = path.join(directory, 'installer-ui.exe');
   execFileSync(path.join(framework, 'csc.exe'), ['/nologo', '/target:exe', '/reference:System.Drawing.dll',
     ...['UIAutomationClient.dll', 'UIAutomationTypes.dll', 'WindowsBase.dll'].map(file => `/reference:${path.join(framework, 'WPF', file)}`),
     `/out:${probe}`, path.resolve('tests/fixtures/installer-ui.cs')], { windowsHide: true, stdio: 'inherit' });
   await mkdir('artifacts', { recursive: true });
+  if (installDirectory) {
+    await run(probe, [path.resolve(executable), name, path.resolve('artifacts'), 'german', 'Weiter', 'Installieren', 'Ja', path.resolve(installDirectory)]);
+    return;
+  }
   for (const labels of [['english', 'Next', 'Install', 'Yes'], ['spanish', 'Siguiente', 'Instalar', 'Sí'],
     ['french', 'Suivant', 'Installer', 'Oui'], ['german', 'Weiter', 'Installieren', 'Ja'],
     ['chinesesimp', '下一步', '安装', '是'], ['japanese', '次へ', 'インストール', 'はい'],

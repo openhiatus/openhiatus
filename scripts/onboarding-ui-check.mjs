@@ -6,7 +6,8 @@ import assert from 'node:assert/strict';
 import { createUiAppFixture } from './helpers/ui-app-fixture.mjs';
 
 await mkdir('.test-data', { recursive: true }); await mkdir('artifacts', { recursive: true });
-const profile = await mkdtemp(path.resolve('.test-data/onboarding-'));
+const profile = process.env.OPENHIATUS_TEST_PROFILE ? path.resolve(process.env.OPENHIATUS_TEST_PROFILE) : await mkdtemp(path.resolve('.test-data/onboarding-'));
+if (!profile.startsWith(path.resolve('.test-data') + path.sep)) throw Error('Onboarding tests require a profile inside .test-data.');
 const fixture = process.env.OPENHIATUS_TEST_APP ? undefined : await createUiAppFixture('onboarding-build');
 let calls = 0, instance, delayed;
 const errors = [];
