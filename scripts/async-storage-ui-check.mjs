@@ -56,6 +56,7 @@ try {
   instance = await launch();
   const page = await instance.firstWindow(); page.on('pageerror', error => exceptions.push(error.message));
   await page.getByRole('button', { name: 'Verstanden, Vollzugriff bestätigen', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Hauptnavigation' }).getByRole('button', { name: 'Gespräch', exact: true }).click();
   await page.evaluate(async url => {
     await window.openhiatus.saveProvider({ id: 'local', baseUrl: url, models: ['storage-test'] });
     await window.openhiatus.savePreferences({ model: 'local/storage-test', dialogModel: 'local/storage-test', memoryModel: 'local/storage-test', memoryAutoSummarize: false, speakReplies: false, earcons: false });

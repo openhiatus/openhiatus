@@ -10,5 +10,6 @@ import './presence.css';
 import './features/navigation/index.css';
 import './features/tasks/index.css';
 import './features/settings/index.css';
+import './features/onboarding/index.css';
 
 createRoot(document.getElementById('root')!).render(<React.StrictMode><App /></React.StrictMode>);

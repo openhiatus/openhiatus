@@ -57,6 +57,7 @@ try {
   const page = await instance.firstWindow();
   page.on('pageerror', error => errors.push(error.message));
   await page.getByRole('button', { name: 'Verstanden, Vollzugriff bestätigen', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Hauptnavigation' }).getByRole('button', { name: 'Gespräch', exact: true }).click();
   await page.evaluate(async url => {
     await window.openhiatus.saveProvider({ id: 'local', baseUrl: url, models: ['ui-workflow'] });
     await window.openhiatus.savePreferences({ model: 'local/ui-workflow', dialogModel: 'local/ui-workflow', memoryModel: 'local/ui-workflow', memoryAutoSummarize: false });
@@ -82,6 +83,7 @@ try {
   assert.equal(snapshot.jobs[0].usage?.outputTokens, 15);
   assert.equal(snapshot.jobs[0].usage?.costUsd, undefined);
   await page.getByRole('navigation', { name: 'Hauptnavigation' }).getByRole('button', { name: /^Aufgaben/ }).click();
+  await page.getByRole('button', { name: 'Hintergrundaufgaben', exact: true }).click();
   await expect(page.getByText('60 Token · Preis nicht verfügbar', { exact: true }).first()).toBeVisible();
   await page.screenshot({ path: 'artifacts/openhiatus-aufgaben-ergebnis.png' });
   await page.getByRole('navigation', { name: 'Hauptnavigation' }).getByRole('button', { name: 'Gespräch', exact: true }).click();

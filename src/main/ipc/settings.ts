@@ -1,5 +1,6 @@
 import type { PreferencesPatch, ProviderInput } from '../../shared/contracts';
 import { parseUiLanguage } from '../../shared/ui-language';
+import { parseOnboarding } from '../../shared/onboarding';
 import { parseSkillFavorites } from '../../shared/skill-favorites';
 import { computerDetailDivisor, computerOverviewDivisor } from '../../shared/computer-views';
 import { computerImageRetentionCalls, computerWorkingMemoryCalls } from '../../shared/computer-task-settings';
@@ -12,8 +13,9 @@ const booleanPreferences = ['speakReplies', 'voiceConversation', 'earcons', 'mem
 const textPreferences = ['inputDeviceId', 'outputDeviceId', 'voiceId', 'model', 'dialogModel', 'memoryModel', 'computerModel'] as const;
 const deviceMetadata = ['inputDeviceLabel', 'inputDeviceGroupId', 'outputDeviceLabel', 'outputDeviceGroupId'] as const;
 function preferences(value: unknown): PreferencesPatch {
-  const input = inputObject(value, [...booleanPreferences, ...textPreferences, ...deviceMetadata, 'uiLanguage', 'skillFavorites', 'computerOverviewScaleDivisor', 'computerDetailScaleDivisor', 'computerImageRetentionCalls', 'computerWorkingMemoryCalls', 'sidebarMode', 'activityOverlaySize', 'assistantProfile'], 'Ungültige Einstellungen.');
+  const input = inputObject(value, [...booleanPreferences, ...textPreferences, ...deviceMetadata, 'onboarding', 'uiLanguage', 'skillFavorites', 'computerOverviewScaleDivisor', 'computerDetailScaleDivisor', 'computerImageRetentionCalls', 'computerWorkingMemoryCalls', 'sidebarMode', 'activityOverlaySize', 'assistantProfile'], 'Ungültige Einstellungen.');
   const patch: PreferencesPatch = {};
+  if (Object.hasOwn(input, 'onboarding')) patch.onboarding = parseOnboarding(input.onboarding);
   if (Object.hasOwn(input, 'uiLanguage')) patch.uiLanguage = parseUiLanguage(input.uiLanguage);
   if (Object.hasOwn(input, 'assistantProfile')) patch.assistantProfile = parseAssistantProfile(input.assistantProfile);
   for (const key of booleanPreferences) if (Object.hasOwn(input, key)) {
@@ -50,7 +52,7 @@ function providerInput(value: unknown): ProviderInput {
   }
   return result;
 }
-export function settingsHandlers({ controller, platform }: IpcPorts): Pick<HandlerMap, 'autostartSettings' | 'setAutostart' | 'savePreferences' | 'signInChatGPT' | 'cancelChatGPTSignIn' | 'signOutChatGPT' | 'openChatGPTUsage' | 'saveProvider' | 'testProvider' | 'removeProvider' | 'listSkills' | 'openSkillsFolder'> {
+export function settingsHandlers({ controller, platform }: IpcPorts): Pick<HandlerMap, 'autostartSettings' | 'setAutostart' | 'savePreferences' | 'signInChatGPT' | 'cancelChatGPTSignIn' | 'signOutChatGPT' | 'openChatGPTUsage' | 'saveProvider' | 'testProvider' | 'checkSetup' | 'removeProvider' | 'listSkills' | 'openSkillsFolder'> {
   return {
     autostartSettings: command('autostartSettings', 0, noArgs, () => platform.autostartSettings()),
     setAutostart: command('setAutostart', 1, args => {
@@ -64,6 +66,7 @@ export function settingsHandlers({ controller, platform }: IpcPorts): Pick<Handl
     openChatGPTUsage: command('openChatGPTUsage', 0, noArgs, () => platform.openChatGPTUsage()),
     saveProvider: command('saveProvider', 1, args => [providerInput(args[0])], input => controller.saveProvider(input)),
     testProvider: command('testProvider', 1, args => [inputText(args[0], 100, 'Anbieter')], id => controller.testProvider(id)),
+    checkSetup: command('checkSetup', 0, noArgs, () => controller.checkSetup()),
     removeProvider: command('removeProvider', 1, args => [inputText(args[0], 100, 'Anbieter')], id => controller.removeProvider(id)),
     listSkills: command('listSkills', 0, noArgs, () => controller.listSkills()),
     openSkillsFolder: command('openSkillsFolder', 0, noArgs, () => platform.openSkillsFolder()),

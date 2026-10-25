@@ -12,6 +12,7 @@ function fixture() {
   const memory = memoryFixture(), snapshot = snapshotFixture(), period: MemoryPeriodPage = { found: false, documentId: 'day:2026-10-20', text: 'Nicht vorhanden', sourceIds: [], sourceCount: 0, offset: 0, totalBytes: 0 };
   const audio = { base64: 'synthetic', mimeType: 'audio/mpeg' };
   const controller: IpcControllerPort = {
+    checkSetup: () => ({ model: 'local/test', answer: 'Hallo!' }),
     snapshot: () => snapshot, send: capture('send'), stop: capture('stop'), stopJob: capture('stopJob'), savePreferences: capture('savePreferences'), acknowledgeFullAccess: capture('acknowledgeFullAccess'),
     signInChatGPT: capture('signInChatGPT'), cancelChatGPTSignIn: capture('cancelChatGPTSignIn'), signOutChatGPT: capture('signOutChatGPT'),
     saveProvider: capture('saveProvider'), testProvider: capture('testProvider'), removeProvider: capture('removeProvider'),
@@ -35,6 +36,7 @@ function fixture() {
 }
 
 const validArgs: { [Name in CommandName]: CommandArgs<Name> } = {
+  checkSetup: [],
   autostartSettings: [], setAutostart: [true],
   googleCalendarSnapshot: [], saveGoogleCalendarClient: [{ clientId: 'synthetic-client.apps.googleusercontent.com' }], connectGoogleCalendar: [], cancelGoogleCalendarLogin: [], disconnectGoogleCalendar: [], selectGoogleCalendar: ['primary'],
   googleCalendarEvents: [{ timeMin: '2026-10-24T00:00:00Z', timeMax: '2026-10-25T00:00:00Z' }], openGoogleCalendarSetup: [],

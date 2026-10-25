@@ -61,6 +61,7 @@ try {
     assert.ok(view); await expect(nav(selectedView)).toHaveAttribute('aria-current', 'page');
   };
   await expect(selector).toBeEnabled({ timeout: 30000 });
+  await nav(0).click();
   assert.equal(await page.locator('.sidebar-language').evaluate(element => element.nextElementSibling?.classList.contains('workspace-link')), true);
   // The menu must be discoverable from the conversation even before consent.
   await expect(selector).toContainText('Language'); await expect(selector).toContainText('语言');

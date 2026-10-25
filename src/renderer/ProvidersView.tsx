@@ -13,7 +13,7 @@ const providers = localized([
   { id: 'local', label: 'Lokaler Server' },
 ]);
 
-function ProviderCard({ provider, disabled, onError }: { provider: ProviderView; disabled: boolean; onError(error: unknown): void }) {
+export function ProviderCard({ provider, disabled, onError, idPrefix = '', guided = false }: { provider: ProviderView; disabled: boolean; onError(error: unknown): void; idPrefix?: string; guided?: boolean }) {
   const [key, setKey] = useState('');
   const [baseUrl, setBaseUrl] = useState(provider.baseUrl ?? '');
   const [modelIds, setModelIds] = useState('');
@@ -32,18 +32,18 @@ function ProviderCard({ provider, disabled, onError }: { provider: ProviderView;
   const canSave = provider.id === 'local' ? !!baseUrl.trim() && (!!customModels.length || provider.models.length > 0) : provider.configured || !!key.trim();
   return <section className="settings-card provider-card" data-provider={provider.id}>
     <div className="settings-card-head"><span className="service-icon"><PlugZap size={21} /></span><div><h2>{provider.id === 'openai' ? 'OpenAI API' : provider.id === 'local' ? t('Lokaler Server') : provider.label}</h2><p>{provider.id === 'local' ? t("OpenAI-kompatibler Server auf deinem Rechner oder im Netz") : t("Modelle für Arbeit, Gespräch und Gedächtnis")}</p></div><span className={`service-status ${provider.verified ? 'good' : ''}`}><span className="status-dot" />{provider.verified ? t("Geprüft") : provider.configured ? t("Gespeichert") : t("Nicht eingerichtet")}</span></div>
-    <label className="field-label" htmlFor={`${provider.id}-key`}>{t("API-Key ")}{provider.id === 'local' && <span className="muted">{t("· optional")}</span>}</label>
-    <input className="provider-input" id={`${provider.id}-key`} type="password" autoComplete="off" spellCheck={false} value={key} placeholder={provider.id === 'local' ? t("Optionalen API-Key eingeben oder ersetzen") : provider.configured ? t("Geschützt gespeichert · zum Ersetzen neu eingeben") : t("API-Key eingeben")} onChange={event => { setKey(event.target.value); setSaved(false); }} disabled={busy} />
+    <label className="field-label" htmlFor={`${idPrefix}${provider.id}-key`}>{t("API-Key ")}{provider.id === 'local' && <span className="muted">{t("· optional")}</span>}</label>
+    <input className="provider-input" id={`${idPrefix}${provider.id}-key`} type="password" autoComplete="off" spellCheck={false} value={key} placeholder={provider.id === 'local' ? t("Optionalen API-Key eingeben oder ersetzen") : provider.configured ? t("Geschützt gespeichert · zum Ersetzen neu eingeben") : t("API-Key eingeben")} onChange={event => { setKey(event.target.value); setSaved(false); }} disabled={busy} />
     <details className="provider-options" open={provider.id === 'local' ? true : undefined}><summary>{provider.id === 'local' ? t("Server und Modelle") : t("Eigene Basis-URL und Modell-IDs")}</summary>
-      <label className="field-label" htmlFor={`${provider.id}-url`}>{t("Basis-URL ")}{provider.id !== 'local' && <span className="muted">{t("· optional")}</span>}</label>
-      <input className="provider-input" id={`${provider.id}-url`} type="url" spellCheck={false} value={baseUrl} placeholder={provider.id === 'local' ? 'http://localhost:11434/v1' : t("Standard-Endpunkt des Anbieters")} onChange={event => { setBaseUrl(event.target.value); setSaved(false); }} disabled={busy} />
-      <label className="field-label" htmlFor={`${provider.id}-models`}>{t("Eigene Modell-IDs ")}{provider.id !== 'local' && <span className="muted">{t("· optional")}</span>}</label>
-      <textarea className="provider-input" id={`${provider.id}-models`} value={modelIds} rows={2} spellCheck={false} placeholder={provider.models.length ? provider.models.filter(model => !isFastModelSelection(model.id)).map(model => model.id.slice(model.id.indexOf('/') + 1)).join(', ') : t("Eine Modell-ID pro Zeile oder mit Komma getrennt")} onChange={event => { setModelIds(event.target.value); setSaved(false); }} disabled={busy} />
+      <label className="field-label" htmlFor={`${idPrefix}${provider.id}-url`}>{t("Basis-URL ")}{provider.id !== 'local' && <span className="muted">{t("· optional")}</span>}</label>
+      <input className="provider-input" id={`${idPrefix}${provider.id}-url`} type="url" spellCheck={false} value={baseUrl} placeholder={provider.id === 'local' ? 'http://localhost:11434/v1' : t("Standard-Endpunkt des Anbieters")} onChange={event => { setBaseUrl(event.target.value); setSaved(false); }} disabled={busy} />
+      <label className="field-label" htmlFor={`${idPrefix}${provider.id}-models`}>{t("Eigene Modell-IDs ")}{provider.id !== 'local' && <span className="muted">{t("· optional")}</span>}</label>
+      <textarea className="provider-input" id={`${idPrefix}${provider.id}-models`} value={modelIds} rows={2} spellCheck={false} placeholder={provider.models.length ? provider.models.filter(model => !isFastModelSelection(model.id)).map(model => model.id.slice(model.id.indexOf('/') + 1)).join(', ') : t("Eine Modell-ID pro Zeile oder mit Komma getrennt")} onChange={event => { setModelIds(event.target.value); setSaved(false); }} disabled={busy} />
       <p className="billing-note">{provider.id === 'local' ? t("Trage mindestens eine Modell-ID ein, die dein Server bereitstellt.") : t("Leere Modell-IDs behalten den vorhandenen Modellkatalog. Eine leere Basis-URL nutzt den Standard des Anbieters.")}</p>
     </details>
     {provider.error && <p className="provider-error" role="alert">{provider.error}</p>}
     <div className="provider-actions"><button className="secondary-button" disabled={busy || !canSave} onClick={() => void action('save', async () => { await window.openhiatus.saveProvider({ id: provider.id, ...(key.trim() ? { apiKey: key.trim() } : {}), baseUrl: baseUrl.trim(), ...(customModels.length ? { models: customModels } : {}) }); setKey(''); setModelIds(''); })}>{pending === 'save' ? <LoaderCircle size={14} className="spin" /> : saved ? <Check size={14} /> : <KeyRound size={14} />}{saved ? t("Gespeichert") : t("Speichern")}</button>
-      <button className="secondary-button" disabled={busy || !provider.configured} onClick={() => void action('test', () => window.openhiatus.testProvider(provider.id))}>{pending === 'test' && <LoaderCircle size={14} className="spin" />}{t(" Verbindung testen")}</button>
+      {!guided && <button className="secondary-button" disabled={busy || !provider.configured} onClick={() => void action('test', () => window.openhiatus.testProvider(provider.id))}>{pending === 'test' && <LoaderCircle size={14} className="spin" />}{t(" Verbindung testen")}</button>}
       {provider.configured && <button className="text-button subtle-danger" disabled={busy} onClick={() => void action('remove', async () => { await window.openhiatus.removeProvider(provider.id); setKey(''); setModelIds(''); })}>{t("Entfernen")}</button>}
     </div>
   </section>;

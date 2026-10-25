@@ -1,4 +1,5 @@
 import type { SkillFavorites } from './skill-favorites';
+import type { OnboardingProgress } from './onboarding';
 import type { WorkItem, WorkActionEvent } from './work-history';
 import type { SidebarMode } from './workspace-preferences';
 import type { UiLanguage } from './ui-language';
@@ -28,6 +29,7 @@ export interface Message { id: string; role: 'user' | 'assistant'; text: string;
 export interface Activity { id: string; at: string; kind: 'system' | 'command' | 'file' | 'error'; title: string; detail?: string; }
 export interface Task { id: string; status: TaskStatus; threadId?: string; turnId?: string; error?: string; }
 export interface Preferences {
+  onboarding?: OnboardingProgress;
   uiLanguage?: UiLanguage;
   assistantProfile?: AssistantProfile;
   itSupporter?: boolean;
@@ -84,6 +86,7 @@ export interface OpenhiatusApi extends GoogleCalendarApi {
   openChatGPTUsage(): Promise<void>;
   saveProvider(input: ProviderInput): Promise<void>;
   testProvider(id: string): Promise<void>;
+  checkSetup(): Promise<{ model: string; answer: string }>;
   removeProvider(id: string): Promise<void>;
   listSkills(): Promise<SkillCatalog>;
   openSkillsFolder(): Promise<void>;

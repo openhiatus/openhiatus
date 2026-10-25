@@ -1,5 +1,6 @@
 import { APP_DISPLAY_NAME } from '../shared/branding';
 import { parseUiLanguage } from '../shared/ui-language';
+import { parseOnboarding } from '../shared/onboarding';
 import { validateUsage } from './modules/tasks';
 export { validateUsage } from './modules/tasks';
 import { closeSync, existsSync, fsyncSync, mkdirSync, openSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
@@ -80,6 +81,7 @@ function validateState(value: unknown): SavedState {
   if (p.activityOverlayEnabled !== undefined && typeof p.activityOverlayEnabled !== 'boolean') throw new Error('Ungültige Einstellung für die Arbeitsanzeige.');
   if (p.itSupporter !== undefined && typeof p.itSupporter !== 'boolean') throw new Error('Ungültiger IT-Supporter-Modus.');
   const preferences: Preferences = {
+    ...(p.onboarding === undefined ? {} : { onboarding: parseOnboarding(p.onboarding) }),
     uiLanguage: p.uiLanguage === undefined ? 'de' : parseUiLanguage(p.uiLanguage),
     itSupporter: p.itSupporter === true,
     assistantProfile: parseAssistantProfile(p.assistantProfile === undefined ? DEFAULT_ASSISTANT_PROFILE : p.assistantProfile),

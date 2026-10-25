@@ -92,6 +92,7 @@ try {
   assert.equal(foreign.rejected, true); assert.match(foreign.message, /Unzulässiger Aufruf/);
 
   await page.getByRole('button', { name: 'Verstanden, Vollzugriff bestätigen', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Hauptnavigation' }).getByRole('button', { name: 'Gespräch', exact: true }).click();
   await expect.poll(() => page.evaluate(async () => (await window.openhiatus.snapshot()).activity.some(item => item.title === 'Vollzugriff bestätigt')), { timeout: 30000 }).toBe(true);
   await page.evaluate(async url => {
     await window.openhiatus.saveProvider({ id: 'local', baseUrl: url, models: ['dialog', 'worker-one', 'worker-two'] });
@@ -124,6 +125,7 @@ try {
   assert.deepEqual(afterNavigation.jobs.map(job => [job.id, job.status]), beforeStop.jobs.map(job => [job.id, job.status]));
   assert.equal(requests.length, callsBeforeNavigation, 'Navigation must not send model requests.');
   await navigation.getByRole('button', { name: /^Aufgaben/ }).click();
+  await page.getByRole('button', { name: 'Hintergrundaufgaben', exact: true }).click();
   const activeFilter = page.getByRole('group', { name: 'Aufgaben nach Status filtern' }).getByRole('button', { name: /^Aktiv/ });
   await activeFilter.click();
   await page.getByRole('button', { name: `Aufgabe anzeigen: ${beforeStop.jobs[0].title}`, exact: true }).click();

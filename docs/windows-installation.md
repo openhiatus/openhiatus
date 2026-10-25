@@ -14,7 +14,9 @@ Setup installiert ausschließlich für das aktuelle Windows-Benutzerkonto unter 
 
 Ab Version 0.0.21 stehen diese sieben Sprachen auch in der App zur Verfügung. Ab 0.0.22 öffnet der Knopf **Language · 语言** mit dem Sprachsymbol A/文 direkt über **Arbeitsordner** in der linken Seitenleiste die Auswahl mit Flaggen und Sprachnamen in ihrer eigenen Schrift. Die Auswahl wirkt sofort und bleibt gespeichert. Setup gibt seine Sprache nur für ein neues Profil vor. Eine bestehende App-Auswahl wird beim Update nicht überschrieben; ältere Profile beginnen weiterhin auf Deutsch. Nachrichten, eigene Dateien und laufende Aufgaben bleiben beim Wechsel erhalten. Details stehen unter [Mehrsprachigkeit](localization.md).
 
-Beim ersten App-Start den Zugriffshinweis bestätigen und unter **Einstellungen → Modelle & Zugänge** einen Anbieter einrichten. Eine vorhandene Anmeldung und ein bestehendes Profil derselben Windows-Anmeldung werden weiterverwendet. Eigene Daten liegen außerhalb des Programmordners unter `%APPDATA%\openhiatus`. Die [README](../README.md#first-time-setup) beschreibt die weitere Einrichtung.
+Ab 0.0.24 führt die App beim ersten Start durch vier Schritte: Sprache und Zugriffshinweis, Konto verbinden, Sprache optional einrichten und eine erste Textantwort testen. **Weiter** und **Zurück** bleiben sichtbar. **Später fortsetzen** speichert den Schritt; **Einrichtung fortsetzen** führt auch nach einem Neustart zurück. Für den Textbetrieb genügt ein Modellzugang. Mikrofontest und zusätzlicher Inworld-Zugang sind freiwillig. Der abschließende Modelltest beginnt erst nach einem Klick, sendet nur eine feste Begrüßungsanfrage und lässt sich mit Stopp oder Esc abbrechen.
+
+Eine vorhandene Anmeldung und ein bestehendes Profil derselben Windows-Anmeldung werden weiterverwendet. Bereits eingerichtete Profile bleiben beim gewohnten Einstieg. Unter **Einstellungen → Schritt für Schritt einrichten** lässt sich die Anleitung erneut öffnen. Eigene Daten liegen außerhalb des Programmordners unter `%APPDATA%\openhiatus`. Die [README](../README.md#first-time-setup) beschreibt die weitere Einrichtung.
 
 ## Updates und Autostart
 

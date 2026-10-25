@@ -51,6 +51,7 @@ try {
   await expect(page.getByRole('heading', { name: 'openHiatus arbeitet mit Vollzugriff', exact: true })).toBeVisible();
   await page.screenshot({ path: 'artifacts/openhiatus-erster-start.png' });
   await expect(page.getByRole('button', { name: /Safe Mode|Risk Mode|Live starten|Mit ChatGPT anmelden/ })).toHaveCount(0);
+  await page.getByRole('navigation', { name: 'Hauptnavigation' }).getByRole('button', { name: 'Gespräch', exact: true }).click();
   const composer = page.getByRole('textbox', { name: 'Dein Auftrag', exact: true });
   await composer.fill('Diesen Entwurf behalten.');
   await expect(page.getByRole('button', { name: 'Auftrag senden', exact: true })).toBeDisabled();

@@ -346,6 +346,12 @@ Der Verlauf wird zusammen mit Nachrichten und Aufgaben über die bestehende daue
 
 Die Aufgabenansicht ergänzt einen gemeinsamen Arbeitsverlauf mit Teilaufgaben, Ergebnistext und Werkzeugschritten. Die bestehende Hintergrundansicht behält Einzelstopp und Verbrauchsanzeige. Dieser erste Abschnitt ersetzt noch keinen Gedächtnisabruf: Automatische Themenzusammenführung mehrerer Anfragen, strukturierte Entscheidungsextraktion, Sitzungsübergaben und zeitliche Aufbewahrungsregeln sind weitere Arbeiten. Gesprächsinhalte werden ohne zusätzliche Modellaufrufe erfasst. [Prüfnachweise](openhiatus-testprotokoll.md) und [Bedienung](../README.md) beschreiben den gelieferten Umfang.
 
+## Ergänzung vom 25. Oktober 2026: Geführte Einrichtung
+
+Das Renderer-Feature [onboarding](../src/renderer/features/onboarding/index.ts) führt durch Zustimmung, Konto, freiwillige Sprache und Antwortprüfung. Es nutzt die bestehenden Anmelde-, Anbieter- und Audiozugänge. Der versionierte Fortschritt wird strikt an IPC- und Speichergrenze geprüft; ein Schrittwechsel wartet auf die dauerhafte Speicherung und setzt den Fortschritt bei Schreibfehlern zurück. Vorhandene eingerichtete Profile bleiben unverändert. Die Navigation behält ihre langlebige Sitzung und den globalen Stopp.
+
+`checkSetup` bindet eine feste, kontextfreie Begrüßungsanfrage an den vorhandenen werkzeuglosen Modellclient. Der Renderer kann weder einen freien Prompt noch weitere Daten mitgeben. Stopp und ein Zeitlimit von 30 Sekunden brechen die Prüfung ab; auch ein Modellclient, der das Signal ignoriert, kann danach keinen Erfolg zurückgeben. Eine geänderte Modellauswahl oder Arbeitsrevision macht eine ausstehende Antwort ungültig. Die Prüfung erzeugt keinen Arbeitsauftrag und bestätigt ausschließlich die Textverbindung. Technische Fehler bleiben unter einer verständlichen, lokalisierten Anleitung aufklappbar.
+
 ## Ergänzung vom 25. Oktober 2026: Windows-Setup
 
 [installer.mjs](../scripts/installer.mjs) verpackt den selbständigen Electron-Paketordner mit [Inno Setup](../resources/windows-installer.iss). Der Compiler wird versions- und hashgebunden portabel im ignorierten Buildverzeichnis bereitgestellt. Setup arbeitet pro Windows-Benutzer unter einem stabilen Programmpfad; Profildaten bleiben außerhalb des Installationsbesitzes. Startmenü, optionales Desktop-Symbol und Deinstallationsregistrierung gehören Setup. Die Anwendung behält die Zuständigkeit für Modellzugänge, Profilmigration und freiwilligen Autostart.

@@ -72,6 +72,7 @@ try {
   instance = await electron.launch({ executablePath, args, env, timeout: 30000 });
   const page = await instance.firstWindow(); page.on('pageerror', error => exceptions.push(error.message));
   await page.getByRole('button', { name: 'Verstanden, Vollzugriff bestätigen', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Hauptnavigation' }).getByRole('button', { name: 'Gespräch', exact: true }).click();
   await page.evaluate(async url => {
     await window.openhiatus.saveProvider({ id: 'local', baseUrl: url, models: ['conversation-test'] });
     await window.openhiatus.savePreferences({ model: 'local/conversation-test', dialogModel: 'local/conversation-test', memoryModel: 'local/conversation-test', memoryAutoSummarize: false, speakReplies: false, earcons: false });
