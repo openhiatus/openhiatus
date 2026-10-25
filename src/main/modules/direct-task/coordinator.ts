@@ -19,7 +19,7 @@ export interface DirectTaskPorts {
     propose(input: CoreProposalInput): CoreProposal | Promise<CoreProposal>;
   };
   parseReply(text: string): ParsedTaskReply;
-  journal: { publish(state: DirectTaskState): void; publishContext?(context: ContextUsage): void; prepare?(): void | Promise<void>; persist(): void | Promise<void>; changed(save?: boolean): void; capture(strict?: boolean): void | Promise<void>; };
+  journal: { publish(state: DirectTaskState, answerId?: string): void; publishContext?(context: ContextUsage): void; prepare?(): void | Promise<void>; persist(): void | Promise<void>; changed(save?: boolean): void; capture(strict?: boolean): void | Promise<void>; };
   effects: { clean(text: string): string; activity(kind: Activity['kind'], title: string, detail?: string): void; reportError(error: unknown): string; frame?(frame: ComputerFrame): void; idle(): void; };
 }
 export function recoverForegroundTask(initial: Task): Task {
@@ -73,7 +73,7 @@ export class DirectTaskCoordinator {
     this.answerId = undefined; this.taskUsageBase = undefined; this.taskSourceIds = []; this.taskMemoryVersions = undefined; this.taskIdentity = undefined; this.resetThreadAfterTurn = false;
     this.project();
   }
-  private project(): void { this.ports.journal.publish(this.snapshot()); }
+  private project(): void { this.ports.journal.publish(this.snapshot(), this.answerId); }
   private changed(save = true): void { this.project(); this.ports.journal.changed(save); }
   private emit(): void { this.changed(false); }
   private persist(): void | Promise<void> { this.project(); return this.ports.journal.persist(); }

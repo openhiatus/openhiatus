@@ -1,4 +1,5 @@
 import { APP_DISPLAY_NAME } from '../shared/branding.js';
+import { workActionTarget } from '../shared/work-history.js';
 import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, writeFile, rename } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
@@ -260,7 +261,14 @@ export class AgentHost {
           totalCost += finite(reported.cost?.total);
           this.emit(input.runId, { type: 'usage', usage: { ...usage, ...(knownPrice ? { costUsd: totalCost } : {}) } });
         }
-        if (event.type === 'tool_execution_start') this.emit(input.runId, { type: 'activity', kind: ['read', 'write', 'edit'].includes(event.toolName) ? 'file' : 'command', title: `Werkzeug: ${event.toolName}` });
+        if (event.type === 'tool_execution_start') {
+          this.emit(input.runId, { type: 'activity', kind: ['read', 'write', 'edit'].includes(event.toolName) ? 'file' : 'command', title: `Werkzeug: ${event.toolName}` });
+          const target = workActionTarget(event.toolName, event.args);
+          this.emit(input.runId, { type: 'work-action', id: `${input.runId}:${event.toolCallId}`, tool: event.toolName, status: 'running',
+            ...(target === undefined ? {} : { target: redactError(target, this.keys) }) });
+        }
+        if (event.type === 'tool_execution_end') this.emit(input.runId, { type: 'work-action', id: `${input.runId}:${event.toolCallId}`, tool: event.toolName,
+          status: event.isError || event.result?.isError === true || event.result?.details?.success === false ? 'failed' : 'completed' });
       });
       if (active.aborted) { await session.abort(); throw new Error('Auftrag wurde unterbrochen.'); }
       this.emit(input.runId, { type: 'started', threadId, turnId: input.runId });

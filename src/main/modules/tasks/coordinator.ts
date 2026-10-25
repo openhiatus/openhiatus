@@ -46,6 +46,7 @@ export interface BackgroundTaskPorts {
   effects: {
     clean(text: string): string;
     activity(kind: Activity['kind'], title: string, detail?: string): void;
+    workAction?(jobId: string, event: Extract<AgentEvent, { type: 'work-action' }>): void;
     speak(text: string, jobId: string, kind?: SpeechCue['kind']): void;
     frame?(frame: ComputerFrame): void;
     idle(): void;
@@ -203,7 +204,7 @@ export class BackgroundTaskCoordinator {
     const prompt = additional ? `${additional}\n\n${fullRequest}` : fullRequest;
     const { history: _history, sourceMessageId, ...request } = input;
     const instructions = [identity, canonicalIdentity ? '' : frozen.persona, frozen.capabilities, frozen.favorites].filter(Boolean).join('\n\n');
-    const accepted = await this.enqueue({ ...request, prompt, identityInstructions: instructions, model: frozen.model, computer: frozen.computer }, job => {
+    const accepted = await this.enqueue({ ...request, parentRequestId: sourceMessageId, prompt, identityInstructions: instructions, model: frozen.model, computer: frozen.computer }, job => {
       if (generation !== this.generation || this.blocked()) throw new Error('Aufgaben werden gerade beendet.');
       this.jobMemory.set(job.id, { versions, sourceIds: [sourceMessageId], reads: 0, readKeys: new Set() });
       this.activity('system', 'Aufgabe angenommen', `${request.title} · ${job.id}`);
@@ -213,6 +214,7 @@ export class BackgroundTaskCoordinator {
     return { job: structuredClone(accepted.job), created: accepted.created };
   }
   private handleJobEvent(job: BackgroundJob, event: AgentEvent): void {
+    if (event.type === 'work-action') { this.ports.effects.workAction?.(job.id, event); this.changed(); return; }
     if (event.type === 'activity') { this.activity(event.kind, `${job.title} · ${event.title}`, event.detail); this.changed(); }
     else if (event.type === 'commentary') {
       this.activity('system', job.title, this.clean(event.text));

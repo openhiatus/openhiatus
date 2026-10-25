@@ -20,7 +20,7 @@ export interface ConversationPorts {
     configuration(): { ready: boolean; model: string; workspace: string };
   };
   journal: {
-    project(state: ConversationState): void;
+    project(state: ConversationState, answerId?: string): void;
     prepare?(): void | Promise<void>;
     persist(): void | Promise<void>;
     changed(save?: boolean): void;
@@ -107,7 +107,7 @@ export class ConversationCoordinator {
     this.pending = []; this.jobDigest.clear(); this.resetThreadAfterTurn = false;
     this.project();
   }
-  private project(): void { this.ports.journal.project(this.snapshot()); }
+  private project(): void { this.ports.journal.project(this.snapshot(), this.turn?.answerId); }
   private changed(save = true): void { this.project(); this.ports.journal.changed(save); }
   private async persist(rollback: () => void, committed: () => void): Promise<void> {
     let settled!: () => void;

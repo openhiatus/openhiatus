@@ -1,5 +1,6 @@
 import type { AgentEvent, DynamicFunctionTool, DynamicToolResponse } from '../shared/contracts.js';
 import { MODEL_SERVICE_TIERS } from '../shared/model-requests.js';
+import { decodeWorkActionEvent } from '../shared/work-history.js';
 import type { ResolvedModel } from './providers.js';
 import { computerImageRetentionCalls, computerWorkingMemoryCalls } from '../shared/computer-task-settings';
 
@@ -33,7 +34,7 @@ export type HostRequest<M extends HostRequestMethod = HostRequestMethod> = { [K 
 export type HostResponseArgs = { [K in HostRequestMethod]: [request: HostRequest<K>, result: HostResults[K]] }[HostRequestMethod];
 export type CommandResponseArgs = { [K in CommandMethod]: [request: CommandRequest<K>, result: CommandResults[K]] }[CommandMethod];
 /** The host cannot publish main-process connection/model/desktop events. */
-export type HostEvent = Extract<AgentEvent, { type: 'started' | 'delta' | 'commentary' | 'context' | 'usage' | 'model-request' | 'activity' | 'completed' }>;
+export type HostEvent = Extract<AgentEvent, { type: 'started' | 'delta' | 'commentary' | 'context' | 'usage' | 'model-request' | 'activity' | 'completed' | 'work-action' }>;
 export type HostNotification = { method: 'event'; params: { runId: string; event: HostEvent } };
 export type NativeOwnership = { method: 'openhiatus/host/child'; params: { control: string; pid: number } };
 /** A response has no method on the wire; its result remains unknown until ID lookup supplies that method. */
@@ -129,6 +130,9 @@ export function decodeHostResult<M extends HostRequestMethod>(method: M, value: 
 function event(value: unknown): HostEvent {
   const input = record(value);
   switch (input.type) {
+    case 'work-action': {
+      try { return decodeWorkActionEvent(input); } catch { return fail(); }
+    }
     case 'started': return { type: 'started', threadId: identifier(input.threadId), turnId: identifier(input.turnId) };
     case 'delta': return { type: 'delta', text: text(input.text) };
     case 'commentary': return { type: 'commentary', text: text(input.text), ...(input.itemId === undefined ? {} : { itemId: identifier(input.itemId) }) };

@@ -142,6 +142,7 @@ export class PiAdapter implements AgentAdapter {
         return;
       }
       if (event.type === 'activity') { this.emit({ ...event, title: this.clean(event.title), ...(event.detail ? { detail: this.clean(event.detail) } : {}) }); return; }
+      if (event.type === 'work-action') { this.emit({ ...event, ...(event.target === undefined ? {} : { target: this.clean(event.target) }) }); return; }
       this.emit(event);
     } else if (packet.method === 'tool') void this.tool(transport, packet, active);
     else if (packet.method === 'credential') void this.credential(transport, packet, active);

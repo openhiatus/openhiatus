@@ -1,4 +1,5 @@
 import type { SkillFavorites } from './skill-favorites';
+import type { WorkItem, WorkActionEvent } from './work-history';
 import type { SidebarMode } from './workspace-preferences';
 import type { UiLanguage } from './ui-language';
 import type { ActivityPresence } from './activity-presence';
@@ -41,6 +42,7 @@ export interface Preferences {
 export type PreferencesPatch = Partial<Omit<Preferences, 'fullAccessAcknowledged'>>;
 export interface BackgroundJob {
   id: string; requestId: string; title: string; prompt: string;
+  parentRequestId?: string;
   status: 'queued' | 'running' | 'stopping' | 'completed' | 'interrupted' | 'failed';
   createdAt: string; updatedAt: string; model: string; resources: string[];
   computer?: ComputerTaskSettings; modelRequests?: ModelRequestSummary[];
@@ -56,7 +58,7 @@ export interface ProviderInput { id: string; apiKey?: string; baseUrl?: string; 
 export interface SkillEntry { name: string; displayName?: string; description: string; path: string; enabled: boolean; scope: 'user' | 'repo' | 'system' | 'admin'; }
 export interface SkillIssue { path: string; message: string; }
 export interface SkillCatalog { skills: SkillEntry[]; errors: SkillIssue[]; directory: string; }
-export interface Snapshot { messages: Message[]; activity: Activity[]; task: Task; preferences: Preferences; connections: Connections; models: ModelOption[]; providers?: ProviderView[]; chatgpt?: ChatGPTConnection; hotkeys?: { recording: boolean; submit: boolean; stop: boolean }; desktopControl?: DesktopControlPhase; workspace: string; version: string; jobs?: BackgroundJobView[]; speech?: SpeechCue[]; summary?: SummaryJobState; context?: ContextUsage; usage?: Usage; }
+export interface Snapshot { messages: Message[]; activity: Activity[]; task: Task; preferences: Preferences; connections: Connections; models: ModelOption[]; providers?: ProviderView[]; chatgpt?: ChatGPTConnection; hotkeys?: { recording: boolean; submit: boolean; stop: boolean }; desktopControl?: DesktopControlPhase; workspace: string; version: string; jobs?: BackgroundJobView[]; workItems?: WorkItem[]; speech?: SpeechCue[]; summary?: SummaryJobState; context?: ContextUsage; usage?: Usage; }
 /** Fill of the conversation thread's model context, as last reported by the agent. */
 export interface ContextUsage { threadId: string; usedTokens: number; windowTokens?: number; at: string; }
 export interface AudioClip { base64: string; mimeType: string; }
@@ -107,6 +109,7 @@ declare global { interface Window { openhiatus: OpenhiatusApi; } }
 
 // Internal main-process boundaries. Credentials never cross back into the renderer.
 export type AgentEvent =
+  | WorkActionEvent
   | { type: 'computer-frame'; frame: ComputerFrame }
   | { type: 'connection'; status: Connections['agent']; account?: string }
   | { type: 'models'; models: ModelOption[] }

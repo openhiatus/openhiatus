@@ -18,11 +18,16 @@ openHiatus is a desktop app that operates visible Windows applications with your
 - 🎯 **Shows you where to click.** Ask about the visible program; a circle and arrow highlight the target directly on your primary display while you keep control.
 - 🎙️ **Talk or type.** Voice and text conversations, with push-to-talk via global hotkeys and an optional transcript review before sending.
 - ⚙️ **Background tasks.** Up to two tasks run while the conversation stays available. Each task shows its progress, result, and usage.
+- 🗂️ **Work history.** Tasks now includes conversation requests, direct work and linked background subtasks, with their latest result and tool outcomes. The history survives a new conversation and restart; interrupted work is never replayed automatically.
 - 🧠 **Personal memory.** Memories with sources, reports, and history, along with core instructions you can edit.
 - 📅 **Google Calendar (optional).** Read your agenda and create or change personal events through your own Google OAuth client.
 - 🔌 **Bring your own models.** Sign in with ChatGPT or use your own credentials for Anthropic, Google, OpenRouter, OpenAI, or a local OpenAI-compatible server.
 
 openHiatus is built on Electron, React, and TypeScript. It uses [Pi](https://www.npmjs.com/package/@earendil-works/pi-coding-agent) as its agent runtime and [Inworld](https://inworld.ai) for speech. No separate Codex or OpenClaw installation is needed.
+
+Under **Aufgaben → Arbeitsverlauf** (Tasks → Work history), each newly accepted conversation request and direct-agent request has its own record. Delegated jobs link back to that request; the parent remains active while its subtasks run. Open, failed and interrupted records can be filtered together. **Hintergrundaufgaben** (Background tasks) retains the existing individual Stop and usage controls. The global Stop remains available in both views.
+
+The record contains the request, timestamps, latest reported result and individual tool starts/outcomes. Supported tools also retain a bounded path, command, action name or task reference. Tool completion is separate from verification of the user's intended outcome. Raw tool outputs, typed text, file contents and screenshots are not copied into this journal. Existing background jobs are imported without inventing earlier actions. This first increment captures work; it does not yet replace memory retrieval, extract decisions automatically, merge separate requests by topic, or introduce a retention/deletion policy. The journal shares the existing bounded local state store and reports storage failures instead of silently deleting history.
 
 ## Getting started
 
@@ -197,6 +202,7 @@ node scripts/google-calendar-setup-ui-check.mjs
 npm run test:ipc
 npm run test:storage-ui
 npm run test:memory-storage-ui
+npm run test:work-history-ui
 npm run test:memory-ui
 npm run test:computer-images
 npm run test:computer-preview

@@ -1,5 +1,18 @@
 # openHiatus – Testprotokoll
 
+## 0.0.23: Gemeinsamer Arbeitsverlauf – 25. Oktober 2026
+
+Die Aufgabenansicht erfasst jetzt Gesprächsaufträge, direkte Arbeit und zugeordnete Hintergrundaufgaben. Der gespeicherte Stand enthält Auftrag, Ergebnistext, Zeitpunkte und einzeln zugeordnete Werkzeugstarts und -ausgänge. Eine abgeschlossene Gesprächsantwort beendet keine noch laufende Teilaufgabe. Gesprächswechsel und Neustart erhalten den Verlauf; unterbrochene Arbeit wird nicht automatisch fortgesetzt. Die neue Ansicht ist in allen sieben Oberflächensprachen verfügbar.
+
+- `npm run check`: Architekturprüfung, TypeScript und **827 Tests bestanden**. Die neuen Verhaltenstests prüfen beide Vordergrundpfade, dauerhafte Annahme vor Agentenarbeit, Rollback bei Speicherfehlern, wartende Nachrichten, Stopp, verspätete Ereignisse, Teilaufgabenzuordnung, Quellenkennungen, Geheimnisbereinigung und Neustart.
+- `npm run build`: bestanden. Ein erster parallel zur nativen Testsuite gestarteter Build traf auf eine belegte Helferdatei; Build und vollständige Testsuite liefen anschließend getrennt erfolgreich.
+- `npm run test:work-history-ui`: bestanden. Ein lokaler synthetischer Modellserver führt über den echten Pi-Host eine Gesprächsanalyse und eine delegierte Dateiprüfung aus. Ein erfolgreicher und ein fehlgeschlagener Leseaufruf landen beim richtigen Auftrag. Alle sieben Sprachen, Fenstergrößen 560 × 440 und 1360 × 900, Ergebnisdarstellung, neues Gespräch und echter App-Neustart wurden geprüft. Der Test deckte eine zunächst fehlende Weitergabe des neuen Feldes durch den Speicher-Worker auf; nach deren Korrektur bleibt der vollständige Verlauf erhalten. Screenshots wurden visuell kontrolliert.
+- `npm run test:responsive-ui`: bestehende Navigation und Einstellungen bei kompakten und großen Fenstern bestanden.
+- `npm run test:storage-ui`: reale verzögerte Speicherbestätigung, erreichbarer Stopp und Neustart ohne Wiederholung bestanden.
+- `node scripts/package.mjs`: Windows-Paket 0.0.23 erstellt. `npm run test:work-history-ui` besteht auch mit `OPENHIATUS_TEST_APP` gegen die verpackte Anwendung, einschließlich echter Werkzeugausgänge und Neustart.
+
+Die Daten und Werkzeugaktionen sind synthetisch; die Prüfungen verwenden eigene Profile und lokale Modellendpunkte. Neue Gedächtnisabrufe, automatische Entscheidungsextraktion, Themenzusammenführung und eine Löschfrist gehören nicht zu diesem ersten Ausbau. Der Ergebnistext bleibt eine Aussage des Agenten; Werkzeugabschluss allein beweist keine fachlich erfolgreiche Ausführung.
+
 ## 0.0.22: Sprachwahl direkt in der Seitenleiste – 25. Oktober 2026
 
 Der Sprachschalter steht direkt über **Arbeitsordner**. Das Sprachsymbol A/文 und **Language · 语言** machen ihn unabhängig von der eingestellten Sprache erkennbar. Das Menü zeigt alle sieben Sprachen in ihrer eigenen Schrift mit lokalen SVG-Flaggen. Die Auswahl bleibt beim Wechsel der Ansicht erreichbar; die bisherige Auswahlkarte in den Einstellungen entfällt.
