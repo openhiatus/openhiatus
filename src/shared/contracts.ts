@@ -88,6 +88,7 @@ export interface OpenhiatusApi extends GoogleCalendarApi {
   setAutostart(enabled: boolean): Promise<AutostartSettings>;
   acknowledgeFullAccess(): Promise<void>;
   signInChatGPT(): Promise<void>;
+  refreshChatGPTModels(): Promise<void>;
   cancelChatGPTSignIn(): Promise<void>;
   signOutChatGPT(): Promise<void>;
   openChatGPTUsage(): Promise<void>;

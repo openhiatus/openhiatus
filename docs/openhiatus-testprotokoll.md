@@ -1,5 +1,15 @@
 # openHiatus – Testprotokoll
 
+## 0.0.30: ChatGPT-Modellliste aktualisieren – 26. Oktober 2026
+
+In 0.0.29 wurde der Kontokatalog nur bei der Anmeldung abgerufen. Eine bestehende Anmeldung konnte neue Modelle deshalb nicht über die Oberfläche nachladen. Unter Einstellungen → Modelle & Zugänge → ChatGPT und im Einrichtungsschritt gibt es nun „Modelle aktualisieren“, übersetzt in alle sieben Oberflächensprachen. Die Aktion erhält gültige Rollenauswahlen und den Gesprächskontext, begrenzt die Wartezeit und wird bei Stopp oder Beenden abgebrochen. Der Kontokatalog entscheidet weiterhin über Terra; es wird kein Zugriff lokal vorgetäuscht.
+
+- `npm run check`: Architektur, Typprüfung und alle **868 Tests bestanden**. Neue Regressionen prüfen eine wiederhergestellte Anmeldung, Katalogpersistenz ohne erneuten Login, HTTP-/Formatfehler, parallele Aktionen, aktive Arbeit und Abbruch.
+- `npm run build` und `npm run test:chatgpt-ui`: bestanden.
+- `npm run test:chatgpt-models-ui`: bestanden mit echtem Main-Prozess, Authentifizierungsspeicher, IPC, Preload und Oberfläche. Ein ausschließlich synthetisches, Windows-verschlüsseltes Konto startet mit alter Liste; der simulierte Abruf ergänzt Terra und Fast. HTTP 503 erhält Anmeldung und Auswahl. Drei Rollen behalten ihre Auswahl nach Neustart. Sieben Sprachen und kompaktes Fenster sind geprüft; Screenshot visuell geprüft.
+
+Keine realen Zugangsdaten, persönlichen Profile oder Cloud-Anfragen wurden für diese Prüfungen verwendet. Die Verfügbarkeit im tatsächlichen ChatGPT-Konto sowie eine saubere Windows-10-VM sind damit nicht geprüft.
+
 ## 0.0.29: GPT-6.1 Terra – 26. Oktober 2026
 
 `gpt-6.1-terra` ergänzt den OpenAI-Standardkatalog. Da Pi 1.3.0 das Modell noch nicht kennt, ergänzt openHiatus dessen Reasoning-, Bild-, Kontext- und Preismetadaten anhand der [offiziellen Modelldokumentation](https://developers.openai.com/api/docs/models/gpt-6.1-terra). Ein späterer SDK-Katalogeintrag hat Vorrang. ChatGPT bietet Terra nur an, wenn der abgerufene Kontokatalog es freigibt. Eigene Modelllisten, bestehende Rollenauswahl und `medium` als Thinking-Vorgabe bleiben erhalten.

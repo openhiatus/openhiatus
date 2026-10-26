@@ -1,4 +1,6 @@
 {
+  "Modelle aktualisieren": ["Refresh models", "Actualizar modelos", "Actualiser les modèles", "刷新模型", "モデルを更新", "Atualizar modelos"],
+  "Modellliste aktualisiert.": ["Model list refreshed.", "Lista de modelos actualizada.", "Liste des modèles actualisée.", "模型列表已更新。", "モデル一覧を更新しました。", "Lista de modelos atualizada."],
   "Das Speichern oder Beenden dauert länger als erwartet.": [
     "Saving or closing is taking longer than expected.", "Guardar o cerrar está tardando más de lo esperado.", "L’enregistrement ou la fermeture prend plus de temps que prévu.", "保存或关闭所需时间比预期更长。", "保存または終了に予想以上の時間がかかっています。", "Salvar ou fechar está demorando mais que o esperado."
   ],

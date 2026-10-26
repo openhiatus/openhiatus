@@ -61,7 +61,7 @@ interface Dependencies {
   dialogAgent?: AgentAdapter;
   createWorker?(onEvent: (event: AgentEvent) => void, job: BackgroundJob): AgentAdapter;
   modelClient?: { complete(prompt: string, model: string, signal: AbortSignal, evidence?: SummaryCallEvidence, thinkingLevel?: ThinkingLevel): Promise<string> };
-  chatgpt?: { snapshot(): ChatGPTConnection; signIn(): Promise<void>; cancelSignIn(): Promise<void>; signOut(): Promise<void> };
+  chatgpt?: { snapshot(): ChatGPTConnection; signIn(): Promise<void>; cancelSignIn(): Promise<void>; signOut(): Promise<void>; refreshModels?(signal?: AbortSignal): Promise<void> };
   providers?: { list(): ProviderView[]; save(input: ProviderInput): Promise<void>; test(id: string): Promise<void>; remove(id: string): Promise<void>; secrets(): string[] };
   memory?: MemoryBackend;
   publishComputerFrame?(frame: ComputerFrame): void;
@@ -415,6 +415,7 @@ export class AppController {
   }
   refreshChatGPT(): void { this.modelManagement.refreshChatGPT(); }
   async signInChatGPT(): Promise<void> { await this.modelManagement.signInChatGPT(); }
+  async refreshChatGPTModels(): Promise<void> { await this.modelManagement.refreshChatGPTModels(); }
   async cancelChatGPTSignIn(): Promise<void> { await this.modelManagement.cancelChatGPTSignIn(); }
   async signOutChatGPT(): Promise<void> { await this.modelManagement.signOutChatGPT(); }
   async saveProvider(input: ProviderInput): Promise<void> { await this.modelManagement.saveProvider(input); }
