@@ -25,6 +25,8 @@ The dialog-only `screen_help` tool supports:
 
 No general desktop action is exposed by this tool. A worker controlling the desktop blocks help operations; starting a desktop operation clears hints. The help images use the existing two-request image-retention policy, including replacement views of the same capture. Original images can remain in the local provider session log, as with other computer observations.
 
+The tool uses a flat schema for all four actions. Models should omit unused fields or pass `null`; the host discards known fields that do not apply to the selected action. For example, placeholder rectangle fields cannot turn `observe` into a mark and no longer reject a valid capture. Unknown fields and unsupported actions remain invalid. `inspect` and `mark` still require valid frame/view identities and rectangles; `mark` also requires a supported color. An empty or null optional label uses the default label. This compatibility handling is available from 0.0.31.
+
 ## Freshness and lifecycle
 
 Before showing a marker, a second local capture checks display geometry and target pixels without another model request. An observation expires after 60 seconds. A hidden Windows observer tracks only foreground-window identity/geometry and an input revision; it never exports key values, typed text or window titles. Keyboard presses, mouse-button presses and wheel input invalidate the observation and marker. Mouse movement alone does not erase the hint. The hooks always pass input through.

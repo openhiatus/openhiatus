@@ -42,7 +42,8 @@ const server = createServer(async (request, response) => {
     const instructions=input.messages.filter(m=>['system','developer'].includes(m.role)).map(m=>JSON.stringify(m.content)).join('\n');
     assert.equal(instructions.includes('Aktiver Betriebsmodus: IT-Supporter.'),supporter);
     requests++; let args;
-    if(requests===1) args={action:'observe'};
+    // Models may populate the flat schema's inactive mark fields on observe.
+    if(requests===1) args={action:'observe',resolution:'original',frameId:'',viewId:'',x:0,y:0,width:1,height:1,label:'',color:'red'};
     else if(requests===2) {
       metadata=findMetadata(input.messages); assert.ok(metadata,'actual screen metadata'); assert.ok(JSON.stringify(input.messages).includes('Hilfe-Skill aus dem lokalen Profil'));
       const view=metadata.views[0], sx=view.imageWidth/displayBounds.width, sy=view.imageHeight/displayBounds.height;

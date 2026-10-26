@@ -1,5 +1,15 @@
 # openHiatus – Testprotokoll
 
+## 0.0.31: Bildschirmhilfe mit ausgefüllten Zusatzfeldern – 26. Oktober 2026
+
+Das flache `screen_help`-Schema bot die Felder aller Aktionen gemeinsam an, während der Parser diese bei anderen Aktionen zurückwies. Ein `observe` mit ausgefüllten Markierungsfeldern konnte so bereits vor der Bildschirmaufnahme scheitern. Die Definition erklärt nun, welche Felder zu welcher Aktion gehören, und erlaubt `null` für optionale Felder. Der Parser verwirft bekannte inaktive Felder; nur die gewählte Aktion wird ausgeführt. Unbekannte Felder, unerlaubte Aktionen, ungültige aktive Koordinaten, fehlende Markierungsfarben und veraltete Bilder bleiben abgelehnt. Ein leerer optionaler Hinweistext verwendet die Standardbeschriftung.
+
+- `npm run check`: Architektur, Typprüfung und **871 Tests bestanden**; `npm run build`: bestanden.
+- Neue Regressionen prüfen ausgefüllte und leere Platzhalter, nullable Felder, unveränderte Markierungsgrenzen und den vollständigen Weg durch den echten Pi-Dialoghost mit synthetischem ChatGPT-Zugang und Modellkennung `gpt-6.1-terra`: observe → inspect → mark → Antwort. Modellantworten und Bilder sind synthetisch, externe Requests gesperrt.
+- `node scripts/screen-help-ui-check.mjs`: bestanden. Der synthetische Modellaufruf füllt nun auch bei `observe` sämtliche Markierungsfelder aus. Die echte App nimmt den Bildschirm auf und zeichnet Kreis/Pfeil am Testelement. Fokus, Durchklicken und Entfernen nach Eingaben sind geprüft; Screenshot visuell geprüft.
+
+Keine persönlichen Profile oder Zugangsdaten wurden für Tests verwendet. Ein Live-Modelllauf und der vollständige Setup-Lebenszyklus wurden für diese Korrektur nicht wiederholt.
+
 ## 0.0.30: ChatGPT-Modellliste aktualisieren – 26. Oktober 2026
 
 In 0.0.29 wurde der Kontokatalog nur bei der Anmeldung abgerufen. Eine bestehende Anmeldung konnte neue Modelle deshalb nicht über die Oberfläche nachladen. Unter Einstellungen → Modelle & Zugänge → ChatGPT und im Einrichtungsschritt gibt es nun „Modelle aktualisieren“, übersetzt in alle sieben Oberflächensprachen. Die Aktion erhält gültige Rollenauswahlen und den Gesprächskontext, begrenzt die Wartezeit und wird bei Stopp oder Beenden abgebrochen. Der Kontokatalog entscheidet weiterhin über Terra; es wird kein Zugriff lokal vorgetäuscht.
