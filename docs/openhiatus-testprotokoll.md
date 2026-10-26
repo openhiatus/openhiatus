@@ -1,5 +1,18 @@
 # openHiatus – Testprotokoll
 
+## 0.0.24: Geführter Einstieg – 25. Oktober 2026
+
+Neue Profile beginnen mit einer Einrichtung in vier Schritten: Sprache und ausdrückliche Zugriffsbestätigung, Modellkonto, freiwillige Sprache und eine erste Textantwort. Fortschritt und Aufschub werden dauerhaft gespeichert; bestehende eingerichtete Profile behalten ihren Einstieg. Die Einrichtung lässt sich über die Einstellungen erneut öffnen. Der abschließende Test sendet ausschließlich einen festen Begrüßungsprompt an den gewählten Gesprächszugang. Er bestätigt keine Desktopfunktionen oder Spracherkennung.
+
+- `npm run check`: Architektur, Typen und alle 834 Tests bestanden. Neue Prüfungen decken Fortschrittsmigration, IPC-/Speichervalidierung, dauerhafte Bestätigung und Rücknahme bei Schreibfehlern, Zustimmung, kontextfreien Modellaufruf, leere/fehlgeschlagene Antworten, geänderte Modellauswahl, Stopp sowie das feste Zeitlimit ab. Ein Modellclient, der Abbruch ignoriert, liefert nach Stopp keinen Erfolg.
+- `npm run build`: bestanden.
+- `npm run test:onboarding-ui`: bestanden. Echter Renderer und Hauptprozess mit eigenem Profil und lokalem synthetischem Modellserver. Alle vier Schritte in sieben Sprachen bei 560 × 440 und 1360 × 900; sichtbare Navigationsknöpfe, Tastaturfokus, Zustimmung, Konto, optionaler Sprachbereich, Aufschub und aktive Fortsetzung nach Neustart, Fehler/Retry, Esc, Abschluss und erneutes Öffnen. Ein bestehendes eingerichtetes Profil ohne Fortschrittsfeld bleibt beim Gespräch. Der Test prüft die tatsächliche Modellanfrage auf fehlende Werkzeuge und genau eine feste Nachricht. Screenshots wurden visuell geprüft.
+- `npm run test:ui`, `npm run test:responsive-ui`, `npm run test:storage-ui`, `npm run test:ipc` und `npm run test:chatgpt-ui`: bestanden. Bestehende UI-Prüfungen öffnen das Gespräch nun ausdrücklich über die Navigation; Prüfungen der delegierten Aufgaben wählen die Hintergrundaufgaben unter dem gemeinsamen Arbeitsverlauf aus.
+- `node scripts/package.mjs` und `npm run test:package`: Windows-Paket 0.0.24 erstellt; alle zwölf Abläufe bestehen mit der verpackten EXE ohne globales Node oder Codex im App-PATH. Dazu gehören die neue Einrichtung sowie Gespräch/Worker, Verlauf, Audiogeräte, Arbeitsanzeige, Persönlichkeit, Fast-Auswahl, Kalender-Einrichtung, Bildschirmhilfe, Desktopübernahme, Autostart und Sprachwechsel. Der neue Einrichtungstest prüft auch aktive Fortsetzung, aufgeschobenen Einstieg und bestehende Profile nach echten App-Neustarts.
+- `node scripts/installer.mjs`: Setup 0.0.24 erstellt und seine SHA-256-Prüfsumme bestätigt. Die verpackten Hauptprozess-, Preload- und Renderer-Dateien stimmen mit dem geprüften Build überein. Der unveränderte Installations-, Update- und Deinstallationsablauf wurde für diese Version nicht erneut vollständig geprüft; Setup bleibt unsigniert.
+
+Alle Daten und Konten in den Prüfungen sind synthetisch. Eine echte Cloudanmeldung, reale Spracherkennung und eine Erprobung mit der vorgesehenen Zielgruppe sind damit nicht abgenommen. Die Anleitung ersetzt nicht die Kontofreigabe beim jeweiligen Anbieter.
+
 ## 0.0.23: Gemeinsamer Arbeitsverlauf – 25. Oktober 2026
 
 Die Aufgabenansicht erfasst jetzt Gesprächsaufträge, direkte Arbeit und zugeordnete Hintergrundaufgaben. Der gespeicherte Stand enthält Auftrag, Ergebnistext, Zeitpunkte und einzeln zugeordnete Werkzeugstarts und -ausgänge. Eine abgeschlossene Gesprächsantwort beendet keine noch laufende Teilaufgabe. Gesprächswechsel und Neustart erhalten den Verlauf; unterbrochene Arbeit wird nicht automatisch fortgesetzt. Die neue Ansicht ist in allen sieben Oberflächensprachen verfügbar.

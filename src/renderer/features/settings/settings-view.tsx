@@ -30,6 +30,7 @@ export interface SettingsViewProps {
   state?: Snapshot;
   navigationRequest?: { tab: SettingsTab; requestId: number };
   onOpenIdentity?(): void;
+  onOpenOnboarding?(): void;
   workBusy: boolean;
   summaryInProgress: boolean;
   voice: SettingsVoicePort;
@@ -53,7 +54,7 @@ const phaseLabels: Record<AudioPhase, string> = localized({
 function Spinner() { return <LoaderCircle size={15} className="spin" aria-hidden="true" />; }
 
 /** The App keeps this feature mounted: tabs and unsaved access fields belong to this view. */
-export function SettingsView({ state, navigationRequest, onOpenIdentity, workBusy, summaryInProgress, voice, onPreference, onError, onNotice }: SettingsViewProps) {
+export function SettingsView({ state, navigationRequest, onOpenIdentity, onOpenOnboarding, workBusy, summaryInProgress, voice, onPreference, onError, onNotice }: SettingsViewProps) {
   const [tab, setTab] = useState<SettingsTab>(navigationRequest?.tab ?? 'models');
   const [speechKey, setSpeechKey] = useState('');
   const [busyAction, setBusyAction] = useState('');
@@ -102,6 +103,7 @@ export function SettingsView({ state, navigationRequest, onOpenIdentity, workBus
 
   return <main className="settings-feature settings-scroll" aria-label={t("Einstellungen")}>
     <div className="settings-content">
+      {onOpenOnboarding && <button className="secondary-button" onClick={onOpenOnboarding}>{t("Schritt für Schritt einrichten")}</button>}
       <header className="settings-feature-heading"><div className="eyebrow">{t("DEIN openHiatus")}</div><h1>{t("Deine Einstellungen.")}</h1><p className="settings-lead">{t("Modellzugänge, Sprache, Persönlichkeit und Bedienung an einem Ort.")}</p></header>
       <div className="settings-tabs" role="tablist" aria-label={t("Einstellungsbereiche")}>
         {tabs.map(({ id: value, label, icon: Icon }, index) => <button key={value} ref={button => { tabButtons.current[index] = button; }}

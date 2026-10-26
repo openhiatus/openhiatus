@@ -60,11 +60,17 @@ npm start
 
 The app and Windows Setup support English, Spanish, French, German, Simplified Chinese, Japanese and Brazilian Portuguese. Open **Language · 语言** directly above **Workspace folder** in the left sidebar to switch immediately, including before acknowledging the access notice. Its A/文 symbol remains visible when the sidebar is collapsed. Every language appears in its own script with a flag symbol; the menu supports keyboard navigation. The choice is saved; the current view, running tasks and unsaved drafts are preserved. Setup's language seeds a new profile; existing profiles keep their choice (German for older profiles). Without Setup, a new normal profile follows the Windows locale, with English as fallback. Messages, files, model replies and editable agent instructions retain their original content. The interface language does not select the assistant's reply language or speech voice. See [localization](docs/localization.md).
 
-1. **Permissions:** On first launch, read and acknowledge the access permissions notice.
-2. **Models:** Under **Einstellungen → Modelle & Zugänge** (Settings → Models & access), sign in with ChatGPT or set up your own provider. Then pick models for conversation, work, and memory. For a local server, enter its base URL and model ID.
+New profiles open a guided setup with four steps. Each step explains what to do; Back and Next stay visible in small windows.
+
+1. **Welcome:** Choose a language, read the access notice and explicitly acknowledge it. Stop and Esc remain accessible throughout setup.
+2. **Account:** Sign in with ChatGPT or open the alternative-provider section for an API account or local server. Available model selections are filled by the existing provider defaults; existing choices are preserved. You can change the conversation model before continuing. Separate role settings remain under **Settings → Models & access**.
+3. **Voice (optional):** Continue with text, or open microphone and voice setup. The local microphone test requires no cloud account. Speech recognition and spoken replies require a separate Inworld key; choose devices and test the output if desired.
+4. **First reply:** Explicitly request a short greeting. This uses the selected conversation model and its normal provider quota, with no tools, files, screenshots or conversation history. Finishing requires a nonempty successful reply; errors, Stop and a 30-second timeout allow retry. This checks text connectivity, not desktop tools or voice recognition.
+
+**Continue later** saves the current step. **Continue setup** resumes it, including after restart. Already configured profiles keep their normal entry point; **Settings → Set up step by step** reopens the guide. Merely opening the guide does not sign in, contact a model, start recording or activate desktop control.
 
 Eligible ChatGPT and OpenAI models appear as adjacent choices such as **gpt-6.1-sol** and **gpt-6.1-sol (fast)**. Each role saves its own choice. The Fast variant requests faster processing with the same underlying model; a choice without `(fast)` sends no explicit Fast request. The provider determines the actual processing tier, which can differ from the request. API Fast requests may cost more. The conversation view shows both the selected conversation and work model, including `(fast)`. Existing model selections remain unchanged. The experimental separate computer model retains its own Fast switch under **Bedienung**.
-3. **Speech (optional):** Under **Einstellungen → Sprache & Geräte** (Settings → Speech & devices), add your Inworld credentials, choose your audio devices, and run the speech test. Text input works without a speech service.
+Speech devices and credentials remain available under **Einstellungen → Sprache & Geräte** (Settings → Speech & devices) after setup. Text input works without a speech service.
 
 Model and speech providers are used with your own accounts. Their availability, usage limits, and costs depend on the service you choose.
 
@@ -203,6 +209,7 @@ npm run test:ipc
 npm run test:storage-ui
 npm run test:memory-storage-ui
 npm run test:work-history-ui
+npm run test:onboarding-ui
 npm run test:memory-ui
 npm run test:computer-images
 npm run test:computer-preview

@@ -17,7 +17,7 @@ const results: { [Name in CommandName]: Decoder<CommandResult<Name>> } = {
   googleCalendarEvents: decodeCalendarEvents, openGoogleCalendarSetup: nothing,
   snapshot: decodeSnapshot, send: nothing, stop: nothing, stopJob: nothing, savePreferences: nothing, acknowledgeFullAccess: nothing,
   signInChatGPT: nothing, cancelChatGPTSignIn: nothing, signOutChatGPT: nothing, openChatGPTUsage: nothing,
-  saveProvider: nothing, testProvider: nothing, removeProvider: nothing, listSkills: skills, openSkillsFolder: nothing,
+  saveProvider: nothing, testProvider: nothing, checkSetup: object({ model: text(300), answer: text(4000) }), removeProvider: nothing, listSkills: skills, openSkillsFolder: nothing,
   saveSpeechKey: nothing, removeSpeechKey: nothing, testSpeech: audio, transcribe: text(20000), synthesize: audio,
   openWorkspace: nothing, revealFile: nothing, newConversation: nothing,
   memorySnapshot: decodeMemorySnapshot, rebuildMemory: decodeMemorySnapshot, startMemorySummary: nothing, readMemoryPeriod: decodeMemoryPeriod,

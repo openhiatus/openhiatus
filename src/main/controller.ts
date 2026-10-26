@@ -1,5 +1,6 @@
 import { APP_DISPLAY_NAME } from '../shared/branding';
 import { parseUiLanguage } from '../shared/ui-language';
+import { parseOnboarding } from '../shared/onboarding';
 import { randomUUID } from 'node:crypto';
 import { nextReceipt, RECEIPT_PHRASES } from '../shared/receipts';
 import { favoriteLevel, parseSkillFavorites } from '../shared/skill-favorites';
@@ -72,6 +73,7 @@ export class AppController {
   private state: InternalSnapshot;
   private secrets: string[] = [];
   private audio = new Set<AbortController>();
+  private setupCheck?: AbortController;
   private closing = false;
   private shuttingDown = false;
   private stopDeferrals = 0;
@@ -634,6 +636,7 @@ export class AppController {
     } finally { this.stopDeferrals--; this.flushAfterStop(); }
   }
   async savePreferences(patch: Partial<Preferences>): Promise<void> {
+    if (Object.hasOwn(patch, 'onboarding')) patch = { ...patch, onboarding: parseOnboarding(patch.onboarding) };
     if (Object.hasOwn(patch, 'uiLanguage')) patch = { ...patch, uiLanguage: parseUiLanguage(patch.uiLanguage) };
     if (Object.hasOwn(patch, 'itSupporter') && typeof patch.itSupporter !== 'boolean') throw new Error('Ungültiger IT-Supporter-Modus.');
     if (Object.hasOwn(patch, 'assistantProfile')) patch = { ...patch, assistantProfile: parseAssistantProfile(patch.assistantProfile) };
@@ -664,6 +667,7 @@ export class AppController {
     if (patch.skillFavorites !== undefined) patch = { ...patch, skillFavorites: parseSkillFavorites(patch.skillFavorites) };
     const favoritesChanged = patch.skillFavorites !== undefined && JSON.stringify(patch.skillFavorites) !== JSON.stringify(this.state.preferences.skillFavorites ?? {});
     const previousProfile = structuredClone(this.state.preferences.assistantProfile);
+    const previousOnboarding = this.state.preferences.onboarding;
     const profileChanged = patch.assistantProfile !== undefined && JSON.stringify(patch.assistantProfile) !== JSON.stringify(this.state.preferences.assistantProfile);
     this.state.preferences = { ...this.state.preferences, ...patch }; this.modelManagement.select(patch); this.changed();
     if (patch.memoryAutoSummarize !== undefined || patch.chatgptBackgroundUsage !== undefined) {
@@ -675,14 +679,45 @@ export class AppController {
       this.invalidateThread();
       this.activity('system', 'Gesprächseinstellungen gelten ab der nächsten Nachricht', 'Laufende Aufgaben behalten ihren bisherigen Kontext.'); this.changed();
     }
-    if (profileChanged) {
+    if (profileChanged || patch.onboarding) {
       try { await this.stateJournal.durableCommit(); }
       catch (error) {
-        if (JSON.stringify(this.state.preferences.assistantProfile) === JSON.stringify(patch.assistantProfile)) {
+        if (profileChanged && JSON.stringify(this.state.preferences.assistantProfile) === JSON.stringify(patch.assistantProfile)) {
           this.state.preferences.assistantProfile = previousProfile; this.invalidateThread(); this.changed();
+        }
+        if (patch.onboarding && this.state.preferences.onboarding === patch.onboarding) {
+          if (previousOnboarding) this.state.preferences.onboarding = previousOnboarding;
+          else delete this.state.preferences.onboarding;
+          this.changed();
         }
         throw error;
       }
+    }
+  }
+  /** A fixed, tool-free request. No conversation, files or screen context is sent. */
+  async checkSetup(): Promise<{ model: string; answer: string }> {
+    this.requireFullAccess(); this.ensureIdle();
+    if (this.setupCheck) throw new Error('Der Verbindungstest läuft bereits.');
+    const model = this.state.preferences.dialogModel;
+    const client = this.deps.modelClient;
+    if (!client || !this.state.models.some(entry => entry.id === model)) throw new Error('Bitte zuerst einen Modellanbieter verbinden.');
+    const control = new AbortController(), epoch = this.workEpoch;
+    this.setupCheck = control; this.audio.add(control);
+    let rejectAbort: () => void = () => {};
+    const aborted = new Promise<never>((_resolve, reject) => {
+      rejectAbort = () => reject(new Error('Verbindungstest gestoppt oder Zeitlimit erreicht. Bitte erneut versuchen.'));
+      control.signal.addEventListener('abort', rejectAbort, { once: true });
+    });
+    const timer = setTimeout(() => control.abort(), 30_000);
+    try {
+      const answer = await Promise.race([client.complete(`This is a connection check. Reply with one short friendly greeting in language ${this.state.preferences.uiLanguage ?? 'de'}. Do not claim to have tested any devices or computer access.`, model, control.signal), aborted]);
+      if (control.signal.aborted || epoch !== this.workEpoch || model !== this.state.preferences.dialogModel) throw new Error('Verbindungstest nicht mehr aktuell. Bitte erneut versuchen.');
+      if (!answer.trim()) throw new Error('Das Modell hat keine Antwort geliefert. Bitte erneut versuchen.');
+      return { model, answer: this.clean(answer.trim()).slice(0, 4000) };
+    } catch (error) { throw new Error(this.clean(error instanceof Error ? error.message : 'Verbindungstest fehlgeschlagen.')); }
+    finally {
+      clearTimeout(timer); control.signal.removeEventListener('abort', rejectAbort); this.audio.delete(control);
+      if (this.setupCheck === control) this.setupCheck = undefined;
     }
   }
   async saveSpeechKey(key: string): Promise<void> {

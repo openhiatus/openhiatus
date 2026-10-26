@@ -6595,5 +6595,317 @@
     "本地模型",
     "ローカルモデル",
     "Modelo local"
+  ],
+  "Einrichtung fortsetzen": [
+    "Continue setup",
+    "Continuar configuración",
+    "Reprendre la configuration",
+    "继续设置",
+    "設定を再開",
+    "Continuar configuração"
+  ],
+  "Einrichtung": [
+    "Setup",
+    "Configuración",
+    "Configuration",
+    "设置",
+    "初期設定",
+    "Configuração"
+  ],
+  "Willkommen bei openHiatus": [
+    "Welcome to openHiatus",
+    "Te damos la bienvenida a openHiatus",
+    "Bienvenue dans openHiatus",
+    "欢迎使用 openHiatus",
+    "openHiatus へようこそ",
+    "Boas-vindas ao openHiatus"
+  ],
+  "Konto verbinden": [
+    "Connect an account",
+    "Conectar una cuenta",
+    "Connecter un compte",
+    "连接账户",
+    "アカウントを接続",
+    "Conectar uma conta"
+  ],
+  "Sprechen oder schreiben": [
+    "Speak or type",
+    "Hablar o escribir",
+    "Parler ou écrire",
+    "语音或文字",
+    "話す、または入力する",
+    "Falar ou digitar"
+  ],
+  "Die erste Antwort": [
+    "Your first reply",
+    "Tu primera respuesta",
+    "Votre première réponse",
+    "第一条回复",
+    "最初の応答",
+    "Sua primeira resposta"
+  ],
+  "Schritt für Schritt einrichten": [
+    "Set up step by step",
+    "Configurar paso a paso",
+    "Configurer étape par étape",
+    "逐步设置",
+    "手順に沿って設定",
+    "Configurar passo a passo"
+  ],
+  "Schritt {0} von {1}": [
+    "Step {0} of {1}",
+    "Paso {0} de {1}",
+    "Étape {0} sur {1}",
+    "第 {0} 步，共 {1} 步",
+    "ステップ {0} / {1}",
+    "Etapa {0} de {1}"
+  ],
+  "Später fortsetzen": [
+    "Continue later",
+    "Continuar más tarde",
+    "Reprendre plus tard",
+    "稍后继续",
+    "後で再開",
+    "Continuar depois"
+  ],
+  "Wir gehen gemeinsam bis zur ersten Antwort. Du kannst jederzeit pausieren und hier weitermachen.": [
+    "We'll guide you to your first reply. You can pause at any time and continue here.",
+    "Te guiamos hasta tu primera respuesta. Puedes pausar cuando quieras y continuar aquí.",
+    "Nous vous guidons jusqu’à votre première réponse. Vous pouvez faire une pause et reprendre ici à tout moment.",
+    "我们将引导您完成设置，直到收到第一条回复。您可以随时暂停并在这里继续。",
+    "最初の応答が届くまで順番にご案内します。いつでも中断し、ここから再開できます。",
+    "Vamos guiar você até a primeira resposta. Você pode pausar a qualquer momento e continuar aqui."
+  ],
+  "Du brauchst einen Modellzugang, zum Beispiel ein freigeschaltetes ChatGPT-Konto. Mikrofon und Sprachdienst sind optional.": [
+    "You'll need access to an AI model, for example an eligible ChatGPT account. A microphone and voice service are optional.",
+    "Necesitas acceso a un modelo de IA, por ejemplo mediante una cuenta de ChatGPT habilitada. El micrófono y el servicio de voz son opcionales.",
+    "Vous avez besoin d’un accès à un modèle d’IA, par exemple via un compte ChatGPT éligible. Le microphone et le service vocal sont facultatifs.",
+    "您需要一个 AI 模型访问权限，例如已开通模型访问权限的 ChatGPT 账户。麦克风和语音服务均为可选项。",
+    "利用可能な ChatGPT アカウントなど、AI モデルへのアクセスが必要です。マイクと音声サービスは任意です。",
+    "Você precisa de acesso a um modelo de IA, por exemplo uma conta ChatGPT habilitada. O microfone e o serviço de voz são opcionais."
+  ],
+  "Stopp und Esc bleiben immer erreichbar. Wenn openHiatus den Desktop bedient, zeigt die App das deutlich an.": [
+    "Stop and Esc are always available. The app clearly indicates when openHiatus is controlling the desktop.",
+    "Detener y Esc siempre están disponibles. La aplicación indica claramente cuándo openHiatus controla el escritorio.",
+    "Arrêter et Échap restent toujours accessibles. L’application indique clairement quand openHiatus contrôle le bureau.",
+    "您始终可以使用“停止”或 Esc。openHiatus 操作桌面时，应用会明确提示。",
+    "停止ボタンと Esc はいつでも使えます。openHiatus がデスクトップを操作している間は、アプリに明確に表示されます。",
+    "Parar e Esc ficam sempre disponíveis. O aplicativo indica claramente quando o openHiatus está controlando a área de trabalho."
+  ],
+  "Verbinde einen Zugang für Antworten und Aufgaben. Der Anbieter kann dafür Gebühren oder Nutzungslimits vorsehen.": [
+    "Connect an account for replies and tasks. Your provider may charge fees or apply usage limits.",
+    "Conecta una cuenta para respuestas y tareas. El proveedor puede cobrar tarifas o aplicar límites de uso.",
+    "Connectez un compte pour les réponses et les tâches. Le fournisseur peut appliquer des frais ou des limites d’utilisation.",
+    "连接账户以获取回复和执行任务。服务商可能会收费或限制使用量。",
+    "応答やタスクに使うアカウントを接続します。提供元によって料金や利用制限がある場合があります。",
+    "Conecte uma conta para respostas e tarefas. O provedor pode cobrar taxas ou aplicar limites de uso."
+  ],
+  "Dein Konto ist verbunden. Im letzten Schritt prüfen wir eine kurze Antwort.": [
+    "Your account is connected. We'll test a short reply in the final step.",
+    "Tu cuenta está conectada. En el último paso probaremos una respuesta breve.",
+    "Votre compte est connecté. Nous testerons une courte réponse à la dernière étape.",
+    "您的账户已连接。我们将在最后一步测试一条简短回复。",
+    "アカウントが接続されました。最後の手順で短い応答をテストします。",
+    "Sua conta está conectada. Na última etapa, vamos testar uma resposta curta."
+  ],
+  "Anderen Anbieter oder lokalen Server verwenden": [
+    "Use another provider or a local server",
+    "Usar otro proveedor o un servidor local",
+    "Utiliser un autre fournisseur ou un serveur local",
+    "使用其他服务商或本地服务器",
+    "別の提供元またはローカルサーバーを使う",
+    "Usar outro provedor ou um servidor local"
+  ],
+  "Modellanbieter": [
+    "Model provider",
+    "Proveedor del modelo",
+    "Fournisseur du modèle",
+    "模型服务商",
+    "モデル提供元",
+    "Provedor do modelo"
+  ],
+  "Für die erste Antwort ausgewählt: {0}": [
+    "Selected for your first reply: {0}",
+    "Seleccionado para tu primera respuesta: {0}",
+    "Sélectionné pour votre première réponse : {0}",
+    "第一条回复将使用：{0}",
+    "最初の応答に使用：{0}",
+    "Selecionado para sua primeira resposta: {0}"
+  ],
+  "Verbinde zuerst ein Konto. Danach kannst du weitergehen.": [
+    "Connect an account first. Then you can continue.",
+    "Conecta una cuenta primero. Después podrás continuar.",
+    "Connectez d’abord un compte. Vous pourrez ensuite continuer.",
+    "请先连接账户，然后继续。",
+    "まずアカウントを接続してください。その後、次へ進めます。",
+    "Conecte uma conta primeiro. Depois você pode continuar."
+  ],
+  "Modell ändern": [
+    "Change model",
+    "Cambiar modelo",
+    "Changer de modèle",
+    "更换模型",
+    "モデルを変更",
+    "Alterar modelo"
+  ],
+  "Du kannst sofort mit Text arbeiten. Sprechen richtest du auf Wunsch jetzt oder später ein.": [
+    "You can start with text right away. Set up voice now or later if you want.",
+    "Puedes empezar con texto de inmediato. Si quieres, configura la voz ahora o más tarde.",
+    "Vous pouvez commencer à écrire tout de suite. Configurez la voix maintenant ou plus tard, si vous le souhaitez.",
+    "您可以立即使用文字交流。如果需要，可以现在或稍后设置语音。",
+    "文字入力はすぐに使えます。音声は必要に応じて今、または後で設定できます。",
+    "Você pode começar com texto imediatamente. Configure a voz agora ou depois, se quiser."
+  ],
+  "Mikrofon und Stimme einrichten (optional)": [
+    "Set up microphone and voice (optional)",
+    "Configurar micrófono y voz (opcional)",
+    "Configurer le microphone et la voix (facultatif)",
+    "设置麦克风和语音（可选）",
+    "マイクと音声を設定（任意）",
+    "Configurar microfone e voz (opcional)"
+  ],
+  "Der Mikrofontest bleibt auf deinem Rechner. Für Spracherkennung und Antworten zum Anhören brauchst du einen separaten Inworld-Zugang.": [
+    "The microphone test stays on your computer. Speech recognition and spoken replies require a separate Inworld account.",
+    "La prueba del micrófono se realiza en tu equipo. El reconocimiento de voz y las respuestas habladas requieren una cuenta de Inworld aparte.",
+    "Le test du microphone reste sur votre ordinateur. La reconnaissance vocale et les réponses à écouter nécessitent un compte Inworld distinct.",
+    "麦克风测试仅在您的电脑上进行。语音识别和朗读回复需要单独的 Inworld 账户。",
+    "マイクのテストはこのパソコン内で行います。音声認識と応答の読み上げには、別途 Inworld のアカウントが必要です。",
+    "O teste do microfone fica no seu computador. O reconhecimento de fala e as respostas em voz exigem uma conta Inworld separada."
+  ],
+  "Mikrofon testen": [
+    "Test microphone",
+    "Probar micrófono",
+    "Tester le microphone",
+    "测试麦克风",
+    "マイクをテスト",
+    "Testar microfone"
+  ],
+  "Sprich kurz. Bewegt sich der Pegel?": [
+    "Say a few words. Does the level move?",
+    "Di unas palabras. ¿Se mueve el indicador?",
+    "Dites quelques mots. Le niveau bouge-t-il ?",
+    "请说几句话。音量指示条有变化吗？",
+    "少し話してみてください。音量メーターは動きますか？",
+    "Diga algumas palavras. O indicador de nível se move?"
+  ],
+  "Inworld API-Key (Base64)": [
+    "Inworld API key (Base64)",
+    "Clave API de Inworld (Base64)",
+    "Clé API Inworld (Base64)",
+    "Inworld API 密钥（Base64）",
+    "Inworld API キー（Base64）",
+    "Chave de API Inworld (Base64)"
+  ],
+  "Inworld erhält Audio und Antworttext. Die Nutzung wird separat abgerechnet.": [
+    "Inworld receives audio and reply text. Usage is billed separately.",
+    "Inworld recibe el audio y el texto de las respuestas. El uso se factura por separado.",
+    "Inworld reçoit l’audio et le texte des réponses. L’utilisation est facturée séparément.",
+    "音频和回复文本会发送给 Inworld。使用费用单独计算。",
+    "音声と応答テキストは Inworld に送信されます。利用料金は別途発生します。",
+    "A Inworld recebe o áudio e o texto das respostas. O uso é cobrado separadamente."
+  ],
+  "Mit „Weiter“ geht es auch ohne Sprachzugang.": [
+    "Choose “Next” to continue even without voice access.",
+    "Puedes pulsar «Siguiente» aunque no tengas acceso al servicio de voz.",
+    "Vous pouvez choisir « Suivant » même sans accès au service vocal.",
+    "即使没有语音服务，也可以点击“下一步”继续。",
+    "音声サービスがなくても「次へ」で進めます。",
+    "Selecione “Avançar” para continuar mesmo sem acesso ao serviço de voz."
+  ],
+  "Lass dir eine kurze Begrüßung senden. Dabei werden keine Dateien oder Bildschirmaufnahmen übertragen und keine Programme bedient.": [
+    "Request a short greeting. No files or screenshots will be sent, and no programs will be controlled.",
+    "Solicita un saludo breve. No se enviarán archivos ni capturas de pantalla y no se controlará ningún programa.",
+    "Demandez un bref message de bienvenue. Aucun fichier ni capture d’écran ne sera envoyé et aucun programme ne sera contrôlé.",
+    "请求一条简短问候。此过程不会发送文件或屏幕截图，也不会操作任何程序。",
+    "短い挨拶をリクエストします。ファイルやスクリーンショットの送信、プログラムの操作は行いません。",
+    "Solicite uma saudação curta. Nenhum arquivo ou captura de tela será enviado e nenhum programa será controlado."
+  ],
+  "Eine kurze Modellanfrage zählt zum Kontingent deines Anbieters. Geprüft wird nur die Textantwort.": [
+    "A short model request counts towards your provider's usage. Only the text reply is tested.",
+    "Una solicitud breve al modelo cuenta para el uso de tu proveedor. Solo se prueba la respuesta de texto.",
+    "Une courte requête au modèle est décomptée de votre quota. Seule la réponse textuelle est testée.",
+    "一次简短的模型请求会计入服务商的使用额度。此测试仅检查文字回复。",
+    "短いモデルリクエストが提供元の利用枠に計上されます。テストするのはテキスト応答のみです。",
+    "Uma solicitação curta ao modelo conta para a cota do seu provedor. Apenas a resposta em texto é testada."
+  ],
+  "Antwort wird geprüft …": [
+    "Testing the reply…",
+    "Probando la respuesta…",
+    "Test de la réponse…",
+    "正在测试回复…",
+    "応答をテスト中…",
+    "Testando a resposta…"
+  ],
+  "Erste Antwort testen": [
+    "Test your first reply",
+    "Probar la primera respuesta",
+    "Tester la première réponse",
+    "测试第一条回复",
+    "最初の応答をテスト",
+    "Testar a primeira resposta"
+  ],
+  "Deine Textverbindung funktioniert.": [
+    "Your text connection works.",
+    "Tu conexión de texto funciona.",
+    "Votre connexion textuelle fonctionne.",
+    "您的文字连接正常。",
+    "テキスト接続は正常です。",
+    "Sua conexão de texto funciona."
+  ],
+  "Du kannst jetzt eine Frage stellen oder dir einen nächsten Schritt erklären lassen.": [
+    "You can now ask a question or get help with your next step.",
+    "Ahora puedes hacer una pregunta o pedir ayuda con el siguiente paso.",
+    "Vous pouvez maintenant poser une question ou demander de l’aide pour la prochaine étape.",
+    "现在您可以提出问题，或请助手说明下一步该怎么做。",
+    "質問したり、次の手順を説明してもらったりできます。",
+    "Agora você pode fazer uma pergunta ou pedir ajuda com o próximo passo."
+  ],
+  "Das hat noch nicht geklappt.": [
+    "That didn't work yet.",
+    "Todavía no ha funcionado.",
+    "Cela n’a pas encore fonctionné.",
+    "暂时未能成功。",
+    "まだうまくいっていません。",
+    "Ainda não deu certo."
+  ],
+  "Prüfe deinen Zugang und die Internetverbindung. Du kannst zurückgehen oder es erneut versuchen.": [
+    "Check your account access and internet connection. You can go back or try again.",
+    "Revisa el acceso a tu cuenta y la conexión a Internet. Puedes volver atrás o intentarlo de nuevo.",
+    "Vérifiez votre accès au compte et votre connexion Internet. Vous pouvez revenir en arrière ou réessayer.",
+    "请检查账户访问权限和网络连接。您可以返回上一步或重试。",
+    "アカウントのアクセス権とインターネット接続を確認してください。前の手順に戻るか、再試行できます。",
+    "Verifique o acesso à sua conta e a conexão com a internet. Você pode voltar ou tentar novamente."
+  ],
+  "Details": [
+    "Details",
+    "Detalles",
+    "Détails",
+    "详情",
+    "詳細",
+    "Detalhes"
+  ],
+  "Zurück": [
+    "Back",
+    "Atrás",
+    "Retour",
+    "上一步",
+    "戻る",
+    "Voltar"
+  ],
+  "Weiter": [
+    "Next",
+    "Siguiente",
+    "Suivant",
+    "下一步",
+    "次へ",
+    "Avançar"
+  ],
+  "Einrichtung abschließen": [
+    "Finish setup",
+    "Finalizar configuración",
+    "Terminer la configuration",
+    "完成设置",
+    "設定を完了",
+    "Concluir configuração"
   ]
 }

@@ -36,6 +36,7 @@ export function createOpenhiatusApi(transport: IpcClientTransport): OpenhiatusAp
     publishActivityPresence: state => transport.publishActivityPresence(state),
     send: (text, requestId) => call('send', text, requestId), stop: () => call('stop'), stopJob: id => call('stopJob', id),
     savePreferences: patch => call('savePreferences', patch), acknowledgeFullAccess: () => call('acknowledgeFullAccess'),
+    checkSetup: () => call('checkSetup'),
     autostartSettings: () => call('autostartSettings'), setAutostart: enabled => call('setAutostart', enabled),
     signInChatGPT: () => call('signInChatGPT'), cancelChatGPTSignIn: () => call('cancelChatGPTSignIn'), signOutChatGPT: () => call('signOutChatGPT'),
     openChatGPTUsage: () => call('openChatGPTUsage'), saveProvider: input => call('saveProvider', input), testProvider: id => call('testProvider', id), removeProvider: id => call('removeProvider', id),

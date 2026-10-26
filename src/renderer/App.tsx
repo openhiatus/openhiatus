@@ -1,5 +1,7 @@
 import { t } from '../shared/i18n';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { needsOnboarding } from '../shared/onboarding';
+import { OnboardingView } from './features/onboarding';
 import { Activity as ActivityIcon, ArrowRight, AudioLines, BookOpen, FileText, Mic, X } from 'lucide-react';
 import { withFavoriteLevel } from '../shared/skill-favorites';
 import { FullAccessNotice } from './FullAccessNotice';
@@ -25,6 +27,13 @@ export default function App() {
   const openIdentity = () => { setMemoryNavigation(current => ({ requestId: (current?.requestId ?? 0) + 1 })); navigate('memory'); };
   const session = useAppSession({ conversationVisible: view === 'chat', openConversation: () => navigate('chat'), openSettings: () => navigate('settings') });
   const { state } = session;
+  const initialViewChosen = useRef(false);
+  useEffect(() => {
+    if (!state || initialViewChosen.current) return;
+    initialViewChosen.current = true;
+    if (needsOnboarding(state) && state.preferences.onboarding?.status !== 'later') setView('onboarding');
+  }, [state]);
+  const setupPending = state && needsOnboarding(state);
 
   return <WorkspaceShell view={view} onNavigate={navigate} state={state} ready={session.ready} speechReady={session.speechReady}
     newConversationDisabled={session.workBusy || session.summaryInProgress || session.busyAction === 'new'}
@@ -32,8 +41,9 @@ export default function App() {
     headerActions={view === 'chat' && <button className={`icon-button activity-toggle ${showActivity ? 'selected' : ''}`}
       onClick={() => setShowActivity(current => !current)} aria-label={showActivity ? t("Aktivität ausblenden") : t("Aktivität einblenden")} title={t("Aktivität")}><ActivityIcon size={18} /></button>}>
     <HotkeyWarning hotkeys={state?.hotkeys} />
-    {state && !session.acknowledged && <FullAccessNotice acknowledged={false} busy={!!session.busyAction}
+    {state && !session.acknowledged && view !== 'onboarding' && <FullAccessNotice acknowledged={false} busy={!!session.busyAction}
       onAcknowledge={() => void session.action('full-access', () => window.openhiatus.acknowledgeFullAccess(), t("Vollzugriff bestätigt. Richte jetzt deinen Modellanbieter ein."))} />}
+    {setupPending && view !== 'onboarding' && <div className="onboarding-resume"><button className="secondary-button" onClick={() => navigate('onboarding')}>{t('Einrichtung fortsetzen')}<ArrowRight size={16} /></button></div>}
     {(session.error || session.notice) && <div role={session.error ? 'alert' : 'status'} className={`banner ${session.error ? 'error' : ''}`}>
       <span>{session.error || session.notice}</span><button className="icon-button" aria-label={t("Hinweis schließen")} onClick={() => { session.setError(''); session.setNotice(''); }}><X size={15} /></button>
     </div>}
@@ -65,11 +75,12 @@ export default function App() {
       insertDisabledReason={session.skillInsertDisabledReason} favorites={state?.preferences.skillFavorites}
       onFavoriteChange={(path, level) => session.preference({ skillFavorites: withFavoriteLevel(state?.preferences.skillFavorites, path, level) })} /></div>}
     <div className="workspace-view settings-view-host" hidden={view !== 'settings'}>
-      <SettingsView state={state} workBusy={session.workBusy} summaryInProgress={session.summaryInProgress} onOpenIdentity={openIdentity}
+      <SettingsView state={state} workBusy={session.workBusy} summaryInProgress={session.summaryInProgress} onOpenIdentity={openIdentity} onOpenOnboarding={() => navigate('onboarding')}
         onPreference={session.preference} onError={session.report} onNotice={session.setNotice}
         voice={{ phase: session.phase, seconds: session.seconds, devices: session.devices, audioBusy: session.audioBusy, speechReady: session.speechReady,
           startRecording: session.startRecording, testSpeech: session.testSpeech, cancelAudio: session.cancelAudio, clearSpeech: session.clearSpeech, stopEarcons: session.stopEarcons,
           saveSpeechKey: key => window.openhiatus.saveSpeechKey(key), removeSpeechKey: () => window.openhiatus.removeSpeechKey() }} />
     </div>
+    {view === 'onboarding' && state && <OnboardingView state={state} session={session} onClose={() => navigate('chat')} />}
   </WorkspaceShell>;
 }
