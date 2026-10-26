@@ -22,6 +22,8 @@ import { ConversationCoordinator } from './modules/conversation';
 import { ModelManagementCoordinator } from './modules/models';
 import { DirectTaskCoordinator, recoverForegroundTask } from './modules/direct-task';
 import { StateJournal } from './modules/state-journal';
+import { WorkHistory } from './modules/work-history';
+import { jobWorkId, requestWorkId } from '../shared/work-history';
 import { openhiatusCapabilitiesPath, buildOpenhiatusCapabilities, writeOpenhiatusCapabilities, type OpenhiatusCapabilitiesDocument } from './capabilities';
 
 type MemoryResult<T> = T | Promise<T>;
@@ -43,7 +45,7 @@ interface MemoryBackend extends Partial<SummaryBackend> {
 interface CaptureBatch { messages: Message[]; firstId: string; sequence: number; }
 
 type InternalSnapshot = Omit<Snapshot, 'jobs'> & { jobs?: BackgroundJob[] };
-type SavedState = Pick<InternalSnapshot, 'messages' | 'activity' | 'task' | 'preferences' | 'jobs' | 'usage'>;
+type SavedState = Pick<InternalSnapshot, 'messages' | 'activity' | 'task' | 'preferences' | 'jobs' | 'usage' | 'workItems'>;
 interface Dependencies {
   version?: string;
   store: { load(): SavedState; save(state: SavedState): void | Promise<void> };
@@ -93,6 +95,8 @@ export class AppController {
   private conversation?: ConversationCoordinator;
   private lastReceipt?: string;
   private receiptWarmup?: AbortController;
+  private readonly workHistory: WorkHistory;
+  private resettingConversation = false;
 
   constructor(private readonly deps: Dependencies) {
     const saved = deps.store.load();
@@ -116,10 +120,13 @@ export class AppController {
     let hasSpeech = false;
     try { const key = deps.credentials.get('inworld'); if (key) { this.secrets.push(key); hasSpeech = true; } } catch { /* credential read fails closed */ }
     this.state = { ...saved, connections: { agent: 'offline', account: '', speech: hasSpeech ? 'saved' : 'missing' }, models: [], providers: [], workspace: deps.workspace, version: deps.version ?? 'Entwicklung' };
+    this.workHistory = new WorkHistory(saved.workItems, text => this.clean(text));
+    delete this.state.workItems; // The journal owns this projection; avoid cloning a stale second copy.
+    if ((!deps.dialogAgent || !deps.createWorker) && saved.jobs) this.workHistory.jobs(saved.jobs);
     this.stateJournal = new StateJournal({
       snapshot: () => {
         const { messages, activity, task, preferences, jobs, usage } = this.state;
-        return { messages, activity, task, preferences, ...(usage ? { usage } : {}), ...(jobs ? { jobs } : {}) };
+        return { messages, activity, task, preferences, workItems: this.workHistory.snapshot(), ...(usage ? { usage } : {}), ...(jobs ? { jobs } : {}) };
       },
       commit: snapshot => deps.store.save(snapshot),
       publish: () => { if (!this.closing) deps.publish(this.snapshot()); },
@@ -179,15 +186,17 @@ export class AppController {
         } : undefined,
         parseReply: parseMemoryReply,
         journal: {
-          publish: jobs => { this.state.jobs = jobs; }, prepare: () => this.stateJournal.ready(), persist: () => this.stateJournal.durableCommit(), changed: () => this.changed(),
+          publish: jobs => { this.state.jobs = jobs; this.workHistory.jobs(jobs); }, prepare: () => this.stateJournal.ready(), persist: () => this.stateJournal.durableCommit(), changed: () => this.changed(),
           appendMessage: message => { if (this.conversation) this.conversation.appendMessage(message); else this.state.messages.push(message); },
           capture: strict => this.captureMemory(strict),
         },
         effects: { clean: text => this.clean(text), activity: (kind, title, detail) => this.activity(kind, title, detail),
+          workAction: (id, event) => this.workHistory.action(jobWorkId(id), event),
           speak: (text, jobId, kind) => this.speechCue(text, jobId, kind), frame: frame => deps.publishComputerFrame?.(frame), idle: () => this.memoryReports.queueAutomatic() },
         now: deps.now,
       });
       this.state.jobs = this.tasks.snapshot();
+      this.workHistory.jobs(this.state.jobs);
       this.conversation = new ConversationCoordinator({ messages: this.state.messages, task: this.state.task }, {
         agent: deps.dialogAgent,
         availability: {
@@ -202,7 +211,11 @@ export class AppController {
           },
         },
         journal: {
-          project: state => { this.state.messages = state.messages; this.state.task = state.task; },
+          project: (state, answerId) => {
+            if (!this.resettingConversation) this.workHistory.rollbackMissing(this.state.messages, state.messages);
+            this.state.messages = state.messages; this.state.task = state.task;
+            this.workHistory.foreground(state.messages, state.task, 'conversation', answerId);
+          },
           prepare: () => this.stateJournal.ready(), persist: () => this.stateJournal.durableCommit(), changed: save => this.changed(save),
         },
         context: {
@@ -232,7 +245,10 @@ export class AppController {
         } : undefined,
         parseReply: parseMemoryReply,
         journal: {
-          publish: state => { this.state.messages = state.messages; this.state.task = state.task;
+          publish: (state, answerId) => {
+            if (!this.resettingConversation) this.workHistory.rollbackMissing(this.state.messages, state.messages);
+            this.state.messages = state.messages; this.state.task = state.task;
+            this.workHistory.foreground(state.messages, state.task, 'direct', answerId);
             if (state.usage === undefined) delete this.state.usage; else this.state.usage = state.usage;
             if (state.context === undefined) delete this.state.context; else this.state.context = state.context; },
           publishContext: context => { this.state.context = context; },
@@ -261,6 +277,7 @@ export class AppController {
 
   snapshot(): Snapshot {
     const snapshot = structuredClone(this.state);
+    snapshot.workItems = this.workHistory.snapshot();
     try {
       const name = this.deps.memory?.instructionDocuments ? identityName(this.deps.memory.instructionDocuments()) : undefined;
       if (name !== undefined) snapshot.preferences.assistantProfile = { ...(snapshot.preferences.assistantProfile ?? structuredClone(DEFAULT_ASSISTANT_PROFILE)), name };
@@ -563,7 +580,12 @@ export class AppController {
     if (!this.conversation || this.closing) return;
     this.conversation.handle(event);
   }
+  private recordForegroundAction(event: Extract<AgentEvent, { type: 'work-action' }>): void {
+    if (this.state.task.status !== 'running' || this.stopPending()) return;
+    this.workHistory.action(requestWorkId(this.state.task.id), event); this.changed();
+  }
   private handleDialogRuntimeEvent(event: Exclude<AgentEvent, { type: 'started' | 'completed' }>): void {
+    if (event.type === 'work-action') { this.recordForegroundAction(event); return; }
     if (['connection', 'models'].includes(event.type)) { this.handle(event); return; }
     if (event.type === 'activity') { this.activity(event.kind, event.title, event.detail); this.changed(); return; }
     if (event.type === 'context') {
@@ -574,6 +596,7 @@ export class AppController {
   }
   handle(event: AgentEvent): void {
     if (this.closing) return;
+    if (event.type === 'work-action') { this.recordForegroundAction(event); return; }
     if (event.type === 'models' || event.type === 'connection') { this.modelManagement.handle(event); this.memoryReports.queueAutomatic(); return; }
     if (this.directTask) { this.directTask.handle(event); return; }
     if (event.type === 'computer-frame') { if (this.state.task.status === 'running') this.deps.publishComputerFrame?.(event.frame); return; }
@@ -701,8 +724,9 @@ export class AppController {
     this.ensureIdle();
     for (const request of this.audio) request.abort(); this.audio.clear();
     delete this.state.usage;
-    if (this.conversation) this.conversation.reset();
-    else this.directTask!.reset();
+    this.resettingConversation = true;
+    try { if (this.conversation) this.conversation.reset(); else this.directTask!.reset(); }
+    finally { this.resettingConversation = false; }
     if (this.state.speech) this.state.speech = [];
     this.activity('system', 'Neues Gespräch'); this.changed();
     this.memoryReports.queueAutomatic();

@@ -85,6 +85,7 @@ export class WorkerStateStore implements AsyncStateStore {
       // Only SavedState roots cross the thread boundary. postMessage captures their
       // immutable graph immediately, before this function returns, even when queued.
       const snapshot: SavedState = { messages: state.messages, activity: state.activity, task: state.task, preferences: state.preferences,
+        ...(state.workItems === undefined ? {} : { workItems: state.workItems }),
         ...(state.jobs === undefined ? {} : { jobs: state.jobs }), ...(state.usage === undefined ? {} : { usage: state.usage }) };
       this.post({ version: 1, type: 'commit', id, state: snapshot });
     } catch {

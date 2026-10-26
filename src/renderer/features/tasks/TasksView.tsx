@@ -7,9 +7,12 @@ import { MessageBody } from '../conversation';
 import { formatTaskNumber, formatTaskTime, taskFilters, taskIsActive, taskMatches, taskStatusDescription, taskStatusLabel, tasksForFilter, taskUsageLabel, type TaskFilter } from './presentation';
 import { TaskStopActions } from './stop-actions';
 import { TaskModelMetrics } from './model-metrics';
+import type { WorkItem } from '../../../shared/work-history';
+import { WorkHistoryView } from './WorkHistoryView';
 
 export interface TasksViewProps {
   jobs: readonly BackgroundJobView[];
+  workItems?: readonly WorkItem[];
   onStop(id: string): Promise<void>;
   onError(error: unknown): void;
   onConversation?(): void;
@@ -52,7 +55,17 @@ function TaskDetails({ job, busy, onStop, onError }: { job: BackgroundJobView; b
   </article>;
 }
 
-export function TasksView({ jobs, onStop, onError, onConversation }: TasksViewProps) {
+export function TasksView(props: TasksViewProps) {
+  const [background, setBackground] = useState(false);
+  const hasHistory = !!props.workItems?.length;
+  return <>
+    {hasHistory && <div className="work-history-tabs"><button type="button" className="secondary-button" aria-pressed={!background} onClick={() => setBackground(false)}>{t('Arbeitsverlauf')}</button>
+      <button type="button" className="secondary-button" aria-pressed={background} onClick={() => setBackground(true)}>{t('Hintergrundaufgaben')}</button></div>}
+    {hasHistory && <div className="work-history-panel" hidden={background}><WorkHistoryView items={props.workItems!} jobs={props.jobs} onError={props.onError} onBackground={() => setBackground(true)} /></div>}
+    <div className="work-background-panel" hidden={hasHistory && !background}><BackgroundTasksView {...props} /></div>
+  </>;
+}
+function BackgroundTasksView({ jobs, onStop, onError, onConversation }: TasksViewProps) {
   const headingId = useId(), listId = useId();
   const [filter, setFilter] = useState<TaskFilter>('all');
   const [selectedId, setSelectedId] = useState<string | undefined>(() => tasksForFilter(jobs, 'all')[0]?.id);

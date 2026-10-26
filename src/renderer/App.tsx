@@ -57,7 +57,7 @@ export default function App() {
       <ConversationView session={session} active={view === 'chat'} showActivity={showActivity} onOpenTasks={() => navigate('tasks')} onOpenSettings={() => navigate('settings')} />
     </div>
     <div className="workspace-view tasks-view-host" hidden={view !== 'tasks'}>
-      <TasksView jobs={state?.jobs ?? []} onStop={id => window.openhiatus.stopJob(id)} onError={session.report} onConversation={() => navigate('chat')} />
+      <TasksView jobs={state?.jobs ?? []} workItems={state?.workItems} onStop={id => window.openhiatus.stopJob(id)} onError={session.report} onConversation={() => navigate('chat')} />
     </div>
     <div className="workspace-view services-view-host" hidden={view !== 'services'}><ServicesView active={view === 'services'} onSettings={() => navigate('settings')} /></div>
     <div className="workspace-view memory-view-host" hidden={view !== 'memory'}><MemoryView state={state} active={view === 'memory'} navigationRequest={memoryNavigation} /></div>

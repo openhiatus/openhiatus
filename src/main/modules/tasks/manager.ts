@@ -6,6 +6,7 @@ import type { BackgroundJob, AgentAdapter, AgentEvent, Usage, ComputerTaskSettin
 
 export interface JobRequest {
   requestId: string; title: string; prompt: string; model: string;
+  parentRequestId?: string;
   resources: string[];
   identityInstructions?: string;
   computer?: ComputerTaskSettings;

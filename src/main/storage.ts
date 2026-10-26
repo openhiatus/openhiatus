@@ -13,8 +13,9 @@ import { activityOverlaySize, sidebarMode, ACTIVITY_OVERLAY_DEFAULT_SIZE } from 
 import { DEFAULT_ASSISTANT_PROFILE, parseAssistantProfile } from '../shared/assistant-profile';
 import { computerImageRetentionCalls, computerWorkingMemoryCalls, parseComputerTaskSettings } from '../shared/computer-task-settings';
 import { parseModelRequestSummaries } from '../shared/model-requests';
+import { decodeWorkItems, type WorkItem } from '../shared/work-history';
 
-export interface SavedState { messages: Message[]; activity: Activity[]; task: Task; preferences: Preferences; jobs?: BackgroundJob[]; usage?: Usage; }
+export interface SavedState { messages: Message[]; activity: Activity[]; task: Task; preferences: Preferences; jobs?: BackgroundJob[]; workItems?: WorkItem[]; usage?: Usage; }
 export const MAX_STATE_BYTES = 32 * 1024 * 1024;
 const taskStatuses = new Set<TaskStatus>(['idle', 'running', 'stopping', 'completed', 'interrupted', 'failed']);
 
@@ -113,6 +114,7 @@ function validateState(value: unknown): SavedState {
         model: string(row.model, 300), resources: row.resources.map(value => redact(string(value, 4096))),
       };
       if (row.usage !== undefined) job.usage = validateUsage(row.usage);
+      if (row.parentRequestId !== undefined) job.parentRequestId = string(row.parentRequestId, 512);
       if (row.computer !== undefined) job.computer = parseComputerTaskSettings(row.computer);
       if (row.modelRequests !== undefined) job.modelRequests = parseModelRequestSummaries(row.modelRequests);
       if (row.runtimeRetained !== undefined) {
@@ -125,7 +127,9 @@ function validateState(value: unknown): SavedState {
     });
     if (new Set(jobs.map(job => job.id)).size !== jobs.length || new Set(jobs.map(job => job.requestId)).size !== jobs.length) throw new Error('Doppelte Aufgabenkennungen.');
   }
-  return { messages, activity, task, preferences, ...(source.usage !== undefined ? { usage: validateUsage(source.usage) } : {}), ...(jobs !== undefined ? { jobs } : {}) };
+  const workItems = source.workItems === undefined ? undefined : decodeWorkItems(JSON.parse(redact(JSON.stringify(source.workItems))));
+  if (workItems && new Set(workItems.map(item => item.id)).size !== workItems.length) throw new Error('Doppelte Arbeitskennungen.');
+  return { messages, activity, task, preferences, ...(workItems ? { workItems } : {}), ...(source.usage !== undefined ? { usage: validateUsage(source.usage) } : {}), ...(jobs !== undefined ? { jobs } : {}) };
 }
 
 function atomicWrite(path: string, contents: string, replace: (temporary: string, target: string) => void = renameSync): void {

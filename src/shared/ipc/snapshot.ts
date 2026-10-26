@@ -1,4 +1,5 @@
 import type { ComputerFrame, Snapshot } from '../contracts';
+import { decodeWorkItems } from '../work-history';
 import { parseUiLanguage } from '../ui-language';
 import { computerDetailDivisor, MAX_COMPUTER_DETAIL_PIXELS, type ComputerObservation, type ComputerRect } from '../computer-views';
 import { parseSkillFavorites } from '../skill-favorites';
@@ -39,9 +40,9 @@ export const decodeSnapshot: Decoder<Snapshot> = object({
   chatgpt: optional(object({ status: choice(['signed-out', 'signing-in', 'signed-in', 'error']), account: optional(body), planUsage: boolean, error: optional(body) })),
   hotkeys: optional(object({ recording: boolean, submit: boolean, stop: boolean })),
   desktopControl: optional(choice(['free', 'preparing', 'active', 'stopping', 'error'])),
-  workspace: short, version: short,
+  workspace: short, version: short, workItems: optional(decodeWorkItems),
   jobs: optional(array(object({ id, requestId: short, title: body, prompt: body, status: choice(['queued', 'running', 'stopping', 'completed', 'interrupted', 'failed']),
-    createdAt: at, updatedAt: at, model: short, resources: array(short, 24), threadId: optional(body), turnId: optional(body), result: optional(body), error: optional(body),
+    createdAt: at, updatedAt: at, model: short, resources: array(short, 24), parentRequestId: optional(id), threadId: optional(body), turnId: optional(body), result: optional(body), error: optional(body),
     runtimeRetained: optional(boolean), usage: optional(usage), computer: optional(parseComputerTaskSettings), modelRequests: optional(parseModelRequestSummaries) }), 1000)),
   speech: optional(array(object({ id, text: body, at, jobId: optional(id), kind: optional(choice(['progress', 'receipt'])) }), 1000)),
   summary: optional(summary), context: optional(object({ threadId: body, usedTokens: number, windowTokens: optional(number), at })), usage: optional(usage),

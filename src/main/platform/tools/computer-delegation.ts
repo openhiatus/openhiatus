@@ -223,6 +223,7 @@ export function createDelegatedComputerToolContribution(options: DelegatedComput
                 run.usage = { ...event.usage };
                 context.emit({ type: 'computer-usage', usage: addUsage(state.usage, run.usage) });
               } else if (event.type === 'computer-frame') context.emit(event);
+              else if (event.type === 'work-action') context.emit(event);
               else if (event.type === 'activity') context.emit({ type: 'activity', kind: event.kind, title: `Computer worker: ${event.title.slice(0, 200)}` });
             };
             let result: Outcome;
