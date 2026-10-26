@@ -1,6 +1,8 @@
 import { packager } from '@electron/packager';
 import { readFile, writeFile, cp } from 'node:fs/promises';
 import path from 'node:path';
+import { copyWindowsRuntime } from './windows-runtime.mjs';
+import { checkWindowsPackageDependencies } from './windows-package-dependencies.mjs';
 const manifest = JSON.parse(await readFile('package.json', 'utf8'));
 // Electron's executable runs the isolated ESM host in Node mode. Keep the SDK,
 // WASM assets and native CUA on disk; no global Node or CLI is required.
@@ -14,6 +16,8 @@ const outputs = await packager({ dir: '.', out: process.env.OPENHIATUS_PACKAGE_O
   win32metadata: { CompanyName: manifest.productName, FileDescription: `${manifest.productName} Sprachassistent`, ProductName: manifest.productName }
 });
 for (const output of outputs) {
+  await copyWindowsRuntime(output);
+  await checkWindowsPackageDependencies(output);
   const readme = `openHiatus – Version ${manifest.version}
 
 Nach Setup: openHiatus im Windows-Startmenü öffnen.

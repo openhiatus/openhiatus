@@ -4,6 +4,8 @@ Ab Version 0.0.20 lässt sich openHiatus als einzelne `openHiatus-Setup-<Version
 
 Die Alpha-Setup-Datei ist noch nicht digital signiert. Windows kann deshalb eine SmartScreen-Warnung anzeigen. Eine veröffentlichte Download-Version oder eine Prüfung auf einer frisch aufgesetzten Windows-VM wird mit dem lokalen Build nicht behauptet.
 
+Ab 0.0.28 enthält das Paket zusätzlich die unveränderte Microsoft-C++-Laufzeit `vcruntime140.dll` für die mitgelieferte native `@ubjs/node`-Abhängigkeit. Sie liegt auch direkt neben dem nativen Addon, damit dessen DLL-Suchpfad keine globale Entwicklerinstallation voraussetzt. Der Pakettest prüft den tatsächlich geladenen DLL-Pfad. Dies ist unabhängig vom Speichern der Vollzugriffsbestätigung und kein Nachweis für einen bestimmten Fehler auf einem anderen PC.
+
 ## Installation
 
 1. Die für diese Version gebaute Setup-Datei öffnen und eine Sprache wählen: Englisch, Spanisch, Französisch, Deutsch, Chinesisch (vereinfacht), Japanisch oder Portugiesisch (Brasilien).
@@ -34,6 +36,16 @@ openHiatus schließen und in den Windows-Einstellungen unter **Apps → Installi
 
 Das Profil unter `%APPDATA%\openhiatus` einschließlich gespeicherter Zugänge sowie eigene Dateien bleiben erhalten. Eine erneute Installation kann das Profil weiterverwenden. Deinstallation ist daher keine Löschung persönlicher Daten.
 
+## Wenn die erste Bestätigung nicht gespeichert wird
+
+**Vollzugriff bestätigen** speichert die Zustimmung im lokalen Profil, bevor Agentenarbeit erlaubt wird. Dafür werden weder ein Modellkonto noch eine Internetverbindung benötigt. Scheitert der Schreibvorgang, bleibt die Zustimmung zurückgenommen; ab 0.0.28 zeigt die Einrichtung die Fehlerdetails direkt an. Bei mehreren wartenden Schreibaufträgen bleibt die ursprüngliche Fehlerursache erhalten.
+
+`EPERM` oder `EBUSY` beim Ersetzen von `state.json` können beispielsweise durch eine Dateisperre entstehen; `ENOSPC` weist auf fehlenden Speicherplatz hin. Fehlercodes und der betroffene Vorgang sind für die Diagnose entscheidend. Das Setup speichert das Profil außerhalb des Programmordners. Eine zusätzliche Installation von Node.js oder Electron behebt einen solchen Profilfehler nicht.
+
+Der Speicher-Worker wartet bei kurzen Windows-Dateisperren insgesamt höchstens geplant 1,27 Sekunden zuzüglich Dateisystemzeit. Er wiederholt ausschließlich das Ersetzen derselben fertig geschriebenen Tempdatei, keine Agentenaktion. Dauerhafte Sperren und fehlende Rechte bleiben Fehler.
+
+Beim Schließen wartet die App weiterhin auf das Speichern. Bei einem Fehler oder nach zehn Sekunden bietet ein nativer Windows-Dialog **Erneut versuchen / Weiter warten**, **Trotzdem beenden** und **Abbrechen** an. Nur **Trotzdem beenden** erzwingt das Ende; dabei können ungespeicherte Änderungen verloren gehen. Die verwalteten Agentenprozesse enden und die Eingabesperre wird durch die unabhängige Überwachung des Hauptprozesses freigegeben. Bereits gespeicherte Profildaten werden nicht gelöscht.
+
 ## Setup bauen
 
 Für die Entwicklung gelten die [Voraussetzungen in der README](../README.md#development-requirements). Im Projektordner:
@@ -54,6 +66,8 @@ release/<Version>/installer/openHiatus-Setup-<Version>-x64.exe.sha256
 
 Der Build lädt einmalig den offiziellen [Inno-Setup-Compiler 7.1.0](https://github.com/jrsoftware/issrc/releases/tag/is-7_1_0), prüft seinen fest hinterlegten SHA-256-Wert und richtet ihn portabel unter `.tmp/build-tools` ein. Es werden keine globalen Compilerverknüpfungen oder Dateizuordnungen angelegt. Mit `OPENHIATUS_ISCC` kann ein bereits vorhandener kompatibler `ISCC.exe` ab Version 7.1 angegeben werden. Für einen bereits gebauten aktuellen Paketordner genügt `node scripts/installer.mjs`.
 
+Der Paketbau lädt außerdem das offizielle Microsoft Visual C++ Redistributable 14.44.35211.0 von Microsoft, prüft den fest hinterlegten SHA-256-Wert und extrahiert die benötigte x64-DLL und den Lizenztext mit dem Windows-Werkzeug `expand.exe`. Er führt dessen Installer nicht aus und kopiert keine DLL aus `System32`. Microsoft beschreibt diese Bereitstellung im Anwendungsordner unter [Local deployment](https://learn.microsoft.com/en-us/cpp/windows/deployment-in-visual-cpp#local-deployment); Updates dieser mitgelieferten Laufzeit müssen mit neuen App-Paketen erfolgen. Paket- und Setupbau verweigern fehlende oder veränderte Laufzeitdateien. Ein Importtabellencheck erfasst weitere C++-Laufzeitabhängigkeiten, die bei SDK-Updates ergänzt werden müssen.
+
 ## Was die Installationstests prüfen
 
 `npm run test:installer` baut eigene Test-Setups mit eindeutiger App-ID, eigenem Windows-Registrierungseintrag, eigenen Verknüpfungen und Ordnern unter `.test-data`. Es verwendet synthetische Daten und ein separates App-Profil. Das normale openHiatus-Profil und seine Autostartregistrierung werden nicht verändert.
@@ -67,3 +81,5 @@ Der eigene Setup-Assistent wird in allen sieben Sprachen bis zur Installationsau
 Für einen anschließenden manuellen Durchlauf enthält `artifacts/openhiatus-installation-handson.json` die erzeugte Test-Setup-Datei, den Testnamen, Installationsordner und leeren Profilpfad. Ausschließlich diese isolierte Variante gibt den Profilpfad an den Startknopf und die Verknüpfungen weiter. Der Compiler akzeptiert diese Option nur für eine Test-App-ID und einen Unterordner von `.test-data`; normale Setups behalten ihre bisherigen Startargumente. Eine echte Anmeldung erfolgt beim manuellen Test durch den Nutzer. Zugangsdaten und persönliche Ergebnisse werden nicht als Testnachweise veröffentlicht.
 
 Generierte Nachweise stehen unter `artifacts`; Pakete, Compiler, synthetische Profile und Bilder bleiben ignoriert. Diese lokale Prüfung ersetzt weder Tests auf frischen Windows-Versionen noch eine signierte Veröffentlichung.
+
+`npm run test:installation-recovery` prüft zusätzlich echte Windows-Dateisperren beim Bestätigen des Vollzugriffs: eine kurze Sperre, eine dauerhaft abgewiesene Speicherung, einen erfolgreichen erneuten Versuch und das ausdrücklich erzwungene Beenden. Derselbe Test läuft auch gegen die installierte EXE. Synthetische Profile und ein leerer Entwickler-Suchpfad ersetzen weiterhin keine frische Windows-10-VM.

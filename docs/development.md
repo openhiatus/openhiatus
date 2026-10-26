@@ -57,6 +57,7 @@ npm run test:storage-ui
 npm run test:memory-storage-ui
 npm run test:work-history-ui
 npm run test:onboarding-ui
+npm run test:installation-recovery
 npm run test:memory-ui
 npm run test:computer-images
 npm run test:computer-preview
