@@ -65,7 +65,10 @@ try {
   assert.equal(await page.locator('.sidebar-language').evaluate(element => element.nextElementSibling?.classList.contains('workspace-link')), true);
   // The menu must be discoverable from the conversation even before consent.
   await expect(selector).toContainText('Language'); await expect(selector).toContainText('语言');
-  await selector.click(); await menu.getByRole('menuitemradio', { name: 'Deutsch', exact: true }).focus();
+  await selector.click();
+  // Popover toggle dispatch is asynchronous; wait for its initial focus before testing navigation.
+  await expect(selector).toHaveAttribute('aria-expanded', 'true');
+  await expect(menu.getByRole('menuitemradio', { name: 'Deutsch', exact: true })).toBeFocused();
   await page.keyboard.press('Home'); await expect(menu.getByRole('menuitemradio', { name: 'English', exact: true })).toBeFocused();
   await page.keyboard.press('End'); await expect(menu.getByRole('menuitemradio', { name: 'Português (Brasil)', exact: true })).toBeFocused();
   await page.keyboard.press('ArrowUp'); await expect(menu.getByRole('menuitemradio', { name: '日本語', exact: true })).toBeFocused();

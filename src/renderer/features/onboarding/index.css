@@ -12,18 +12,21 @@
 .onboarding-content select, .onboarding-content input { width: 100%; max-width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: 9px; background: #172111; color: inherit; }
 .onboarding-content button:focus-visible, .onboarding-content summary:focus-visible, .onboarding-content select:focus-visible, .onboarding-content input:focus-visible { outline: 3px solid #c5e39b; outline-offset: 3px; }
 .onboarding-content summary { cursor: pointer; padding: 12px 0; font-weight: 600; }
-.onboarding-content .field-label { display: block; margin-top: 16px; }
+.onboarding-content .field-label { display: block; margin-top: 16px; margin-bottom: 6px; font-size: 15px; font-weight: 600; }
 .onboarding-content .settings-card { margin: 12px 0; }
 .onboarding-content .full-access-notice { margin: 24px 0; font-size: 15px; }
 .onboarding-content .full-access-notice p { font-size: 15px; }
 .onboarding-content .full-access-notice button { height: auto; }
 .onboarding-language { padding: 16px; background: #202c19; border-radius: 12px; }
 .onboarding-language select { flex: 1; min-width: 170px; }
-.onboarding-progress { padding: 0; margin: 20px 0 0; list-style: none; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
-.onboarding-progress li { display: flex; align-items: center; gap: 8px; color: #a4b697; font-size: 12px; line-height: 1.4; }
-.onboarding-progress li > span:first-child { display: grid; place-items: center; width: 28px; height: 28px; border: 1px solid #526344; border-radius: 50%; flex: 0 0 28px; }
-.onboarding-progress li[aria-current] { color: #b8cf94; font-weight: 700; }
-.onboarding-progress li[aria-current] > span:first-child { background: #b8cf94; border-color: #b8cf94; color: #182111; }
+.onboarding-progress { padding: 0; margin: 20px 0 0; list-style: none; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+.onboarding-progress li { min-width: 0; }
+.onboarding-progress button { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%; height: 100%; padding: 8px 4px; border: 1px solid transparent; border-radius: 10px; background: transparent; color: #a4b697; font-size: 12px; line-height: 1.4; cursor: pointer; overflow-wrap: anywhere; }
+.onboarding-progress button:hover { background: #202c19; }
+.onboarding-progress button > span:first-child { display: grid; place-items: center; width: 28px; height: 28px; border: 1px solid #526344; border-radius: 50%; flex: 0 0 28px; }
+.onboarding-progress button[aria-current] { color: #b8cf94; font-weight: 700; border-color: #526344; background: #202c19; }
+.onboarding-progress button[aria-current] > span:first-child { background: #b8cf94; border-color: #b8cf94; color: #182111; }
+.onboarding-jump-hint { font-size: 13px; color: #a4b697; }
 .onboarding-model { margin: 16px 0; padding: 14px; background: #202c19; border-radius: 10px; }
 .onboarding-model svg { flex-shrink: 0; }
 .onboarding-tip { border-left: 3px solid #7d9562; padding: 10px 16px; background: #1c2817; }
@@ -40,8 +43,13 @@
 .onboarding-success h2 { display: flex; align-items: center; gap: 8px; }
 .onboarding-error { background: #38251e; color: #f2cab8; }
 .onboarding-resume { padding: 8px 20px; background: #202c19; }
+.onboarding-content textarea { display: block; width: 100%; max-width: 100%; resize: vertical; min-height: 90px; padding: 9px 12px; border: 1px solid var(--border); border-radius: 9px; background: #172111; color: inherit; font: inherit; font-size: 15px; }
+.onboarding-content textarea:focus-visible { outline: 3px solid #c5e39b; outline-offset: 3px; }
+.onboarding-model-select { margin: 16px 0; padding: 4px 16px; background: #202c19; border-radius: 12px; }
+.onboarding-model-select p { font-size: 14px; }
 @media (max-width: 650px) {
-  .onboarding-progress { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .onboarding-progress { gap: 4px; }
+  .onboarding-progress button { font-size: 11px; }
   .onboarding-content .settings-card-head { flex-wrap: wrap; }
   .onboarding-content .full-access-notice { display: block; }
   .onboarding-content .full-access-notice > svg { display: none; }

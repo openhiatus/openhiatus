@@ -6907,5 +6907,221 @@
     "完成设置",
     "設定を完了",
     "Concluir configuração"
+  ],
+  "Du und dein Agent": [
+    "You and your agent",
+    "Tú y tu agente",
+    "Vous et votre agent",
+    "您与您的助手",
+    "あなたとエージェント",
+    "Você e seu agente"
+  ],
+  "Wie möchtet ihr zusammenarbeiten? Alle Angaben sind freiwillig. Du kannst sie später unter „Agent & Nutzer“ ändern.": [
+    "How would you like to work together? All fields are optional. You can change them later under “Agent & user”.",
+    "¿Cómo quieres trabajar con tu agente? Todos los campos son opcionales. Puedes cambiarlos después en «Agente y usuario».",
+    "Comment souhaitez-vous travailler ensemble ? Tous les champs sont facultatifs. Vous pourrez les modifier dans « Agent et utilisateur ».",
+    "您希望如何与助手协作？所有信息均为选填，之后可在“助手与用户”中修改。",
+    "どのように協力したいですか？すべて任意です。後から「エージェントとユーザー」で変更できます。",
+    "Como você gostaria de trabalhar com seu agente? Todos os campos são opcionais. Você pode alterá-los depois em “Agente e usuário”."
+  ],
+  "Die Angaben werden in deinem Profil gespeichert und bei späteren Gesprächen als Kontext an deinen Modellanbieter gesendet. Trage nur ein, was du dafür teilen möchtest.": [
+    "These details are saved in your profile and sent to your model provider as context in future conversations. Only enter information you want to share for that purpose.",
+    "Estos datos se guardan en tu perfil y se envían a tu proveedor del modelo como contexto en futuras conversaciones. Introduce solo lo que quieras compartir con ese fin.",
+    "Ces informations sont enregistrées dans votre profil et transmises au fournisseur du modèle comme contexte lors des prochaines conversations. Saisissez uniquement ce que vous souhaitez partager à cette fin.",
+    "这些信息将保存到您的个人资料中，并在今后的对话中作为上下文发送给模型提供商。请仅填写您愿意为此分享的信息。",
+    "入力内容はプロフィールに保存され、今後の会話でモデル提供元に文脈として送信されます。その目的で共有してよい情報だけを入力してください。",
+    "Essas informações são salvas no seu perfil e enviadas ao provedor do modelo como contexto em conversas futuras. Preencha apenas o que deseja compartilhar para essa finalidade."
+  ],
+  "Angaben werden geladen …": [
+    "Loading your details…",
+    "Cargando tus datos…",
+    "Chargement de vos informations…",
+    "正在加载信息…",
+    "情報を読み込み中…",
+    "Carregando suas informações…"
+  ],
+  "Deine Angaben konnten nicht geladen werden. Du kannst erneut laden oder diesen Schritt überspringen.": [
+    "Your details could not be loaded. You can reload or skip this step.",
+    "No se han podido cargar tus datos. Puedes volver a cargarlos u omitir este paso.",
+    "Vos informations n’ont pas pu être chargées. Vous pouvez réessayer ou passer cette étape.",
+    "无法加载您的信息。您可以重新加载或跳过此步骤。",
+    "情報を読み込めませんでした。再読み込みするか、この手順をスキップできます。",
+    "Não foi possível carregar suas informações. Você pode recarregar ou pular esta etapa."
+  ],
+  "Wie soll dein Agent heißen?": [
+    "What would you like to name your agent?",
+    "¿Cómo quieres llamar a tu agente?",
+    "Quel nom souhaitez-vous donner à votre agent ?",
+    "您想给助手起什么名字？",
+    "エージェントにどんな名前を付けますか？",
+    "Que nome você quer dar ao seu agente?"
+  ],
+  "Wie soll er dich ansprechen?": [
+    "What should your agent call you?",
+    "¿Cómo debe llamarte tu agente?",
+    "Comment votre agent doit-il vous appeler ?",
+    "助手应该如何称呼您？",
+    "あなたをどう呼べばよいですか？",
+    "Como seu agente deve chamar você?"
+  ],
+  "Welche Rolle soll dein Agent übernehmen?": [
+    "What role should your agent take on?",
+    "¿Qué función debe desempeñar tu agente?",
+    "Quel rôle votre agent doit-il jouer ?",
+    "您希望助手担任什么角色？",
+    "エージェントにどんな役割を任せたいですか？",
+    "Qual deve ser o papel do seu agente?"
+  ],
+  "Zum Beispiel: geduldige Hilfe am Computer": [
+    "For example: patient help with my computer",
+    "Por ejemplo: ayuda paciente con el ordenador",
+    "Par exemple : une aide patiente pour utiliser mon ordinateur",
+    "例如：耐心地帮助我使用电脑",
+    "例：パソコン操作を根気よく手伝ってほしい",
+    "Por exemplo: ajuda paciente com o computador"
+  ],
+  "Was sollte er für die Zusammenarbeit über dich wissen?": [
+    "What should your agent know about you to help you?",
+    "¿Qué debería saber tu agente sobre ti para ayudarte?",
+    "Que doit savoir votre agent à votre sujet pour vous aider ?",
+    "为了更好地协作，助手应该了解您的哪些情况？",
+    "あなたを手伝うために、知っておいてほしいことはありますか？",
+    "O que seu agente deve saber sobre você para ajudar?"
+  ],
+  "Zum Beispiel: Ich kenne mich am PC noch wenig aus.": [
+    "For example: I am still new to using a computer.",
+    "Por ejemplo: Todavía tengo poca experiencia con el ordenador.",
+    "Par exemple : Je débute en informatique.",
+    "例如：我还不太熟悉电脑操作。",
+    "例：パソコンにはまだあまり慣れていません。",
+    "Por exemplo: Ainda tenho pouca experiência com computadores."
+  ],
+  "Wie möchtest du Antworten erhalten?": [
+    "How would you like your agent to respond?",
+    "¿Cómo prefieres recibir las respuestas?",
+    "Quel type de réponses préférez-vous ?",
+    "您希望助手如何回答？",
+    "どのような回答を希望しますか？",
+    "Como você prefere receber as respostas?"
+  ],
+  "Vorhandenen Stil beibehalten": [
+    "Keep the existing style",
+    "Mantener el estilo actual",
+    "Conserver le style actuel",
+    "保持现有风格",
+    "現在のスタイルを維持",
+    "Manter o estilo atual"
+  ],
+  "Kurz und direkt": [
+    "Brief and direct",
+    "Breve y directo",
+    "Bref et direct",
+    "简洁直接",
+    "簡潔で率直",
+    "Breve e direto"
+  ],
+  "Ausführlich mit Erklärungen": [
+    "Detailed, with explanations",
+    "Detallado, con explicaciones",
+    "Détaillé, avec des explications",
+    "详细并附带解释",
+    "詳しく説明",
+    "Detalhado, com explicações"
+  ],
+  "Schritt für Schritt, einfach erklärt": [
+    "Step by step, simply explained",
+    "Paso a paso, con explicaciones sencillas",
+    "Étape par étape, avec des explications simples",
+    "逐步引导，通俗易懂",
+    "手順ごとにわかりやすく",
+    "Passo a passo, com explicações simples"
+  ],
+  "Weitere Wünsche an den Agenten": [
+    "Other preferences for your agent",
+    "Otras preferencias para tu agente",
+    "Autres souhaits pour votre agent",
+    "对助手的其他要求",
+    "エージェントへのその他の希望",
+    "Outras preferências para seu agente"
+  ],
+  "Zum Beispiel: Bitte duze mich und vermeide Fachbegriffe.": [
+    "For example: Use a friendly tone and avoid jargon.",
+    "Por ejemplo: Tutéame y evita los términos técnicos.",
+    "Par exemple : Tutoie-moi et évite le jargon.",
+    "例如：请用亲切的语气，避免专业术语。",
+    "例：親しみやすい言葉遣いで、専門用語は避けてください。",
+    "Por exemplo: Fale de forma informal e evite termos técnicos."
+  ],
+  "Weitere vorhandene Angaben bleiben erhalten. Beim Wechseln des Schritts oder Pausieren werden Änderungen gespeichert. „Überspringen“ verwirft noch nicht gespeicherte Änderungen.": [
+    "Other existing details are kept. Changing steps or pausing saves your changes. “Skip” discards changes that have not yet been saved.",
+    "Los demás datos existentes se conservan. Al cambiar de paso o pausar, se guardan los cambios. «Omitir» descarta los cambios aún no guardados.",
+    "Les autres informations existantes sont conservées. Changer d’étape ou faire une pause enregistre vos modifications. « Passer » abandonne les modifications non encore enregistrées.",
+    "其他现有信息将保留。切换步骤或暂停时会保存修改。“跳过”会放弃尚未保存的修改。",
+    "その他の既存情報は保持されます。手順の移動や一時中断時に変更を保存します。「スキップ」で未保存の変更を破棄します。",
+    "As outras informações existentes são mantidas. Mudar de etapa ou pausar salva suas alterações. “Pular” descarta as alterações ainda não salvas."
+  ],
+  "Neu laden und Entwurf verwerfen": [
+    "Reload and discard draft",
+    "Volver a cargar y descartar el borrador",
+    "Recharger et abandonner le brouillon",
+    "重新加载并放弃草稿",
+    "下書きを破棄して再読み込み",
+    "Recarregar e descartar rascunho"
+  ],
+  "Überspringen": [
+    "Skip",
+    "Omitir",
+    "Passer",
+    "跳过",
+    "スキップ",
+    "Pular"
+  ],
+  "Modell für das Gespräch": [
+    "Conversation model",
+    "Modelo de conversación",
+    "Modèle de conversation",
+    "对话模型",
+    "会話用モデル",
+    "Modelo de conversa"
+  ],
+  "Zur Auswahl stehen die Modelle deiner verbundenen Zugänge. Weitere Zugänge kannst du unter „Konto verbinden“ hinzufügen.": [
+    "Choose from the models available through your connected accounts. Add more accounts under “Connect an account”.",
+    "Puedes elegir entre los modelos de tus cuentas conectadas. Añade más cuentas en «Conectar una cuenta».",
+    "Choisissez parmi les modèles de vos comptes connectés. Ajoutez d’autres comptes dans « Connecter un compte ».",
+    "可选择已连接账户提供的模型。您可在“连接账户”中添加其他账户。",
+    "接続済みアカウントのモデルから選べます。「アカウントを接続」で他のアカウントを追加できます。",
+    "Escolha entre os modelos das suas contas conectadas. Adicione outras contas em “Conectar uma conta”."
+  ],
+  "Name und Antwortwünsche gelten ab deinem ersten Gespräch. Dieser Verbindungstest verwendet nur eine feste Begrüßungsanfrage.": [
+    "Your name and response preferences apply from your first conversation. This connection test only uses a fixed greeting prompt.",
+    "El nombre y las preferencias de respuesta se aplican desde tu primera conversación. Esta prueba de conexión solo utiliza una solicitud de saludo fija.",
+    "Le nom et vos préférences de réponse s’appliquent dès votre première conversation. Ce test de connexion utilise uniquement une demande de salutation prédéfinie.",
+    "名字和回答偏好将从您的第一次正式对话起生效。此连接测试仅发送固定的问候请求。",
+    "名前と回答の希望は最初の会話から反映されます。この接続テストでは固定の挨拶文だけを送信します。",
+    "O nome e as preferências de resposta valem a partir da primeira conversa. Este teste de conexão usa apenas uma solicitação fixa de saudação."
+  ],
+  "Deine Änderungen sind noch nicht vollständig gespeichert. Versuche es erneut. Falls die Angaben inzwischen anderswo geändert wurden, lade sie neu.": [
+    "Your changes have not all been saved yet. Try again. If the details have changed elsewhere, reload them.",
+    "Todavía no se han guardado todos los cambios. Inténtalo de nuevo. Si los datos se han modificado en otro lugar, vuelve a cargarlos.",
+    "Toutes vos modifications ne sont pas encore enregistrées. Réessayez. Si les informations ont été modifiées ailleurs, rechargez-les.",
+    "您的修改尚未全部保存。请重试。如果信息已在其他地方被修改，请重新加载。",
+    "変更はまだすべて保存されていません。再試行してください。他の場所で変更された場合は、再読み込みしてください。",
+    "Nem todas as alterações foram salvas. Tente novamente. Se as informações foram alteradas em outro lugar, recarregue-as."
+  ],
+  "Wähle oben einen Schritt, um direkt dorthin zu wechseln.": [
+    "Select a step above to jump straight to it.",
+    "Selecciona un paso arriba para ir directamente a él.",
+    "Sélectionnez une étape ci-dessus pour y accéder directement.",
+    "点击上方任一步骤即可直接跳转。",
+    "上の手順を選ぶと、直接移動できます。",
+    "Selecione uma etapa acima para ir diretamente até ela."
+  ],
+  "Bestätige zuerst den Zugriffshinweis im Schritt „Willkommen bei openHiatus“.": [
+    "First acknowledge the access notice in “Welcome to openHiatus”.",
+    "Primero confirma el aviso de acceso en «Bienvenido a openHiatus».",
+    "Confirmez d’abord l’avis d’accès dans « Bienvenue dans openHiatus ».",
+    "请先在“欢迎使用 openHiatus”中确认访问权限说明。",
+    "まず「openHiatus へようこそ」でアクセスに関する案内を確認してください。",
+    "Primeiro confirme o aviso de acesso em “Boas-vindas ao openHiatus”."
   ]
 }

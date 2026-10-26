@@ -9,15 +9,23 @@ await mkdir('.test-data', { recursive: true }); await mkdir('artifacts', { recur
 const profile = process.env.OPENHIATUS_TEST_PROFILE ? path.resolve(process.env.OPENHIATUS_TEST_PROFILE) : await mkdtemp(path.resolve('.test-data/onboarding-'));
 if (!profile.startsWith(path.resolve('.test-data') + path.sep)) throw Error('Onboarding tests require a profile inside .test-data.');
 const fixture = process.env.OPENHIATUS_TEST_APP ? undefined : await createUiAppFixture('onboarding-build');
-let calls = 0, instance, delayed;
+let calls = 0, dialogCalls = 0, instance, delayed;
+const models = [];
 const errors = [];
 const server = createServer(async (request, response) => {
   try {
     let body = ''; for await (const chunk of request) body += chunk;
-    const input = JSON.parse(body); calls++;
-    assert.equal(input.model, 'setup-test'); assert.equal(input.messages.length, 1);
-    assert.ok(!input.tools?.length); assert.match(JSON.stringify(input.messages), /connection check/);
-    if (calls === 1) { response.writeHead(401, { 'Content-Type': 'application/json' }); response.end(JSON.stringify({ error: { message: 'Synthetic account failure' } })); return; }
+    const input = JSON.parse(body), setupCheck = JSON.stringify(input.messages).includes('connection check');
+    if (setupCheck) {
+      calls++; models.push(input.model);
+      assert.ok(['setup-test', 'setup-second'].includes(input.model)); assert.equal(input.messages.length, 1);
+      assert.ok(!input.tools?.length); assert.ok(!JSON.stringify(input.messages).includes('Nova'));
+      if (calls === 1) { response.writeHead(401, { 'Content-Type': 'application/json' }); response.end(JSON.stringify({ error: { message: 'Synthetic account failure' } })); return; }
+    } else {
+      dialogCalls++; assert.equal(input.model, 'setup-second');
+      const context = JSON.stringify(input.messages.filter(message => ['system', 'developer'].includes(message.role)));
+      for (const expected of ['Nova', 'Camille', 'Synthetic beginner context', 'Geduldige Computerhilfe', 'kleinen, leicht', 'Please avoid jargon.', 'Keep custom content.']) assert.ok(context.includes(expected), expected);
+    }
     const reply = () => {
       if (response.destroyed) return;
       response.writeHead(200, { 'Content-Type': 'text/event-stream' });
@@ -26,7 +34,7 @@ const server = createServer(async (request, response) => {
       }
       response.end('data: [DONE]\n\n');
     };
-    if (calls === 2) delayed = reply; else reply();
+    if (setupCheck && calls === 2) delayed = reply; else reply();
   } catch (error) { errors.push(String(error)); if (!response.headersSent) response.writeHead(500); response.end('{}'); }
 });
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
@@ -74,8 +82,40 @@ try {
     await page.screenshot({ path: `artifacts/openhiatus-onboarding-${width}.png` });
   }
   assert.equal(calls, 0);
+  const jump = title => setup.getByRole('navigation', { name: 'Einrichtung', exact: true }).getByRole('button', { name: title, exact: true }).click();
+  await jump('Die erste Antwort');
+  await expect(setup.getByRole('button', { name: 'Erste Antwort testen', exact: true })).toBeDisabled();
+  await jump('Willkommen bei openHiatus');
   await setup.getByRole('button', { name: 'Verstanden, Vollzugriff bestätigen', exact: true }).click();
   await setup.getByRole('button', { name: 'Weiter', exact: true }).click();
+  await expect(setup.locator('h1')).toHaveText('Du und dein Agent');
+  await checkStep('Du und dein Agent');
+  const originalIdentity = await page.evaluate(async () => (await window.openhiatus.memorySnapshot()).documents.filter(doc => ['agent', 'soul', 'user', 'core'].includes(doc.id)));
+  await setup.locator('#setup-agent-name').fill('Discard this draft');
+  await setup.getByRole('button', { name: 'Überspringen', exact: true }).click();
+  assert.deepEqual(await page.evaluate(async () => (await window.openhiatus.memorySnapshot()).documents.filter(doc => ['agent', 'soul', 'user', 'core'].includes(doc.id))), originalIdentity);
+  await jump('Du und dein Agent');
+  await expect(setup.locator('#setup-agent-name')).toHaveValue('');
+  await setup.locator('#setup-agent-name').fill('Nova');
+  await page.evaluate(async () => {
+    const doc = (await window.openhiatus.memorySnapshot()).documents.find(doc => doc.id === 'agent');
+    await window.openhiatus.editMemory(doc.id, doc.content + '\nKeep custom content.\n', doc.version);
+  });
+  await setup.getByRole('button', { name: 'Weiter', exact: true }).click();
+  await expect(setup.locator('.onboarding-error')).toBeVisible();
+  await expect(setup.locator('#setup-agent-name')).toHaveValue('Nova');
+  await expect(setup.locator('h1')).toHaveText('Du und dein Agent');
+  await setup.getByRole('button', { name: 'Neu laden und Entwurf verwerfen', exact: true }).click();
+  await expect(setup.locator('#setup-agent-name')).toHaveValue('');
+  await setup.locator('#setup-agent-name').fill('Nova');
+  await setup.locator('#setup-user-name').fill('Camille');
+  await setup.locator('#setup-agent-role').fill('Geduldige Computerhilfe');
+  await setup.locator('#setup-user-context').fill('Synthetic beginner context');
+  await setup.locator('#setup-reply-style').selectOption('guided');
+  await setup.locator('#setup-reply-notes').fill('Please avoid jargon.');
+  await page.screenshot({ path: 'artifacts/openhiatus-onboarding-identity.png' });
+  // A direct jump saves the identity, just like Next or Continue later.
+  await jump('Konto verbinden');
   await expect(setup.locator('h1')).toHaveText('Konto verbinden');
   await expect(setup.locator('h1')).toBeFocused();
   await checkStep('Konto verbinden');
@@ -86,12 +126,21 @@ try {
   await expect(setup).toHaveCount(0);
   await page.getByRole('button', { name: 'Einrichtung fortsetzen', exact: true }).click();
   await expect(setup.locator('h1')).toHaveText('Konto verbinden');
+  await setup.getByRole('button', { name: 'Später fortsetzen', exact: true }).click();
+  await page.locator('.connection-summary').click();
+  await expect(setup.locator('h1')).toHaveText('Willkommen bei openHiatus');
+  await jump('Du und dein Agent');
+  await expect(setup.locator('#setup-agent-name')).toHaveValue('Nova');
+  await expect(setup.locator('#setup-user-name')).toHaveValue('Camille');
+  await expect(setup.locator('#setup-reply-style')).toHaveValue('guided');
+  await jump('Konto verbinden');
   await setup.getByText('Anderen Anbieter oder lokalen Server verwenden', { exact: true }).click();
   await setup.locator('#setup-provider').selectOption('local');
   await setup.locator('#setup-local-url').fill(`http://127.0.0.1:${server.address().port}/v1`);
-  await setup.locator('#setup-local-models').fill('setup-test');
+  await setup.locator('#setup-local-models').fill('setup-test, setup-second');
   await setup.getByRole('button', { name: 'Speichern', exact: true }).click();
   await expect(setup.getByRole('button', { name: 'Weiter', exact: true })).toBeEnabled();
+  await expect(setup.locator('#setup-model')).toBeVisible();
   await setup.getByRole('button', { name: 'Weiter', exact: true }).click();
   await expect(setup.locator('h1')).toHaveText('Sprechen oder schreiben');
   await setup.getByText('Mikrofon und Stimme einrichten (optional)', { exact: true }).click();
@@ -113,23 +162,38 @@ try {
   delayed(); await expect(finish()).toBeDisabled(); await expect(setup.locator('.onboarding-success')).toHaveCount(0);
   await check().click();
   await expect(setup.locator('.onboarding-success')).toContainText('Hallo!', { timeout: 15000 });
+  const workModel = (await snapshot()).preferences.model;
+  await setup.locator('#setup-model').selectOption('local/setup-second');
+  await expect(finish()).toBeDisabled(); await expect(setup.locator('.onboarding-success')).toHaveCount(0);
+  await setup.locator('#setup-model').selectOption('local/setup-test');
+  await expect(finish()).toBeDisabled();
+  await setup.locator('#setup-model').selectOption('local/setup-second');
+  await check().click(); await expect(finish()).toBeEnabled();
+  assert.equal((await snapshot()).preferences.model, workModel);
+  assert.deepEqual(models, ['setup-test', 'setup-test', 'setup-test', 'setup-second']);
   await page.screenshot({ path: 'artifacts/openhiatus-onboarding-complete.png' });
   await finish().click(); await expect(setup).toHaveCount(0);
   assert.equal((await snapshot()).preferences.onboarding.status, 'complete');
   assert.equal((await snapshot()).workItems?.length ?? 0, 0);
+  await page.getByRole('textbox', { name: 'Dein Auftrag', exact: true }).fill('Synthetic onboarding conversation');
+  await page.getByRole('button', { name: 'Auftrag senden', exact: true }).click();
+  await expect.poll(() => dialogCalls).toBe(1);
+  await expect.poll(async () => (await snapshot()).messages.some(message => message.role === 'assistant' && message.text.includes('Hallo!'))).toBe(true);
   await instance.close(); instance = undefined;
   page = await launch(); setup = page.locator('.onboarding-view');
   await expect(setup).toHaveCount(0); assert.equal((await snapshot()).preferences.onboarding.status, 'complete');
   await page.getByRole('navigation', { name: 'Hauptnavigation' }).getByRole('button', { name: 'Einstellungen', exact: true }).click();
   await page.getByRole('button', { name: 'Schritt für Schritt einrichten', exact: true }).click();
-  await expect(setup).toBeVisible(); await expect(finish()).toBeDisabled();
+  await expect(setup.locator('h1')).toHaveText('Willkommen bei openHiatus');
+  await jump('Die erste Antwort'); await expect(finish()).toBeDisabled();
+  await jump('Du und dein Agent'); await expect(setup.locator('#setup-agent-name')).toHaveValue('Nova');
   await instance.close(); instance = undefined;
   const statePath = path.join(profile, 'state.json'), stored = JSON.parse(await readFile(statePath, 'utf8'));
   delete stored.state.preferences.onboarding; await writeFile(statePath, JSON.stringify(stored));
   page = await launch(); await expect(page.locator('.onboarding-view')).toHaveCount(0);
   assert.equal((await snapshot()).preferences.onboarding, undefined);
-  assert.equal(calls, 3); assert.deepEqual(errors, []);
-  console.log('Onboarding UI passed: seven languages, compact layout, explicit consent, defer/restart/resume, optional voice, real tool-free model check, failure/retry, Esc cancellation, completion/restart/reopen.');
+  assert.equal(calls, 4); assert.equal(dialogCalls, 1); assert.deepEqual(errors, []);
+  console.log('Onboarding UI passed: seven languages, compact layout, direct step navigation, optional identity/skip, stale edits, persistence/restart, real conversation identity, consent, defer/resume, optional voice, model selection/reset, tool-free check, failure/retry, Esc, completion and reopening from the start.');
 } catch (error) {
   if (instance) await (await instance.firstWindow()).screenshot({ path: 'artifacts/openhiatus-onboarding-failure.png' }).catch(() => {});
   throw error;

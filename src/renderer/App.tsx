@@ -22,8 +22,9 @@ export default function App() {
   const [view, setView] = useState<AppView>('chat');
   const [showActivity, setShowActivity] = useState(false);
   const [skillsVisited, setSkillsVisited] = useState(false);
+  const [setupFromStart, setSetupFromStart] = useState(false);
   const [memoryNavigation, setMemoryNavigation] = useState<{ requestId: number }>();
-  const navigate = (next: AppView) => { if (next === 'skills') setSkillsVisited(true); setView(next); };
+  const navigate = (next: AppView, fromStart = true) => { if (next === 'skills') setSkillsVisited(true); if (next === 'onboarding') setSetupFromStart(fromStart); setView(next); };
   const openIdentity = () => { setMemoryNavigation(current => ({ requestId: (current?.requestId ?? 0) + 1 })); navigate('memory'); };
   const session = useAppSession({ conversationVisible: view === 'chat', openConversation: () => navigate('chat'), openSettings: () => navigate('settings') });
   const { state } = session;
@@ -43,7 +44,7 @@ export default function App() {
     <HotkeyWarning hotkeys={state?.hotkeys} />
     {state && !session.acknowledged && view !== 'onboarding' && <FullAccessNotice acknowledged={false} busy={!!session.busyAction}
       onAcknowledge={() => void session.action('full-access', () => window.openhiatus.acknowledgeFullAccess(), t("Vollzugriff bestätigt. Richte jetzt deinen Modellanbieter ein."))} />}
-    {setupPending && view !== 'onboarding' && <div className="onboarding-resume"><button className="secondary-button" onClick={() => navigate('onboarding')}>{t('Einrichtung fortsetzen')}<ArrowRight size={16} /></button></div>}
+    {setupPending && view !== 'onboarding' && <div className="onboarding-resume"><button className="secondary-button" onClick={() => navigate('onboarding', false)}>{t('Einrichtung fortsetzen')}<ArrowRight size={16} /></button></div>}
     {(session.error || session.notice) && <div role={session.error ? 'alert' : 'status'} className={`banner ${session.error ? 'error' : ''}`}>
       <span>{session.error || session.notice}</span><button className="icon-button" aria-label={t("Hinweis schließen")} onClick={() => { session.setError(''); session.setNotice(''); }}><X size={15} /></button>
     </div>}
@@ -75,12 +76,12 @@ export default function App() {
       insertDisabledReason={session.skillInsertDisabledReason} favorites={state?.preferences.skillFavorites}
       onFavoriteChange={(path, level) => session.preference({ skillFavorites: withFavoriteLevel(state?.preferences.skillFavorites, path, level) })} /></div>}
     <div className="workspace-view settings-view-host" hidden={view !== 'settings'}>
-      <SettingsView state={state} workBusy={session.workBusy} summaryInProgress={session.summaryInProgress} onOpenIdentity={openIdentity} onOpenOnboarding={() => navigate('onboarding')}
+      <SettingsView state={state} workBusy={session.workBusy} summaryInProgress={session.summaryInProgress} onOpenIdentity={openIdentity} onOpenOnboarding={() => navigate('onboarding', true)}
         onPreference={session.preference} onError={session.report} onNotice={session.setNotice}
         voice={{ phase: session.phase, seconds: session.seconds, devices: session.devices, audioBusy: session.audioBusy, speechReady: session.speechReady,
           startRecording: session.startRecording, testSpeech: session.testSpeech, cancelAudio: session.cancelAudio, clearSpeech: session.clearSpeech, stopEarcons: session.stopEarcons,
           saveSpeechKey: key => window.openhiatus.saveSpeechKey(key), removeSpeechKey: () => window.openhiatus.removeSpeechKey() }} />
     </div>
-    {view === 'onboarding' && state && <OnboardingView state={state} session={session} onClose={() => navigate('chat')} />}
+    {view === 'onboarding' && state && <OnboardingView state={state} session={session} fromStart={setupFromStart} onClose={() => navigate('chat')} />}
   </WorkspaceShell>;
 }
