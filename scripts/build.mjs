@@ -5,6 +5,10 @@ import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 await mkdir('dist', { recursive: true });
 await mkdir('dist/native', { recursive: true });
+await mkdir('.tmp/build-tools', { recursive: true });
+execFileSync(path.join(process.env.WINDIR || 'C:\\Windows', 'Microsoft.NET', 'Framework64', 'v4.0.30319', 'csc.exe'),
+  ['/nologo', '/target:exe', '/reference:System.Drawing.dll', `/out:${path.resolve('.tmp/build-tools/openhiatus-icon.exe')}`, path.resolve('resources/openhiatus-icon.cs')], { windowsHide: true, stdio: 'inherit' });
+execFileSync(path.resolve('.tmp/build-tools/openhiatus-icon.exe'), [path.resolve('dist/openhiatus.ico'), path.resolve('dist/openhiatus.png')], { windowsHide: true, stdio: 'inherit' });
 execFileSync(path.join(process.env.WINDIR || 'C:\\Windows', 'Microsoft.NET', 'Framework64', 'v4.0.30319', 'csc.exe'),
   ['/nologo', '/target:exe', `/out:${path.resolve('dist/native/openhiatus-input-guard.exe')}`, path.resolve('src/main/openhiatus-input-guard.cs')], { windowsHide: true, stdio: 'inherit' });
 execFileSync(path.join(process.env.WINDIR || 'C:\\Windows', 'Microsoft.NET', 'Framework64', 'v4.0.30319', 'csc.exe'),

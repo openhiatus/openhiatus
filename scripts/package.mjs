@@ -6,7 +6,9 @@ const manifest = JSON.parse(await readFile('package.json', 'utf8'));
 // WASM assets and native CUA on disk; no global Node or CLI is required.
 const outputs = await packager({ dir: '.', out: process.env.OPENHIATUS_PACKAGE_OUT || path.join('release', manifest.version), name: manifest.productName, platform: 'win32', arch: 'x64',
   electronVersion: manifest.devDependencies.electron, appVersion: manifest.version, overwrite: true, asar: false, prune: true,
-  ignore: [/^\/release($|\/)/, /^\/artifacts($|\/)/, /^\/\.test-data($|\/)/, /^\/\.tmp($|\/)/, /^\/\.git($|\/)/,
+  icon: path.resolve('dist/openhiatus.ico'),
+  ignore: [/^\/release($|\/)/, /^\/artifacts($|\/)/, /^\/\.test-data($|\/)/, /^\/\.tmp($|\/)/, /^\/\.git($|\/)/, /^\/\.github($|\/)/,
+    /^\/resources\/(?:windows-installer\.iss|openhiatus-icon\.cs)$/,
     /^\/src($|\/)/, /^\/tests($|\/)/, /^\/scripts($|\/)/, /^\/benchmarks($|\/)/, /^\/skills($|\/)/, /\.lnk$/, /agent-host-test\.mjs/, /\/node_modules\/@openai\/codex/],
   extraResource: [path.resolve('dist/native')],
   win32metadata: { CompanyName: manifest.productName, FileDescription: `${manifest.productName} Sprachassistent`, ProductName: manifest.productName }
@@ -14,7 +16,8 @@ const outputs = await packager({ dir: '.', out: process.env.OPENHIATUS_PACKAGE_O
 for (const output of outputs) {
   const readme = `openHiatus – Version ${manifest.version}
 
-Start: openHiatus.exe doppelklicken. Das vollständige Paket zusammen behalten.
+Nach Setup: openHiatus im Windows-Startmenü öffnen.
+Ohne Setup: openHiatus.exe doppelklicken und den vollständigen Paketordner zusammen behalten.
 openHiatus bringt Electron, die Pi-Laufzeit, den Windows-Prozessschutz und die Desktopsteuerung mit.
 Node.js, ein globales Pi/Codex und OpenClaw sind nicht erforderlich.
 
@@ -35,9 +38,16 @@ Persönliche Skill-Sammlungen werden nicht mitgeliefert.
 Unter Einstellungen → Bedienung → Windows-Autostart kannst du „Mit Windows starten“
 einschalten. Die App startet nach der Windows-Anmeldung minimiert in der Taskleiste.
 Ein Klick auf das Taskleistensymbol oder ein manueller App-Start öffnet das Fenster.
-Der Autostart ist zunächst aus. Lass den Paketordner an einem festen Ort; nach einem
-Verschieben oder Paketwechsel die Option im neuen Paket erneut einschalten.
-Vor dem Entfernen des Pakets kannst du die Option wieder ausschalten.
+Der Autostart ist zunächst aus. Setup-Updates behalten den Installationsordner und
+die Windows-Autostartauswahl bei. Beim Wechsel von einem portablen Paket zur installierten
+App die Option dort erneut einschalten. Bei portabler Nutzung den Paketordner an einem
+festen Ort lassen und Autostart vor dem Entfernen ausschalten.
+
+Updates: openHiatus schließen und die neuere Setup.exe öffnen. Die Installation liegt
+unter %LOCALAPPDATA%\\Programs\\openHiatus und benötigt keine Administratorrechte.
+Deinstallation: openHiatus in den installierten Apps der Windows-Einstellungen entfernen.
+Einstellungen, Zugänge, Gedächtnis und eigene Dateien bleiben erhalten.
+Siehe Dokumentation/windows-installation.md für Einzelheiten.
 
 F8 startet/beendet die Aufnahme. F9 sendet den Entwurf bei aktiviertem „Transkript prüfen“.
 Belegt eine andere App die Tasten, zeigt openHiatus einen sichtbaren Hinweis.

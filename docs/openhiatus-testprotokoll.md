@@ -1,5 +1,19 @@
 # openHiatus – Testprotokoll
 
+## 0.0.20: Installation, Update und Deinstallation unter Windows – 25. Oktober 2026
+
+Der neue Inno-Setup-Build erzeugt eine einzelne, noch unsignierte x64-Setup-Datei mit SHA-256-Prüfsumme. Die Installation erfolgt pro Benutzer ohne angeforderte Rechteerhöhung, mit Startmenü-Eintrag und optionalem Desktop-Symbol. Updates verwenden denselben Programmpfad; das bestehende Profil bleibt außerhalb des Installationsbesitzes. Anleitung und Prüfbefehle stehen unter [Windows-Installation](windows-installation.md).
+
+`npm run check` besteht mit Architekturprüfung, Typprüfung und **814 Tests** ohne Fehler oder Auslassungen. `npm run package` einschließlich Build und die anschließende Setup-Erzeugung bestehen. Die tatsächliche deutsche Setup-Oberfläche wurde bedient und visuell geprüft: Begrüßung, optionales Desktop-Symbol, direktes Installieren und Abbrechen.
+
+`npm run test:installer` besteht mit eindeutigen Test-Registrierungen, eigenen Verknüpfungen und separaten Profilen. Geprüft sind Neuinstallation, Update eines synthetischen älteren Pakets, erneute Installation, Downgrade-Sperre, Erhalt gespeicherter Einstellungen und einer in Windows deaktivierten Autostartregistrierung, richtige Verknüpfungsziele sowie vollständige Entfernung des eigenen Installationsbesitzes. Persönliche und unbekannte Dateien bleiben erhalten. Eine fremde Programmkopie behält ihre Autostartregistrierung. Die Bereinigung veralteter Paketdateien widersteht relativen Ausbrüchen, absoluten Pfaden und einer Verzeichnisverknüpfung auf ein außerhalb liegendes Ziel.
+
+Eine tatsächlich laufende Test-App verhindert Update und Deinstallation, ohne beendet zu werden. Kurzzeitige Dateisperren beim Prozessende werden bis zu zwei Sekunden abgewartet. Die installierte unveränderte Anwendung besteht außerdem den Gesprächs-/Worker-Dateiablauf und die echte native Desktopprüfung ohne globales Node oder Codex im Suchpfad. Die Modellantworten stammen dabei von lokalen synthetischen Servern; bestehende Benutzerprofile und echte Modellzugänge werden nicht verwendet.
+
+`npm run test:package` besteht vollständig mit den zehn bestehenden Paketabläufen einschließlich Gesprächsverlauf, Audioauswahl, Arbeitsanzeige, Identitätsdateien, Fast-Auswahl, Kalender-Einrichtung, Bildschirmhilfe, Desktopübernahme und Autostart. Ein erster Lauf der Bildschirmhilfeprüfung traf auf eine korrekt verworfene veraltete Aufnahme; der anschließende vollständige Paketlauf bestand unverändert. Diese native Prüfung setzt einen während Beobachtung und Markierung unveränderten Testdesktop voraus.
+
+Dies ist eine lokale Alpha-Abnahme, keine Prüfung auf einer frisch aufgesetzten Windows-VM. Signierung, öffentliche Release-Downloads und automatische Updateverteilung bleiben außerhalb dieser Lieferung. Generierte Installationsdateien, Protokolle, Profile und Bilder bleiben ignoriert.
+
 ## Berichte und Beobachtungskennungen – 23. Oktober 2026
 
 Die Computerlaufzeit erhält einen ausdrücklichen terminalen Berichtsrückweg. Begrenzte verschachtelte Beobachtungen und Tabellen mit mehr als 20 Zeilen werden als Daten transportiert; ein nützlicher Bericht wird nicht wegen einer undokumentierten kleinen Stringlisten-Grenze verworfen. Die fachliche Prüfung bleibt beim Arbeitsmodell. Der Berichtsabschluss beendet den Teilauftrag und wartet auf die bestehende Freigabe; er startet keine weitere Modellrunde. JSON-Textabschlüsse bleiben ein kompatibler Rückweg.
