@@ -48,8 +48,13 @@ function providerInput(value: unknown): ProviderInput {
   }
   return result;
 }
-export function settingsHandlers({ controller, platform }: IpcPorts): Pick<HandlerMap, 'savePreferences' | 'signInChatGPT' | 'cancelChatGPTSignIn' | 'signOutChatGPT' | 'openChatGPTUsage' | 'saveProvider' | 'testProvider' | 'removeProvider' | 'listSkills' | 'openSkillsFolder'> {
+export function settingsHandlers({ controller, platform }: IpcPorts): Pick<HandlerMap, 'autostartSettings' | 'setAutostart' | 'savePreferences' | 'signInChatGPT' | 'cancelChatGPTSignIn' | 'signOutChatGPT' | 'openChatGPTUsage' | 'saveProvider' | 'testProvider' | 'removeProvider' | 'listSkills' | 'openSkillsFolder'> {
   return {
+    autostartSettings: command('autostartSettings', 0, noArgs, () => platform.autostartSettings()),
+    setAutostart: command('setAutostart', 1, args => {
+      if (typeof args[0] !== 'boolean') throw new Error('Ungültige Autostart-Einstellung.');
+      return [args[0]];
+    }, enabled => platform.setAutostart(enabled)),
     savePreferences: command('savePreferences', 1, args => [preferences(args[0])], patch => controller.savePreferences(patch)),
     signInChatGPT: command('signInChatGPT', 0, noArgs, () => controller.signInChatGPT()),
     cancelChatGPTSignIn: command('cancelChatGPTSignIn', 0, noArgs, () => controller.cancelChatGPTSignIn()),

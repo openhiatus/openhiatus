@@ -32,6 +32,13 @@ Eigene Skills können unter %APPDATA%\\openhiatus\\pi\\skills abgelegt werden.
 Der Hilfe-Skill bildschirmhilfe wird einmalig ins Profil kopiert und bleibt dort bearbeitbar.
 Persönliche Skill-Sammlungen werden nicht mitgeliefert.
 
+Unter Einstellungen → Bedienung → Windows-Autostart kannst du „Mit Windows starten“
+einschalten. Die App startet nach der Windows-Anmeldung minimiert in der Taskleiste.
+Ein Klick auf das Taskleistensymbol oder ein manueller App-Start öffnet das Fenster.
+Der Autostart ist zunächst aus. Lass den Paketordner an einem festen Ort; nach einem
+Verschieben oder Paketwechsel die Option im neuen Paket erneut einschalten.
+Vor dem Entfernen des Pakets kannst du die Option wieder ausschalten.
+
 F8 startet/beendet die Aufnahme. F9 sendet den Entwurf bei aktiviertem „Transkript prüfen“.
 Belegt eine andere App die Tasten, zeigt openHiatus einen sichtbaren Hinweis.
 Die andere Anwendung bei Bedarf schließen und openHiatus neu starten oder die Schaltflächen im Fenster verwenden.

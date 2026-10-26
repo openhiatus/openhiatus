@@ -36,12 +36,16 @@ import { createComputerImageProcessor } from './computer-images';
 import { sharedDesktopCoordinator } from './desktop-coordinator';
 import { DesktopControlOverlay } from './desktop-control-overlay';
 import { startDesktopProtection, type ProtectDesktop } from './desktop-protection';
+import { AUTOSTART_ARGUMENT, autostartUnavailableReason, WindowsAutostart } from './windows-autostart';
 
 app.setName(APP_DISPLAY_NAME);
 app.setAppUserModelId('local.openhiatus.assistant');
 const profileArg = process.argv.find(arg => arg.startsWith('--data-dir='))?.slice('--data-dir='.length);
 const dataDirectory = profileArg && path.isAbsolute(profileArg) ? profileArg : path.join(app.getPath('appData'), APP_SLUG);
 app.setPath('userData', dataDirectory);
+const autostart = new WindowsAutostart({ app, executable: process.execPath,
+  unavailableReason: autostartUnavailableReason(process.platform, app.isPackaged, profileArg !== undefined) });
+const startedAtLogin = process.argv.includes(AUTOSTART_ARGUMENT);
 const locked = app.requestSingleInstanceLock();
 if (!locked) app.quit();
 let window: BrowserWindow | undefined, controller: AppController | undefined;
@@ -177,7 +181,7 @@ async function createApp(): Promise<void> {
   await controller.initialize();
   await memory.initializeProfile(controller.snapshot().preferences.assistantProfile ?? { name: '', personalityId: 'balanced', templates: [] });
   const rendererFile = path.join(__dirname, 'renderer', 'index.html'), rendererUrl = pathToFileURL(rendererFile).href;
-  window = new BrowserWindow({ width: 1360, height: 900, minWidth: 560, minHeight: 440, title: APP_DISPLAY_NAME, backgroundColor: '#131714', autoHideMenuBar: true,
+  window = new BrowserWindow({ width: 1360, height: 900, minWidth: 560, minHeight: 440, show: !startedAtLogin, title: APP_DISPLAY_NAME, backgroundColor: '#131714', autoHideMenuBar: true,
     webPreferences: { preload: path.join(__dirname, 'preload.cjs'), nodeIntegration: false, contextIsolation: true, sandbox: true, webSecurity: true, spellcheck: false, backgroundThrottling: false } });
   window.removeMenu();
   guidanceOverlay = new GuidanceOverlay(() => {
@@ -247,6 +251,7 @@ async function createApp(): Promise<void> {
     disconnectGoogleCalendar: () => calendarAuth.disconnect(), selectGoogleCalendar: async id => calendarAuth.select(id), googleCalendarEvents: query => calendar.list(query, AbortSignal.timeout(30000)),
     openGoogleCalendarSetup: () => shell.openExternal('https://console.cloud.google.com/apis/library/calendar-json.googleapis.com'),
   }, platform: {
+    autostartSettings: () => autostart.read(), setAutostart: enabled => autostart.set(enabled),
     stopActivityPresence,
     openChatGPTUsage: () => shell.openExternal('https://chatgpt.com/settings/usage'),
     openWorkspace: async () => { const error = await shell.openPath(workspace); if (error) throw new Error('Arbeitsordner konnte nicht geöffnet werden.'); },
@@ -269,7 +274,10 @@ async function createApp(): Promise<void> {
     if (!trustedRenderer(event)) return { ok: false, error: 'Unzulässiger Aufruf.' };
     return ipc.dispatch(method, args);
   });
-  await window.loadFile(rendererFile); void controller.start();
+  await window.loadFile(rendererFile);
+  // Show without taking focus, then keep the normal window minimized in the taskbar.
+  if (startedAtLogin) { window.showInactive(); window.minimize(); }
+  void controller.start();
   let registered = false;
   try { registered = globalShortcut.register('CommandOrControl+Alt+F12', () => { stopActivityPresence(); window?.webContents.send('openhiatus:emergency-stop'); void controller?.stop().catch(() => {}); }); } catch { /* Local Stop remains available. */ }
   if (!registered) controller.reportError(new Error('Globaler Stopp-Hotkey ist belegt. Stopp im Fenster und Escape bleiben verfügbar.'));
@@ -294,7 +302,10 @@ async function createApp(): Promise<void> {
     if ((input.key === 'F8' || input.key === 'F9') && registeredVoiceKeys[input.key] && !input.control && !input.alt && !input.shift && !input.meta) event.preventDefault();
   });
 }
-app.on('second-instance', () => { window?.restore(); window?.focus(); });
+app.on('second-instance', (_event, argv) => {
+  if (argv.includes(AUTOSTART_ARGUMENT)) return;
+  window?.show(); window?.restore(); window?.focus();
+});
 app.on('window-all-closed', () => app.quit());
 app.on('before-quit', event => {
   if (disposed) return; event.preventDefault(); if (quitting) return; quitting = true; stopActivityPresence();

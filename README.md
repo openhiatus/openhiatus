@@ -5,7 +5,7 @@
 openHiatus is a desktop app that operates visible Windows applications with your choice of AI models. You describe a task by voice or text, keep the conversation going while up to two tasks run in the background, and each task returns a result you can trace. The project focuses on reliable, affordable computer use on your own device; see [Direction](#direction).
 
 ![Status: alpha](https://img.shields.io/badge/status-alpha-orange)
-![Version 0.0.18](https://img.shields.io/badge/version-0.0.18-blue)
+![Version 0.0.19](https://img.shields.io/badge/version-0.0.19-blue)
 ![Platform: Windows x64](https://img.shields.io/badge/platform-Windows%20x64-0078D6)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green)
 
@@ -78,6 +78,14 @@ Choose **Größe der Arbeitsanzeige** (Indicator size) in the same settings card
 Background tasks show **Hintergrundarbeit · Arbeitsplatz frei** in the app: you can keep using your mouse and keyboard. When the agent actually acquires desktop control, a mandatory amber frame and a large **Agent steuert deinen PC** banner appear on every connected display. Your ordinary physical mouse and keyboard input is blocked while the agent owns the desktop, including pauses between model requests. The banner remains visible even when the optional background indicator is disabled. Screen help that only observes and marks a target leaves input available.
 
 Press **Esc** to stop the agent and take over; the banner displays this shortcut throughout the takeover. **Ctrl+Alt+F12** also stops it. Registered **F8/F9** voice shortcuts remain available. Completion or Stop releases the input lock. A separate Windows helper releases it if the app exits or stops responding; the watchdog is about two seconds. Already admitted input may have taken effect. This prevents ordinary input conflicts on the current desktop; it is not a security boundary against other software injecting input and does not cover Windows secure desktops. See the [desktop-control contract](docs/desktop-control.md).
+
+### Start with Windows
+
+In the Windows package, open **Einstellungen → Bedienung → Windows-Autostart** and enable **Mit Windows starten** (Start with Windows). It is off until you enable it. After signing into Windows, openHiatus starts minimized in the taskbar without taking focus. Click the taskbar icon or launch the app manually to open its existing window. Another automatic launch leaves it minimized.
+
+The switch reads the actual Windows registration, including a disable action in Task Manager or Windows Settings. Enabling it explicitly reactivates the entry; merely opening the app does not rewrite it. Turning it off removes the app's login entry for the current Windows user. No administrator rights are required. The setting belongs to this computer and is not copied into agent preferences.
+
+Keep the complete package in a stable folder. After moving it or switching packages, enable the option in the new copy to update the executable path. Turn it off before removing the package. Source/development runs and launches with a separate `--data-dir` profile cannot change your normal Windows autostart. The minimized launch uses the fixed `--autostart` argument; debug and profile arguments are never registered.
 
 ### Keyboard shortcuts
 
@@ -187,6 +195,7 @@ npm run test:computer-preview
 npm run test:computer-model-ui
 npm run test:input-guard
 npm run test:desktop-control
+npm run test:autostart
 ```
 
 </details>

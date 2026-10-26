@@ -25,6 +25,8 @@ function fixture() {
     cancelGoogleCalendarLogin: async () => calendarSnapshot, disconnectGoogleCalendar: async () => calendarSnapshot, selectGoogleCalendar: async () => calendarSnapshot,
     googleCalendarEvents: async () => ({ events: [], now: '2026-10-24T00:00:00Z', timeZone: 'UTC' }), openGoogleCalendarSetup: capture('openGoogleCalendarSetup'),
   }, reportError: error => { errors.push(error); return 'Bereinigte Meldung'; }, platform: {
+    autostartSettings: () => ({ available: true, enabled: false, disabledByWindows: false }),
+    setAutostart: async enabled => { await capture('setAutostart')(enabled); return { available: true, enabled, disabledByWindows: false }; },
     stopActivityPresence: () => { calls.push({ name: 'stopActivityPresence', args: [] }); },
     openWorkspace: capture('openWorkspace'), openSkillsFolder: capture('openSkillsFolder'), openChatGPTUsage: capture('openChatGPTUsage'), revealFile: capture('revealFile'),
   } };
@@ -32,6 +34,7 @@ function fixture() {
 }
 
 const validArgs: { [Name in CommandName]: CommandArgs<Name> } = {
+  autostartSettings: [], setAutostart: [true],
   googleCalendarSnapshot: [], saveGoogleCalendarClient: [{ clientId: 'synthetic-client.apps.googleusercontent.com' }], connectGoogleCalendar: [], cancelGoogleCalendarLogin: [], disconnectGoogleCalendar: [], selectGoogleCalendar: ['primary'],
   googleCalendarEvents: [{ timeMin: '2026-10-24T00:00:00Z', timeMax: '2026-10-25T00:00:00Z' }], openGoogleCalendarSetup: [],
   snapshot: [], send: ['Hallo', 'request'], stop: [], stopJob: ['job'], savePreferences: [{ speakReplies: false }], acknowledgeFullAccess: [],
@@ -40,6 +43,17 @@ const validArgs: { [Name in CommandName]: CommandArgs<Name> } = {
   openWorkspace: [], revealFile: ['result.txt'], newConversation: [], memorySnapshot: [], rebuildMemory: [], startMemorySummary: [], readMemoryPeriod: [{}],
   editMemory: [{ id: 'core', content: 'Neue Fassung', expectedVersion: 1 }], decideMemoryProposal: ['proposal', 'approve'], memorySource: ['source'], searchMemory: ['Grüße'],
 };
+
+test('autostart crosses IPC as a boolean only; the renderer cannot choose a path, name or startup arguments', async () => {
+  const f = fixture();
+  assert.equal((await f.router.dispatch('setAutostart', [true])).ok, true);
+  assert.deepEqual(f.calls.at(-1), { name: 'setAutostart', args: [true] });
+  for (const args of [[], [null], ['true'], [1], [{ enabled: true, path: 'untrusted.exe' }], [true, '--untrusted']]) {
+    assert.equal((await f.router.dispatch('setAutostart', args)).ok, false);
+  }
+  assert.equal(f.calls.length, 1);
+  assert.throws(() => decodeResponse('autostartSettings', { ok: true, value: { available: true, enabled: 'yes', disabledByWindows: false } }));
+});
 
 test('device identity metadata is accepted and validated before preferences reach the application', async () => {
   const f = fixture();

@@ -8,6 +8,7 @@ import { COMPUTER_IMAGE_RETENTION_CALLS, COMPUTER_WORKING_MEMORY_CALLS } from '.
 import { ACTIVITY_OVERLAY_DEFAULT_SIZE, type SidebarMode } from '../../../shared/workspace-preferences';
 import { ProvidersView } from '../../ProvidersView';
 import type { AudioPhase } from '../voice';
+import { AutostartCard } from './autostart-card';
 
 export interface SettingsVoicePort {
   phase: AudioPhase;
@@ -155,6 +156,7 @@ export function SettingsView({ state, navigationRequest, onOpenIdentity, workBus
 
       <section id={`${id}-panel-behavior`} role="tabpanel" aria-labelledby={`${id}-tab-behavior`} hidden={tab !== 'behavior'} className="settings-tab-panel">
         <p className="settings-panel-intro">So hörst du Antworten und übergibst neue Aufträge.</p>
+        <AutostartCard active={tab === 'behavior' && ready} onError={onError} />
         <section className="settings-card settings-supporter">
           <div className="settings-card-head"><span className="service-icon"><Monitor size={22} aria-hidden="true" /></span><div><h2>Hilfe bei der PC-Bedienung</h2><p>Du bedienst den PC, dein Assistent leitet dich an.</p></div></div>
           <label className="settings-toggle"><span><strong>IT-Supporter</strong><small>Versteht Wünsche vorrangig als Bedarf an Anleitung. Zeigt passende Stellen auf dem Bildschirm und erklärt den nächsten Schritt.</small></span>
