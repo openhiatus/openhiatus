@@ -1,10 +1,11 @@
+import { localized, numberFormatter, t } from '../shared/i18n';
 import { useState } from 'react';
 import { ChevronDown, LoaderCircle, Square } from 'lucide-react';
 import type { BackgroundJob } from '../shared/contracts';
 
-const labels = { queued: 'Wartet', running: 'Arbeitet', stopping: 'Wird gestoppt', completed: 'Fertig', interrupted: 'Gestoppt', failed: 'Fehlgeschlagen' };
+const labels = localized({ queued: 'Wartet', running: 'Arbeitet', stopping: 'Wird gestoppt', completed: 'Fertig', interrupted: 'Gestoppt', failed: 'Fehlgeschlagen' });
 function statusLabel(job: BackgroundJob): string {
-  if (job.runtimeRetained && job.status === 'completed') return 'Ergebnis liegt vor · Sitzung noch offen';
+  if (job.runtimeRetained && job.status === 'completed') return t("Ergebnis liegt vor · Sitzung noch offen");
   return labels[job.status];
 }
 const needsAttention = (job: BackgroundJob) => job.status === 'failed';
@@ -12,9 +13,9 @@ function usageLabel(job: BackgroundJob): string | undefined {
   const usage = job.usage;
   if (!usage) return;
   const tokens = usage.inputTokens + usage.outputTokens + usage.cacheReadTokens + usage.cacheWriteTokens;
-  if (job.model.startsWith('chatgpt/')) return `${new Intl.NumberFormat('de-DE').format(tokens)} Token · ChatGPT-Kontingent`;
-  const price = usage.costUsd !== undefined ? `Schätzkosten ${new Intl.NumberFormat('de-DE', { minimumFractionDigits: 4, maximumFractionDigits: 6 }).format(usage.costUsd)} USD` : 'Preis nicht verfügbar';
-  return `${new Intl.NumberFormat('de-DE').format(tokens)} Token · ${price}`;
+  if (job.model.startsWith('chatgpt/')) return t("{0} Token · ChatGPT-Kontingent", numberFormatter().format(tokens));
+  const price = usage.costUsd !== undefined ? t("Schätzkosten {0} USD", numberFormatter({ minimumFractionDigits: 4, maximumFractionDigits: 6 }).format(usage.costUsd)) : t("Preis nicht verfügbar");
+  return t("{0} Token · {1}", numberFormatter().format(tokens), price);
 }
 /** Without `onToggle` the list is always open; the conversation view passes both to make it collapsible. */
 export function BackgroundJobs({ jobs, onStop, onError, open = true, onToggle }: {
@@ -32,16 +33,16 @@ export function BackgroundJobs({ jobs, onStop, onError, open = true, onToggle }:
   }
   const activeCount = jobs.filter(active).length;
   const attention = visible.some(needsAttention);
-  const summary = activeCount ? `${activeCount} aktiv · du kannst weiter sprechen` : 'Letzte Ergebnisse';
-  return <section className={`background-jobs ${onToggle ? 'collapsible' : ''} ${open ? 'open' : 'collapsed'}`} aria-label="Aufträge">
+  const summary = activeCount ? t("{0} aktiv · du kannst weiter sprechen", activeCount) : t("Letzte Ergebnisse");
+  return <section className={`background-jobs ${onToggle ? 'collapsible' : ''} ${open ? 'open' : 'collapsed'}`} aria-label={t("Aufträge")}>
     {onToggle
-      ? <button className="background-jobs-heading" aria-expanded={open} onClick={onToggle} title={open ? 'Aufträge einklappen' : 'Aufträge anzeigen'}>
-        <strong>Aufträge</strong><span>{activeCount ? `${activeCount} aktiv` : 'Letzte Ergebnisse'}</span>{attention && <em>Rückmeldung nötig</em>}<ChevronDown size={13} className={open ? 'rotate' : ''} />
+      ? <button className="background-jobs-heading" aria-expanded={open} onClick={onToggle} title={open ? t("Aufträge einklappen") : t("Aufträge anzeigen")}>
+        <strong>{t("Aufträge")}</strong><span>{activeCount ? `${activeCount} aktiv` : t("Letzte Ergebnisse")}</span>{attention && <em>{t("Rückmeldung nötig")}</em>}<ChevronDown size={13} className={open ? 'rotate' : ''} />
       </button>
-      : <div className="background-jobs-heading"><strong>Aufträge</strong><span>{summary}</span></div>}
+      : <div className="background-jobs-heading"><strong>{t("Aufträge")}</strong><span>{summary}</span></div>}
     {open && <ul>{visible.map(job => <li key={job.id} data-job-id={job.id} className={`background-job ${job.status}`}>
       <div><strong title={job.title}>{job.title}</strong><span>{statusLabel(job)}{job.error && <span className="background-job-error"> · {job.error}</span>}</span>{job.usage && <span className="background-job-usage">{usageLabel(job)}</span>}</div>
-      {active(job) && <button disabled={stopping.has(job.id) || job.status === 'stopping'} aria-label={`Auftrag stoppen: ${job.title}`} onClick={() => void stop(job.id)}>{stopping.has(job.id) || job.status === 'stopping' ? <LoaderCircle size={12} className="spin" /> : <Square size={10} />} Stopp</button>}
+      {active(job) && <button disabled={stopping.has(job.id) || job.status === 'stopping'} aria-label={t("Auftrag stoppen: {0}", job.title)} onClick={() => void stop(job.id)}>{stopping.has(job.id) || job.status === 'stopping' ? <LoaderCircle size={12} className="spin" /> : <Square size={10} />}{t(" Stopp")}</button>}
     </li>)}</ul>}
   </section>;
 }

@@ -1,6 +1,6 @@
 import { _electron as electron, expect } from '@playwright/test';
 import { createServer } from 'node:http';
-import { mkdir, mkdtemp, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import assert from 'node:assert/strict';
 import { createUiAppFixture } from './helpers/ui-app-fixture.mjs';
@@ -11,6 +11,8 @@ const fixture = process.env.OPENHIATUS_TEST_APP ? undefined : await createUiAppF
 let mode = 'background', dialogCalls = 0, workerCalls = 0, screenshot, frame, clickPoint, instance;
 let release; let gate; const resetGate = () => { gate = new Promise(resolve => { release = resolve; }); }; resetGate();
 const errors = [];
+const catalog = JSON.parse(await readFile('src/shared/locales/messages.json', 'utf8'));
+const languageColumns = ['en', 'es', 'fr', 'zh-CN', 'ja', 'pt-BR'];
 function find(value, match) {
   if (typeof value === 'string') return match(value);
   if (value && typeof value === 'object') for (const item of Object.values(value)) { const result = find(item, match); if (result) return result; }
@@ -87,6 +89,18 @@ try {
     const overlay = instance.windows().find(p => p !== page && p !== target && p.url().startsWith('data:'));
     assert.ok(overlay); const overlayWindow = await instance.browserWindow(overlay);
     await expect(overlay.locator('#title')).toHaveText('Agent steuert deinen PC'); await expect(overlay.locator('#escape')).toContainText('Esc');
+    if (next === 'complete') {
+      for (const language of [...languageColumns, 'de']) {
+        await page.evaluate(uiLanguage => window.openhiatus.savePreferences({ uiLanguage }), language);
+        const translate = source => language === 'de' ? source : catalog[source][languageColumns.indexOf(language)];
+        await expect(overlay.locator('html')).toHaveAttribute('lang', language);
+        await expect(overlay.locator('#title')).toHaveText(translate('Agent steuert deinen PC'));
+        await expect(overlay.locator('#escape span')).toHaveText(translate('Stoppen & übernehmen'));
+        assert.equal((await snapshot()).desktopControl, 'active'); assert.equal(workerCalls, 2);
+        assert.equal(await overlay.locator('#notice').evaluate(element => element.scrollWidth > element.clientWidth + 1), false);
+        if (['fr', 'ja', 'zh-CN'].includes(language)) await overlay.screenshot({ path: `artifacts/openhiatus-desktop-takeover-${language}.png` });
+      }
+    }
     assert.equal(await overlayWindow.evaluate(w => w.isFocusable()), false);
     assert.equal(await overlayWindow.evaluate(w => w.isContentProtected()), true);
     assert.deepEqual(await overlay.evaluate(() => [typeof window.openhiatus, typeof require]), ['undefined', 'undefined']);
@@ -114,6 +128,6 @@ try {
   await targetWindow.evaluate(w => w.destroy()); await instance.close(); instance = undefined;
   instance = await electron.launch(options); const restarted = await instance.firstWindow();
   assert.equal((await restarted.evaluate(() => window.openhiatus.snapshot())).desktopControl, 'free');
-  const proof = { status: 'passed', checks: ['background task without input lock', 'real dialog-to-worker computer tool', 'native input guard acknowledged before desktop use', 'mandatory overlay despite disabled background indicator', 'all display bounds', 'no overlay API or focus theft', 'visible frame excluded from actual computer capture', 'actual agent click through the passive overlay', 'reservation between model calls', 'completion and UI Stop restore free state', 'compact window', 'restart does not persist lock'], limitation: 'Escape filtering is verified by the native policy harness; this UI run uses the app Stop button.' };
+  const proof = { status: 'passed', checks: ['background task without input lock', 'real dialog-to-worker computer tool', 'native input guard acknowledged before desktop use', 'mandatory overlay despite disabled background indicator', 'all display bounds', 'no overlay API or focus theft', 'visible frame excluded from actual computer capture', 'actual agent click through the passive overlay', 'reservation between model calls', 'all seven takeover titles and Esc instructions during a live reservation', 'completion and UI Stop restore free state', 'compact window', 'restart does not persist lock'], limitation: 'Escape filtering is verified by the native policy harness; this UI run uses the app Stop button.' };
   await writeFile('artifacts/openhiatus-desktop-control.json', JSON.stringify(proof, null, 2)); console.log(JSON.stringify(proof, null, 2));
 } finally { release(); if (instance) await instance.close(); server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }

@@ -1,4 +1,5 @@
 import type { BrowserWindow, Rectangle, WebContents } from 'electron';
+import { getUiLanguage, t } from '../shared/i18n';
 import type { ActivityPresencePhase } from '../shared/activity-presence';
 import { ACTIVITY_OVERLAY_MIN_SIZE, ACTIVITY_OVERLAY_MAX_SIZE, ACTIVITY_OVERLAY_DEFAULT_SIZE } from '../shared/workspace-preferences';
 
@@ -64,7 +65,7 @@ body{--tint:176,201,131}body[data-phase=listening]{--tint:135,213,207}body[data-
 .core{position:relative;width:78%;aspect-ratio:1;border:1px solid rgba(var(--tint),.6);border-radius:50%;background:radial-gradient(circle at 36% 30%,rgba(var(--tint),.25),#192117f5 70%);box-shadow:0 0 15px rgba(var(--tint),.18);animation:breathe 3.2s ease-in-out infinite;display:grid;place-items:center}
 .ring{position:absolute;inset:2%;border:1px solid rgba(var(--tint),.25);border-radius:50%;animation:spin 3.2s linear infinite}.ring:before{content:'';position:absolute;top:-3px;left:50%;width:5px;height:5px;border-radius:50%;background:rgb(var(--tint));box-shadow:0 0 8px rgba(var(--tint),.8)}
 svg{width:62%;height:62%;transform:translateY(-14%);fill:none;stroke:rgb(var(--tint));stroke-width:1.8}svg .point{fill:rgb(var(--tint));stroke:none}svg .satellite{fill:#273120}
-#status{position:absolute;bottom:13%;left:4%;right:4%;margin:0;text-align:center;font-size:clamp(8px,6vw,12px);font-weight:600;line-height:1.2;white-space:nowrap;text-shadow:0 1px 4px #000}
+#status{position:absolute;bottom:13%;left:4%;right:4%;margin:0;text-align:center;font-size:clamp(8px,6vw,12px);font-weight:600;line-height:1.2;overflow-wrap:anywhere;text-shadow:0 1px 4px #000}
 #resize{position:absolute;right:0;top:25%;bottom:25%;width:16px;display:grid;place-items:center;border:0;background:transparent;cursor:ns-resize;touch-action:none;outline-offset:-3px}
 #resize:before{content:'';width:2px;height:100%;max-height:60px;background:rgba(var(--tint),.55);border-radius:2px}
 #resize:hover:before,#resize:focus-visible:before,#resize[data-dragging=true]:before{width:3px;background:rgb(var(--tint))}
@@ -197,8 +198,9 @@ export class ActivityOverlay {
       if (!this.current(revision, overlay)) return;
       overlay.setBounds(activityOverlayBounds(this.options.workArea(), this.localSize));
       const currentPhase = phase(this.state.phase, !!this.state.stopping);
-      const state = JSON.stringify({ phase: currentPhase, status: status[currentPhase], size: this.localSize, dragging: !!this.drag });
-      await overlay.webContents.executeJavaScript(`(() => { const state=${state}; document.body.dataset.phase=state.phase; document.getElementById('status').textContent=state.status; const handle=document.getElementById('resize'); handle.setAttribute('aria-valuenow',String(state.size)); handle.dataset.dragging=String(state.dragging); if(!state.dragging)document.dispatchEvent(new Event('openhiatus:activity-overlay-reset')); })()`);
+      const state = JSON.stringify({ phase: currentPhase, status: t(status[currentPhase]), size: this.localSize, dragging: !!this.drag,
+        language: getUiLanguage(), label: t('Overlay-Größe'), hint: t('Größe ändern: nach unten größer, nach oben kleiner') });
+      await overlay.webContents.executeJavaScript(`(() => { const state=${state}; document.documentElement.lang=state.language; document.body.dataset.phase=state.phase; document.getElementById('status').textContent=state.status; const handle=document.getElementById('resize'); handle.setAttribute('aria-label',state.label);handle.title=state.hint; handle.setAttribute('aria-valuenow',String(state.size)); handle.dataset.dragging=String(state.dragging); if(!state.dragging)document.dispatchEvent(new Event('openhiatus:activity-overlay-reset')); })()`);
       if (!this.current(revision, overlay)) return;
       this.visible = true; this.mousePolicy(); overlay.showInactive();
     }).catch(() => {

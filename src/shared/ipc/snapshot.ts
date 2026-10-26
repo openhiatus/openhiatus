@@ -1,4 +1,5 @@
 import type { ComputerFrame, Snapshot } from '../contracts';
+import { parseUiLanguage } from '../ui-language';
 import { computerDetailDivisor, MAX_COMPUTER_DETAIL_PIXELS, type ComputerObservation, type ComputerRect } from '../computer-views';
 import { parseSkillFavorites } from '../skill-favorites';
 import { computerImageRetentionCalls, computerWorkingMemoryCalls, parseComputerTaskSettings } from '../computer-task-settings';
@@ -25,7 +26,7 @@ export const decodeSnapshot: Decoder<Snapshot> = object({
   messages: array(object(messageFields), 10000),
   activity: array(object({ id, at, kind: choice(['system', 'command', 'file', 'error']), title: body, detail: optional(body) }), 20000),
   task: object({ id, status: taskStatus, threadId: optional(body), turnId: optional(body), error: optional(body) }),
-  preferences: object({ assistantProfile: optional(parseAssistantProfile), sidebarMode: optional(sidebarMode), activityOverlayEnabled: optional(boolean), activityOverlaySize: optional(activityOverlaySize), inputDeviceId: short, outputDeviceId: short, speakReplies: boolean, voiceId: short, model: short, dialogModel: short, memoryModel: short,
+  preferences: object({ uiLanguage: optional(parseUiLanguage), assistantProfile: optional(parseAssistantProfile), sidebarMode: optional(sidebarMode), activityOverlayEnabled: optional(boolean), activityOverlaySize: optional(activityOverlaySize), inputDeviceId: short, outputDeviceId: short, speakReplies: boolean, voiceId: short, model: short, dialogModel: short, memoryModel: short,
     inputDeviceLabel: optional(text(1000)), inputDeviceGroupId: optional(text(1000)), outputDeviceLabel: optional(text(1000)), outputDeviceGroupId: optional(text(1000)),
     memoryAutoSummarize: optional(boolean), voiceConversation: optional(boolean), earcons: optional(boolean), skillFavorites: optional(parseSkillFavorites), itSupporter: optional(boolean),
     fullAccessAcknowledged: optional(boolean), chatgptBackgroundUsage: optional(boolean), computerOverviewScaleDivisor: optional(overviewPreference),

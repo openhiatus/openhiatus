@@ -1,4 +1,5 @@
 import { APP_DISPLAY_NAME } from '../shared/branding';
+import { parseUiLanguage } from '../shared/ui-language';
 import { randomUUID } from 'node:crypto';
 import { nextReceipt, RECEIPT_PHRASES } from '../shared/receipts';
 import { favoriteLevel, parseSkillFavorites } from '../shared/skill-favorites';
@@ -610,6 +611,7 @@ export class AppController {
     } finally { this.stopDeferrals--; this.flushAfterStop(); }
   }
   async savePreferences(patch: Partial<Preferences>): Promise<void> {
+    if (Object.hasOwn(patch, 'uiLanguage')) patch = { ...patch, uiLanguage: parseUiLanguage(patch.uiLanguage) };
     if (Object.hasOwn(patch, 'itSupporter') && typeof patch.itSupporter !== 'boolean') throw new Error('Ungültiger IT-Supporter-Modus.');
     if (Object.hasOwn(patch, 'assistantProfile')) patch = { ...patch, assistantProfile: parseAssistantProfile(patch.assistantProfile) };
     if (patch.chatgptBackgroundUsage !== undefined && typeof patch.chatgptBackgroundUsage !== 'boolean') throw new Error('Ungültige Einstellung für automatische ChatGPT-Nutzung.');

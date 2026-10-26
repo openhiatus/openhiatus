@@ -1,3 +1,4 @@
+import { t } from '../../../shared/i18n';
 import { FileText } from 'lucide-react';
 import { markdownLinkPattern } from '../../../shared/spoken-text';
 
@@ -12,7 +13,7 @@ function MessageLinks({ text, onError }: { text: string; onError: (error: unknow
     const local = /^(?:\/?[a-z]:[\\/]|\\\\|\/|\.{1,2}[\\/])/i.test(target) || (!/^[a-z][a-z\d+.-]*:/i.test(target) && !target.startsWith('#'));
     if (local) {
       const filePath = target.replace(/^\/([a-z]:[\\/])/i, '$1');
-      elements.push(<button key={start} className="message-file-link" title={`${label} im Datei-Explorer anzeigen`} onClick={() => void window.openhiatus.revealFile(filePath).catch(onError)}><FileText size={12} />{label}</button>);
+      elements.push(<button key={start} className="message-file-link" title={t("{0} im Datei-Explorer anzeigen", label)} onClick={() => void window.openhiatus.revealFile(filePath).catch(onError)}><FileText size={12} />{label}</button>);
     } else {
       elements.push(<span key={start} className="message-web-reference">{label}<span className="message-link-target"> ({target})</span></span>);
     }

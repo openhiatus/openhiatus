@@ -12,6 +12,11 @@ export async function inspectInstaller(executable, name, directory) {
     ...['UIAutomationClient.dll', 'UIAutomationTypes.dll', 'WindowsBase.dll'].map(file => `/reference:${path.join(framework, 'WPF', file)}`),
     `/out:${probe}`, path.resolve('tests/fixtures/installer-ui.cs')], { windowsHide: true, stdio: 'inherit' });
   await mkdir('artifacts', { recursive: true });
-  await run(probe, [path.resolve(executable), name, path.resolve('artifacts')]);
+  for (const labels of [['english', 'Next', 'Install', 'Yes'], ['spanish', 'Siguiente', 'Instalar', 'Sí'],
+    ['french', 'Suivant', 'Installer', 'Oui'], ['german', 'Weiter', 'Installieren', 'Ja'],
+    ['chinesesimp', '下一步', '安装', '是'], ['japanese', '次へ', 'インストール', 'はい'],
+    ['brazilianportuguese', 'Avançar', 'Instalar', 'Sim']]) {
+    await run(probe, [path.resolve(executable), name, path.resolve('artifacts'), ...labels]);
+  }
 }
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) await inspectInstaller(process.argv[2], process.argv[3], process.argv[4]);

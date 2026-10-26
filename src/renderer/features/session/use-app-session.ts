@@ -1,6 +1,7 @@
+import { setUiLanguage, t, uiLocale } from '../../../shared/i18n';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { SkillEntry, Snapshot } from '../../../shared/contracts';
-import { modelSelectionLabel } from '../../../shared/model-selection';
+import { modelSelectionLabel, modelOptionLabel } from '../../../shared/model-selection';
 import { friendlyAudioError } from '../../audio';
 import { useVoiceSession, voicePresence } from '../voice';
 import { SessionOperations } from './session-operations';
@@ -41,10 +42,10 @@ export function useAppSession(navigation: SessionNavigation) {
     transcribing: () => {},
     connectionsRequired: () => navigation.openSettings(),
     transcript: async (text, automatic) => {
-      if (text && automatic) { setNotice(stateRef.current?.preferences.itSupporter ? 'Frage erkannt. Dein IT-Supporter hilft dir weiter.' : 'Sprache erkannt. openHiatus übernimmt.'); await send(false, text, true); }
+      if (text && automatic) { setNotice(stateRef.current?.preferences.itSupporter ? t("Frage erkannt. Dein IT-Supporter hilft dir weiter.") : t("Sprache erkannt. openHiatus übernimmt.")); await send(false, text, true); }
       else if (text) {
         setDraft(current => current ? `${current}\n${text}` : text); setTranscript(true);
-        setNotice('Dein Transkript ist bereit. Prüfe es kurz und sende mit F9 oder Strg + Enter.');
+        setNotice(t("Dein Transkript ist bereit. Prüfe es kurz und sende mit F9 oder Strg + Enter."));
       }
       textarea.current?.focus();
     },
@@ -52,8 +53,12 @@ export function useAppSession(navigation: SessionNavigation) {
 
   useEffect(() => {
     let disposed = false; let revisions = 0;
-    if (!window.openhiatus) { setError('Die lokale App-Verbindung ist nicht verfügbar. Bitte starte openHiatus über die Anwendung.'); return; }
-    const apply = (snapshot: Snapshot) => { if (!disposed) { stateRef.current = snapshot; setState(snapshot); } };
+    if (!window.openhiatus) { setError(t("Die lokale App-Verbindung ist nicht verfügbar. Bitte starte openHiatus über die Anwendung.")); return; }
+    const apply = (snapshot: Snapshot) => { if (!disposed) {
+      const language = snapshot.preferences.uiLanguage ?? 'de';
+      setUiLanguage(language); document.documentElement.lang = language;
+      stateRef.current = snapshot; setState(snapshot);
+    } };
     const unsubscribe = window.openhiatus.subscribe(snapshot => { revisions++; apply(snapshot); });
     const revision = revisions;
     void window.openhiatus.snapshot().then(snapshot => { if (revision === revisions) apply(snapshot); }).catch(report);
@@ -68,7 +73,7 @@ export function useAppSession(navigation: SessionNavigation) {
 
   const stopAll = useCallback(async () => {
     await operations.current?.stop(() => window.openhiatus.stop(), {
-      started: () => { stopVoice(); setNotice('Stopp angefordert. Es werden keine weiteren Sprachaktionen gestartet.'); },
+      started: () => { stopVoice(); setNotice(t("Stopp angefordert. Es werden keine weiteren Sprachaktionen gestartet.")); },
       failed: report, settled: () => refreshOperations(current => current + 1),
     });
   }, [stopVoice, report]);
@@ -88,19 +93,19 @@ export function useAppSession(navigation: SessionNavigation) {
   function sendBlockedReason(globalShortcut = false, submittedText = draft, voiceInput = false): string {
     const text = submittedText.trim();
     const current = stateRef.current;
-    if (globalShortcut && hasOpenDialog()) return 'Schließe zuerst den offenen Dialog in openHiatus. Drücke danach erneut F9.';
-    if (!current) return 'openHiatus wird noch verbunden. Drücke danach erneut F9.';
-    if (!current.preferences.fullAccessAcknowledged) return 'Bestätige zuerst den Vollzugriff von openHiatus.';
-    if (current.preferences.itSupporter && !voiceInput && !transcript) return 'Im IT-Supporter-Modus stellst du deine Frage mit F8 oder der Sprechtaste. Das Protokoll dient zum Nachlesen.';
-    if (operations.current?.isStopping() || current.task.status === 'stopping' || current.summary?.status === 'stopping') return 'Bitte warte auf den bestätigten Stopp und drücke danach erneut F9.';
-    if (getPhase() === 'opening') return 'Das Mikrofon wird geöffnet. Beende die Aufnahme mit F8 und drücke erst nach dem Transkript F9.';
-    if (getPhase() === 'recording' || getPhase() === 'mic-test') return 'Die Aufnahme läuft. Beende sie mit F8 und drücke erst nach dem Transkript F9.';
-    if (getPhase() === 'transcribing') return 'Deine Sprache wird noch erkannt. Prüfe danach den Text und drücke erneut F9.';
-    if (operations.current?.isSending()) return 'Der Auftrag wird bereits gesendet.';
-    if (operations.current?.actionName() === 'new') return 'Das neue Gespräch wird vorbereitet. Drücke danach erneut F9.';
-    if (current.summary?.mode === 'manual' && ['running', 'stopping'].includes(current.summary.status)) return 'openHiatus erstellt Gedächtnisberichte. Warte oder stoppe sie und drücke danach erneut F9.';
-    if (!text) return 'Es gibt noch keinen Text zum Senden. Mit F8 kannst du eine Aufnahme beginnen.';
-    if (current.connections.agent !== 'ready') return 'Richte zuerst einen Modellanbieter in den Einstellungen ein.';
+    if (globalShortcut && hasOpenDialog()) return t("Schließe zuerst den offenen Dialog in openHiatus. Drücke danach erneut F9.");
+    if (!current) return t("openHiatus wird noch verbunden. Drücke danach erneut F9.");
+    if (!current.preferences.fullAccessAcknowledged) return t("Bestätige zuerst den Vollzugriff von openHiatus.");
+    if (current.preferences.itSupporter && !voiceInput && !transcript) return t("Im IT-Supporter-Modus stellst du deine Frage mit F8 oder der Sprechtaste. Das Protokoll dient zum Nachlesen.");
+    if (operations.current?.isStopping() || current.task.status === 'stopping' || current.summary?.status === 'stopping') return t("Bitte warte auf den bestätigten Stopp und drücke danach erneut F9.");
+    if (getPhase() === 'opening') return t("Das Mikrofon wird geöffnet. Beende die Aufnahme mit F8 und drücke erst nach dem Transkript F9.");
+    if (getPhase() === 'recording' || getPhase() === 'mic-test') return t("Die Aufnahme läuft. Beende sie mit F8 und drücke erst nach dem Transkript F9.");
+    if (getPhase() === 'transcribing') return t("Deine Sprache wird noch erkannt. Prüfe danach den Text und drücke erneut F9.");
+    if (operations.current?.isSending()) return t("Der Auftrag wird bereits gesendet.");
+    if (operations.current?.actionName() === 'new') return t("Das neue Gespräch wird vorbereitet. Drücke danach erneut F9.");
+    if (current.summary?.mode === 'manual' && ['running', 'stopping'].includes(current.summary.status)) return t("openHiatus erstellt Gedächtnisberichte. Warte oder stoppe sie und drücke danach erneut F9.");
+    if (!text) return t("Es gibt noch keinen Text zum Senden. Mit F8 kannst du eine Aufnahme beginnen.");
+    if (current.connections.agent !== 'ready') return t("Richte zuerst einen Modellanbieter in den Einstellungen ein.");
     return '';
   }
   async function send(globalShortcut = false, submittedText = draft, voiceInput = false) {
@@ -134,9 +139,9 @@ export function useAppSession(navigation: SessionNavigation) {
 
   function insertSkill(skill: SkillEntry) {
     if (!skill.enabled || operations.current?.actionName() === 'new' || ['opening', 'recording', 'mic-test', 'transcribing'].includes(getPhase())) return;
-    setDraft(current => current.toLocaleLowerCase('de').includes(skill.path.toLocaleLowerCase('de')) ? current : `${current}${current && !current.endsWith('\n') ? '\n' : ''}Nutze den Skill "${skill.path}".`);
+    setDraft(current => current.toLocaleLowerCase(uiLocale()).includes(skill.path.toLocaleLowerCase(uiLocale())) ? current : t("{0}{1}Nutze den Skill \"{2}\".", current, current && !current.endsWith('\n') ? '\n' : '', skill.path));
     focusDraft.current = true; navigation.openConversation();
-    setNotice(`Der Skill „${skill.displayName || skill.name}“ steht in deinem Entwurf. Ergänze deinen Auftrag und sende ihn, wenn du bereit bist.`);
+    setNotice(t("Der Skill „{0}“ steht in deinem Entwurf. Ergänze deinen Auftrag und sende ihn, wenn du bereit bist.", skill.displayName || skill.name));
   }
 
   const acknowledged = !!state?.preferences.fullAccessAcknowledged;
@@ -152,11 +157,11 @@ export function useAppSession(navigation: SessionNavigation) {
   const isRecording = phase === 'recording' || phase === 'mic-test';
   const audioBusy = phase !== 'idle' && phase !== 'playing';
   const taskStatus = state?.task.status ?? 'idle';
-  const currentModel = state?.models.find(model => model.id === state.preferences.model)?.label ?? modelSelectionLabel(state?.preferences.model ?? '');
-  const currentDialogModel = state?.models.find(model => model.id === state.preferences.dialogModel)?.label ?? modelSelectionLabel(state?.preferences.dialogModel ?? '');
-  const voiceStatus = { idle: 'Sprachgespräch', opening: 'Mikrofon wird geöffnet', recording: 'Ich höre zu', 'mic-test': 'Mikrofontest', transcribing: 'Sprache wird erkannt', synthesizing: 'Antwort wird vertont', playing: 'Antwort wird vorgelesen' }[phase];
+  const currentModel = state?.models.filter(model => model.id === state.preferences.model).map(modelOptionLabel)[0] ?? modelSelectionLabel(state?.preferences.model ?? '');
+  const currentDialogModel = state?.models.filter(model => model.id === state.preferences.dialogModel).map(modelOptionLabel)[0] ?? modelSelectionLabel(state?.preferences.dialogModel ?? '');
+  const voiceStatus = { idle: t("Sprachgespräch"), opening: t("Mikrofon wird geöffnet"), recording: t("Ich höre zu"), 'mic-test': t("Mikrofontest"), transcribing: t("Sprache wird erkannt"), synthesizing: t("Antwort wird vertont"), playing: t("Antwort wird vorgelesen") }[phase];
   const activeJobs = state?.jobs?.filter(job => ['queued', 'running', 'stopping'].includes(job.status)).length ?? 0;
-  const skillInsertDisabledReason = state?.preferences.itSupporter ? 'Im IT-Supporter-Modus nennst du den gewünschten Skill per Sprache. Zum Schreiben kannst du den Modus in Einstellungen → Bedienung ausschalten.' : busyAction === 'new' ? 'Das neue Gespräch wird vorbereitet. Danach kannst du einen Skill ergänzen.' : ['opening', 'recording', 'mic-test', 'transcribing'].includes(phase) ? 'Beende zuerst die Sprachaufnahme und warte auf das Transkript. Danach kannst du einen Skill ergänzen.' : undefined;
+  const skillInsertDisabledReason = state?.preferences.itSupporter ? t("Im IT-Supporter-Modus nennst du den gewünschten Skill per Sprache. Zum Schreiben kannst du den Modus in Einstellungen → Bedienung ausschalten.") : busyAction === 'new' ? t("Das neue Gespräch wird vorbereitet. Danach kannst du einen Skill ergänzen.") : ['opening', 'recording', 'mic-test', 'transcribing'].includes(phase) ? t("Beende zuerst die Sprachaufnahme und warte auf das Transkript. Danach kannst du einen Skill ergänzen.") : undefined;
   const overlayPhase = voicePresence(phase, pendingSend, transcript && !!draft.trim()).phase;
   useEffect(() => {
     window.openhiatus?.publishActivityPresence({ phase: overlayPhase });

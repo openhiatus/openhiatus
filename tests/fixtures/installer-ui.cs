@@ -27,6 +27,14 @@ class InstallerUiCheck {
             if (button.Current.Name.Replace("&", "").Contains(name) && button.Current.IsEnabled) return button;
         return null;
     }
+    static AutomationElement ConfirmCancellation(AutomationElement window, string translatedYes) {
+        foreach (AutomationElement button in window.FindAll(TreeScope.Descendants, new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Button))) {
+            // Native message-box buttons follow Windows' language, not Setup's /LANG.
+            // IDYES is 6; use the language-independent ID before the Setup label fallback.
+            if (button.Current.IsEnabled && button.Current.AutomationId == "6") return button;
+        }
+        return Button(window, translatedYes);
+    }
     static void Capture(AutomationElement window, string file) {
         var handle = new IntPtr(window.Current.NativeWindowHandle); Rect rect;
         if (!GetWindowRect(handle, out rect)) throw new Exception("No test window bounds.");
@@ -40,24 +48,25 @@ class InstallerUiCheck {
     static void Main(string[] args) {
         SetProcessDPIAware();
         if (!args[1].StartsWith("openHiatus Setup Test ")) throw new Exception("Only the isolated test installer is permitted.");
-        using (var process = Process.Start(new ProcessStartInfo(args[0], "/LANG=german /NORESTART /SP-") { UseShellExecute = false })) {
+        string language = args[3], nextText = args[4], installText = args[5], yesText = args[6];
+        using (var process = Process.Start(new ProcessStartInfo(args[0], "/LANG=" + language + " /NORESTART /SP-") { UseShellExecute = false })) {
             var window = WaitWindow(args[1]); int ownedPid = window.Current.ProcessId;
             try {
-                Thread.Sleep(250); Capture(window, Path.Combine(args[2], "openhiatus-setup-welcome.png"));
-                var next = Button(window, "Weiter"); if (next == null) throw new Exception("Welcome must offer Next.");
+                Thread.Sleep(250); Capture(window, Path.Combine(args[2], "openhiatus-setup-" + language + "-welcome.png"));
+                var next = Button(window, nextText); if (next == null) throw new Exception(language + ": welcome must offer translated Next.");
                 ((InvokePattern)next.GetCurrentPattern(InvokePattern.Pattern)).Invoke(); Thread.Sleep(250);
-                Capture(window, Path.Combine(args[2], "openhiatus-setup-options.png"));
-                if (Button(window, "Installieren") == null) throw new Exception("Setup must proceed directly from optional Desktop icon to Install.");
+                Capture(window, Path.Combine(args[2], "openhiatus-setup-" + language + "-options.png"));
+                if (Button(window, installText) == null) throw new Exception(language + ": setup must offer translated Install.");
                 // Cancel before any files or registry entries are installed.
                 PostMessage(new IntPtr(window.Current.NativeWindowHandle), 0x10, IntPtr.Zero, IntPtr.Zero);
                 for (int i = 0; i < 50 && !process.HasExited; i++) {
                     foreach (AutomationElement dialog in AutomationElement.RootElement.FindAll(TreeScope.Children, new PropertyCondition(AutomationElement.ProcessIdProperty, ownedPid))) {
-                        var yes = Button(dialog, "Ja"); if (yes != null) ((InvokePattern)yes.GetCurrentPattern(InvokePattern.Pattern)).Invoke();
+                        var yes = ConfirmCancellation(dialog, yesText); if (yes != null) ((InvokePattern)yes.GetCurrentPattern(InvokePattern.Pattern)).Invoke();
                     }
                     Thread.Sleep(100);
                 }
                 if (!process.WaitForExit(5000)) throw new Exception("Cancellation did not close test Setup.");
-                Console.WriteLine("Owned setup welcome, optional Desktop icon, direct Install action and Cancel passed.");
+                Console.WriteLine(language + ": owned setup welcome, optional Desktop icon, direct Install action and Cancel passed.");
             } finally {
                 if (!process.HasExited) { try { Process.GetProcessById(ownedPid).Kill(); } catch { } try { process.Kill(); } catch { } }
             }

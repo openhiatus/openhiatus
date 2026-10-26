@@ -25,6 +25,7 @@ throw 'The owned test application did not release its executable.'
 const waitForAppExit = () => run('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', waitScript, '-Executable', executable]);
 const reg = path.join(process.env.SystemRoot || 'C:/Windows', 'System32/reg.exe');
 const uninstallKey = `HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\${id}_is1`;
+const languageKey = `HKCU\\Software\\${id}`;
 const runKey = 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run';
 const approvedKey = 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApproved\\Run';
 const query = (key, value) => spawnSync(reg, ['query', key, ...(value ? ['/v', value] : []), '/reg:64'], { windowsHide: true, encoding: 'utf8' });
@@ -37,7 +38,7 @@ const registeredUninstaller = () => {
   assert.ok(file && path.dirname(file).toLowerCase() === installDirectory.toLowerCase() && /^unins\d+\.exe$/.test(path.basename(file)), 'uninstaller must belong to the test installation');
   return file;
 };
-for (const [key, value] of [[uninstallKey], [runKey, id], [approvedKey, id]]) assert.equal(query(key, value).status, 1);
+for (const [key, value] of [[uninstallKey], [languageKey], [runKey, id], [approvedKey, id]]) assert.equal(query(key, value).status, 1);
 const env = { ...process.env }; delete env.ELECTRON_RUN_AS_NODE;
 for (const key of Object.keys(env)) if (key.toLowerCase() === 'path' || /^(?:OPENAI|ANTHROPIC|GEMINI|GOOGLE|OPENROUTER|XAI)_API_KEY$/.test(key)) delete env[key];
 env.PATH = [env.SystemRoot || 'C:\\Windows', path.join(env.SystemRoot || 'C:\\Windows', 'System32')].join(';');
@@ -64,6 +65,14 @@ assert.ok((await readFile(current)).includes(Buffer.from('level="asInvoker"')), 
 const installedManifest = path.join(installDirectory, '.openhiatus-install-files.txt');
 let uninstaller;
 try {
+  // The tiny package exercises every actual Setup-to-profile language mapping.
+  for (const [language, expected] of [['english', 'en'], ['spanish', 'es'], ['french', 'fr'], ['german', 'de'],
+    ['chinesesimp', 'zh-CN'], ['japanese', 'ja'], ['brazilianportuguese', 'pt-BR']]) {
+    assert.equal(await setup(older, [`/LANG=${language}`]), 0);
+    assert.equal(readRegistryString(languageKey, 'InstallerLanguage'), expected);
+    assert.equal(await setup(registeredUninstaller()), 0);
+    assert.equal(query(languageKey).status, 1, 'uninstall cleans only the test language registration');
+  }
   assert.equal(await setup(older), 0);
   assert.equal(query(uninstallKey).status, 0); assert.equal(query(uninstallKey.replace('HKCU', 'HKLM')).status, 1);
   uninstaller = registeredUninstaller();
@@ -100,13 +109,15 @@ try {
   const launch = { executablePath: executable, args: [`--data-dir=${profile}`], env };
   instance = await electron.launch(launch); let page = await instance.firstWindow();
   await page.getByRole('button', { name: 'Verstanden, Vollzugriff bestätigen', exact: true }).click();
-  await page.evaluate(() => window.openhiatus.savePreferences({ activityOverlaySize: 188 }));
+  await page.evaluate(() => window.openhiatus.savePreferences({ activityOverlaySize: 188, uiLanguage: 'ja' }));
   await instance.close(); instance = undefined;
   await waitForAppExit();
   const stateBefore = await readFile(path.join(profile, 'state.json'), 'utf8');
-  assert.equal(await setup(current), 0); assert.equal(await readFile(path.join(profile, 'state.json'), 'utf8'), stateBefore);
+  assert.equal(await setup(current, ['/LANG=french']), 0); assert.equal(await readFile(path.join(profile, 'state.json'), 'utf8'), stateBefore);
+  assert.equal(readRegistryString(languageKey, 'InstallerLanguage'), 'fr');
   instance = await electron.launch(launch); page = await instance.firstWindow();
   assert.equal((await page.evaluate(() => window.openhiatus.snapshot())).preferences.activityOverlaySize, 188);
+  assert.equal((await page.evaluate(() => window.openhiatus.snapshot())).preferences.uiLanguage, 'ja', 'Setup language cannot overwrite an existing app choice');
   assert.equal(await page.getByRole('button', { name: 'Verstanden, Vollzugriff bestätigen', exact: true }).count(), 0);
   await instance.close(); instance = undefined;
   // Use the installed, unmodified application with no global Node or Codex on its PATH.
@@ -125,7 +136,7 @@ try {
   await run(reg, ['add', runKey, '/v', id, '/t', 'REG_SZ', '/d', '"C:\\Synthetic Other Copy\\openHiatus.exe" --autostart', '/f', '/reg:64']);
   assert.equal(await setup(registeredUninstaller()), 0); assert.equal(query(runKey, id).status, 0, 'uninstall must not remove another copy\'s autostart');
   const evidence = { status: 'passed', version: manifest.version, checks: ['asInvoker per-user installation', 'Start menu and optional Desktop shortcuts target installed executable', 'upgrade from synthetic older installation', 'running application blocks update and uninstall without being killed', 'downgrade rejected', 'obsolete owned files removed', 'unknown files, personal profile and Windows-disabled autostart preserved', 'corrupt manifest cannot escape or follow a junction', 'installed UI persists settings', 'installed real dialog/worker and native desktop workflows without global Node/Codex', 'uninstall removes owned shortcuts, registration, program and matching autostart', 'personal files survive uninstall', 'clean reinstall with no desktop shortcut', 'another copy\'s autostart is retained'], limitation: 'Tested locally in isolated folders and registrations; not a clean Windows VM or a signed distribution.' };
-  await inspectInstaller(current, name, directory); evidence.checks.push('actual German wizard: welcome, optional Desktop icon, direct Install and Cancel');
+  await inspectInstaller(current, name, directory); evidence.checks.push('seven actual wizard languages: welcome, optional Desktop icon, direct Install and Cancel', 'all seven registry language mappings and uninstall cleanup', 'updates preserve a different saved app language');
   await writeFile('artifacts/openhiatus-installer.json', JSON.stringify(evidence, null, 2)); console.log(JSON.stringify(evidence, null, 2));
 } catch (error) {
   console.error('Installer lifecycle check failed:', error);
@@ -138,4 +149,5 @@ try {
   }
   for (const key of [runKey, approvedKey]) if (query(key, id).status === 0) await run(reg, ['delete', key, '/v', id, '/f', '/reg:64']);
   assert.equal(query(uninstallKey).status, 1, 'test uninstall registration must be cleaned');
+  assert.equal(query(languageKey).status, 1, 'test language registration must be cleaned');
 }

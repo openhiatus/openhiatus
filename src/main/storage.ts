@@ -1,4 +1,5 @@
 import { APP_DISPLAY_NAME } from '../shared/branding';
+import { parseUiLanguage } from '../shared/ui-language';
 import { validateUsage } from './modules/tasks';
 export { validateUsage } from './modules/tasks';
 import { closeSync, existsSync, fsyncSync, mkdirSync, openSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
@@ -20,7 +21,7 @@ const taskStatuses = new Set<TaskStatus>(['idle', 'running', 'stopping', 'comple
 export function defaultState(): SavedState {
   return {
     messages: [], activity: [], task: { id: '', status: 'idle' },
-    preferences: { itSupporter: false, assistantProfile: structuredClone(DEFAULT_ASSISTANT_PROFILE), sidebarMode: 'auto', activityOverlayEnabled: false, activityOverlaySize: ACTIVITY_OVERLAY_DEFAULT_SIZE, inputDeviceId: 'default', outputDeviceId: 'default', speakReplies: true, voiceId: 'Dennis', model: '', dialogModel: '', memoryModel: '', memoryAutoSummarize: true, voiceConversation: true, fullAccessAcknowledged: false, chatgptBackgroundUsage: false, computerOverviewScaleDivisor: 1, computerDetailScaleDivisor: 1, computerImageRetentionCalls: 0, computerWorkingMemoryCalls: 0, computerDelegationEnabled: false, computerModel: '', computerFast: true },
+    preferences: { uiLanguage: 'de', itSupporter: false, assistantProfile: structuredClone(DEFAULT_ASSISTANT_PROFILE), sidebarMode: 'auto', activityOverlayEnabled: false, activityOverlaySize: ACTIVITY_OVERLAY_DEFAULT_SIZE, inputDeviceId: 'default', outputDeviceId: 'default', speakReplies: true, voiceId: 'Dennis', model: '', dialogModel: '', memoryModel: '', memoryAutoSummarize: true, voiceConversation: true, fullAccessAcknowledged: false, chatgptBackgroundUsage: false, computerOverviewScaleDivisor: 1, computerDetailScaleDivisor: 1, computerImageRetentionCalls: 0, computerWorkingMemoryCalls: 0, computerDelegationEnabled: false, computerModel: '', computerFast: true },
   };
 }
 
@@ -78,6 +79,7 @@ function validateState(value: unknown): SavedState {
   if (p.activityOverlayEnabled !== undefined && typeof p.activityOverlayEnabled !== 'boolean') throw new Error('Ungültige Einstellung für die Arbeitsanzeige.');
   if (p.itSupporter !== undefined && typeof p.itSupporter !== 'boolean') throw new Error('Ungültiger IT-Supporter-Modus.');
   const preferences: Preferences = {
+    uiLanguage: p.uiLanguage === undefined ? 'de' : parseUiLanguage(p.uiLanguage),
     itSupporter: p.itSupporter === true,
     assistantProfile: parseAssistantProfile(p.assistantProfile === undefined ? DEFAULT_ASSISTANT_PROFILE : p.assistantProfile),
     sidebarMode: p.sidebarMode === undefined ? 'auto' : sidebarMode(p.sidebarMode),

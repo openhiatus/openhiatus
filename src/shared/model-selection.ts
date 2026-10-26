@@ -1,4 +1,12 @@
 import type { ModelOption } from './contracts';
+import { t } from './i18n';
+
+/** Only the application-owned provider prefix is translated; model names stay verbatim. */
+export function modelOptionLabel(model: ModelOption): string {
+  const prefix = 'Lokales Modell · ';
+  return model.provider === 'local' && model.label.startsWith(prefix)
+    ? `${t('Lokales Modell')} · ${model.label.slice(prefix.length)}` : model.label;
+}
 
 // A local selection identifier. This suffix must never become a provider model ID.
 const FAST_SUFFIX = '::fast';
