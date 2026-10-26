@@ -178,6 +178,18 @@ test('validated handlers preserve normalization, explicit acknowledgement and St
   await f.router.dispatch('acknowledgeFullAccess', []); assert.equal(f.calls.at(-1)?.name, 'acknowledgeFullAccess');
 });
 
+test('IPC preserves each thinking preference and rejects unsupported values before side effects', async () => {
+  const f = fixture();
+  const patch = { workThinkingLevel: 'high', dialogThinkingLevel: 'low', memoryThinkingLevel: 'off', computerThinkingLevel: 'max' };
+  assert.equal((await f.router.dispatch('savePreferences', [patch])).ok, true);
+  assert.deepEqual(f.calls.at(-1), { name: 'savePreferences', args: [patch] });
+  const count = f.calls.length;
+  for (const key of Object.keys(patch)) for (const value of ['ultra', null, undefined, 3]) {
+    assert.equal((await f.router.dispatch('savePreferences', [{ [key]: value }])).ok, false);
+  }
+  assert.equal(f.calls.length, count);
+});
+
 test('outbound projection happens in the main handler before the transport receives the envelope', async () => {
   const f = fixture();
   f.controller.snapshot = () => ({ ...f.snapshot, credentials: { token: 'private' }, jobs: [{ id: 'job', requestId: 'request', title: '', prompt: '', status: 'completed',

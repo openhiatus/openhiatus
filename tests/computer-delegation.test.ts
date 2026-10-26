@@ -78,7 +78,7 @@ test('a fresh Luna Fast child performs several observed inputs with only compute
   const parent = fixture.bind(), response = await parent.call('computer_task', { objective: 'Fill the observed field', instructions: 'Use this exact value', context: 'Exact supplied value' });
   const result = report(response); assert.equal(result.status, 'reported'); assert.equal(result.verified, false);
   assert.equal(result.model, 'chatgpt/gpt-6-luna'); assert.equal(result.requestedServiceTier, 'fast'); assert.equal(result.threadId, 'child-1'); assert.equal(result.actionCount, 3);
-  assert.deepEqual(fixture.captures[0].options, { serviceTier: 'fast' }); assert.equal(fixture.captures[0].thread, undefined);
+  assert.deepEqual(fixture.captures[0].options, { serviceTier: 'fast', thinkingLevel: 'medium' }); assert.equal(fixture.captures[0].thread, undefined);
   assert.equal(fixture.captures[0].instructions, COMPUTER_DELEGATION_INSTRUCTIONS);
   assert.equal(JSON.parse(fixture.captures[0].prompt!).context, 'Exact supplied value');
   assert.equal(fixture.captures[0].disposed, 1); assert.ok(fixture.stops > 0);
@@ -112,7 +112,7 @@ test('blocked and failed child reports stay distinct from verified completion an
   const parent = fixture.bind();
   const blocked = await parent.call('computer_task', { objective: 'Locate the destination' });
   assert.equal(blocked.success, false); assert.equal(report(blocked).status, 'blocked');
-  assert.equal(fixture.captures[0].options, undefined); assert.equal(report(blocked).requestedServiceTier, undefined);
+  assert.deepEqual(fixture.captures[0].options, { thinkingLevel: 'medium' }); assert.equal(report(blocked).requestedServiceTier, undefined);
   const failed = await parent.call('computer_task', { objective: 'Locate another destination' });
   assert.equal(failed.success, false); assert.equal(report(failed).status, 'error'); assert.equal(fixture.captures.length, 2);
   await fixture.registry.dispose();

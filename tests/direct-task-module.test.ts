@@ -1,19 +1,20 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DirectTaskCoordinator, type DirectTaskPorts, type DirectTaskState } from '../src/main/modules/direct-task';
+import type { AgentRunOptions } from '../src/shared/contracts';
 import type { CoreProposalInput } from '../src/shared/memory';
 
 const tick = () => new Promise<void>(resolve => setImmediate(resolve));
 function fixture(initial: DirectTaskState = { messages: [], task: { id: '', status: 'idle' } }) {
   let projection = structuredClone(initial), saved = structuredClone(initial), failSave = false, identity = 'Alte Identität', blocked = false, reportBusy = false;
-  const config = { ready: true, model: 'frozen-model' }, core = { id: 'core', version: 1, content: 'Alte Vorliebe.' };
-  const runs: Array<{ text: string; model: string; threadId?: string }> = [], proposals: CoreProposalInput[] = [], frames: string[] = [], activities: string[] = [], archived = new Set<string>();
+  const config = { thinkingLevel: 'low' as import('../src/shared/thinking').ThinkingLevel, ready: true, model: 'frozen-model' }, core = { id: 'core', version: 1, content: 'Alte Vorliebe.' };
+  const runs: Array<{ text: string; model: string; threadId?: string; options?: AgentRunOptions }> = [], proposals: CoreProposalInput[] = [], frames: string[] = [], activities: string[] = [], archived = new Set<string>();
   let stop = async () => {}, dispose = async () => {}, prepare = async () => { reportBusy = false; };
   let direct!: DirectTaskCoordinator;
   const ports: DirectTaskPorts = {
-    agent: { async start() {}, async run(text, model, threadId) {
+    agent: { async start() {}, async run(text, model, threadId, options) {
       assert.equal(saved.task.status, 'running', 'external work follows durable intent');
-      runs.push({ text, model, threadId }); direct.handle({ type: 'started', threadId: threadId ?? 'thread-one', turnId: `turn-${runs.length}` });
+      runs.push({ text, model, threadId, options }); direct.handle({ type: 'started', threadId: threadId ?? 'thread-one', turnId: `turn-${runs.length}` });
     }, stop: () => stop(), dispose: () => dispose() },
     access: { assertAdmission() {}, blocked: () => blocked }, configuration: () => config,
     reports: { busy: () => reportBusy, prepareForUserWork: () => prepare() }, context: { identity: () => identity, started() {} },
@@ -51,16 +52,17 @@ test('direct admission owns its transcript, rolls back failed intent and freezes
 test('archive continuation retains the original, model, identity and cumulative usage while a deferred thread reset applies next turn', async () => {
   const f = fixture(); await f.direct.send('Vollständiger Originalauftrag', 'first');
   f.direct.handle({ type: 'usage', usage: { inputTokens: 10, outputTokens: 2, cacheReadTokens: 0, cacheWriteTokens: 0 } });
-  f.config.model = 'next-model'; f.identity('Neue Identität'); f.direct.invalidateThread();
+  f.config.thinkingLevel = 'high'; f.config.model = 'next-model'; f.identity('Neue Identität'); f.direct.invalidateThread();
   assert.equal(f.direct.currentIdentity(), 'Alte Identität');
   f.direct.handle({ type: 'completed', status: 'completed', text: read }); await tick();
+  assert.equal(f.runs[0].options?.thinkingLevel, 'low'); assert.equal(f.runs[1].options?.thinkingLevel, 'low');
   assert.equal(f.runs[1].model, 'frozen-model'); assert.equal(f.runs[1].threadId, 'thread-one');
   assert.ok(f.runs[1].text.includes('Vollständiger Originalauftrag')); assert.ok(f.runs[1].text.includes('Vollständige Archivdaten.'));
   f.direct.handle({ type: 'usage', usage: { inputTokens: 4, outputTokens: 3, cacheReadTokens: 0, cacheWriteTokens: 0 } });
   assert.equal(f.direct.snapshot().usage?.inputTokens, 14);
   f.direct.handle({ type: 'completed', status: 'completed', text: 'Belegte Antwort.' });
   assert.equal(f.direct.snapshot().task.threadId, undefined); assert.ok(!JSON.stringify(f.direct.snapshot().messages).includes('openhiatus-memory-read'));
-  await f.direct.send('Nächster Auftrag', 'next'); assert.equal(f.runs[2].threadId, undefined); assert.equal(f.runs[2].model, 'next-model'); assert.equal(f.direct.currentIdentity(), 'Neue Identität');
+  await f.direct.send('Nächster Auftrag', 'next'); assert.equal(f.runs[2].threadId, undefined); assert.equal(f.runs[2].model, 'next-model'); assert.equal(f.runs[2].options?.thinkingLevel, 'high'); assert.equal(f.direct.currentIdentity(), 'Neue Identität');
   await f.direct.stop();
 });
 

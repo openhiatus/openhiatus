@@ -1,3 +1,4 @@
+import { THINKING_PREFERENCES, parseThinkingLevel, thinkingPreferences, type ThinkingLevel } from '../shared/thinking';
 import { APP_DISPLAY_NAME } from '../shared/branding';
 import { parseUiLanguage } from '../shared/ui-language';
 import { parseOnboarding } from '../shared/onboarding';
@@ -59,7 +60,7 @@ interface Dependencies {
   agent: AgentAdapter;
   dialogAgent?: AgentAdapter;
   createWorker?(onEvent: (event: AgentEvent) => void, job: BackgroundJob): AgentAdapter;
-  modelClient?: { complete(prompt: string, model: string, signal: AbortSignal, evidence?: SummaryCallEvidence): Promise<string> };
+  modelClient?: { complete(prompt: string, model: string, signal: AbortSignal, evidence?: SummaryCallEvidence, thinkingLevel?: ThinkingLevel): Promise<string> };
   chatgpt?: { snapshot(): ChatGPTConnection; signIn(): Promise<void>; cancelSignIn(): Promise<void>; signOut(): Promise<void> };
   providers?: { list(): ProviderView[]; save(input: ProviderInput): Promise<void>; test(id: string): Promise<void>; remove(id: string): Promise<void>; secrets(): string[] };
   memory?: MemoryBackend;
@@ -103,6 +104,7 @@ export class AppController {
 
   constructor(private readonly deps: Dependencies) {
     const saved = deps.store.load();
+    Object.assign(saved.preferences, thinkingPreferences(saved.preferences));
     saved.preferences.assistantProfile = parseAssistantProfile(saved.preferences.assistantProfile ?? DEFAULT_ASSISTANT_PROFILE);
     saved.preferences.voiceConversation ??= true;
     saved.preferences.speechProvider = parseSpeechProvider(saved.preferences.speechProvider ?? 'inworld');
@@ -158,7 +160,7 @@ export class AppController {
     this.memoryReports = new MemoryReportCoordinator({
       memory: deps.memory?.planSummaries && deps.memory.summaryInput && deps.memory.applySummary ? deps.memory as SummaryBackend : undefined,
       modelClient: deps.modelClient,
-      settings: () => ({ memoryModel: this.state.preferences.memoryModel, workModel: this.state.preferences.model,
+      settings: () => ({ thinkingLevel: this.state.preferences.memoryThinkingLevel, memoryModel: this.state.preferences.memoryModel, workModel: this.state.preferences.model,
         automatic: this.state.preferences.memoryAutoSummarize === true, chatgptBackgroundUsage: this.state.preferences.chatgptBackgroundUsage === true }),
       availability: {
         assertIdle: () => this.ensureWorkIdle(),
@@ -179,7 +181,7 @@ export class AppController {
       this.tasks = new BackgroundTaskCoordinator(saved.jobs ?? [], {
         createWorker: deps.createWorker,
         access: { assertFullAccess: () => this.requireFullAccess(), blocked: () => this.closing || this.shuttingDown || this.stopPending() },
-        settings: () => ({ model: this.state.preferences.model, progressSpeech: this.state.preferences.speakReplies && this.state.preferences.voiceConversation !== false,
+        settings: () => ({ thinkingLevel: this.state.preferences.workThinkingLevel, computerThinkingLevel: this.state.preferences.computerThinkingLevel, model: this.state.preferences.model, progressSpeech: this.state.preferences.speakReplies && this.state.preferences.voiceConversation !== false,
           computerDelegationEnabled: this.state.preferences.computerDelegationEnabled === true, computerModel: this.state.preferences.computerModel ?? '',
           computerFast: this.state.preferences.computerFast !== false, computerOverviewScaleDivisor: this.state.preferences.computerOverviewScaleDivisor ?? 1,
           computerDetailScaleDivisor: this.state.preferences.computerDetailScaleDivisor ?? 1,
@@ -207,7 +209,7 @@ export class AppController {
         agent: deps.dialogAgent,
         availability: {
           blocked: () => this.closing || this.shuttingDown || this.stopPending(),
-          configuration: () => ({ ready: this.state.connections.agent === 'ready', model: this.state.preferences.dialogModel, workspace: deps.workspace }),
+          configuration: () => ({ ready: this.state.connections.agent === 'ready', model: this.state.preferences.dialogModel, thinkingLevel: this.state.preferences.dialogThinkingLevel, workspace: deps.workspace }),
           prepare: async () => {
             this.requireFullAccess();
             if (this.memoryReports.busy()) {
@@ -244,7 +246,7 @@ export class AppController {
     if (!this.conversation) {
       this.directTask = new DirectTaskCoordinator({ messages: this.state.messages, task: this.state.task, usage: this.state.usage, context: this.state.context }, {
         agent: deps.agent, access: { assertAdmission: () => { this.requireFullAccess(); this.modelManagement.assertUnlocked(); }, blocked: () => this.closing || this.shuttingDown || this.stopPending() },
-        configuration: () => ({ ready: this.state.connections.agent === 'ready', model: this.state.preferences.model }), reports: this.memoryReports,
+        configuration: () => ({ ready: this.state.connections.agent === 'ready', model: this.state.preferences.model, thinkingLevel: this.state.preferences.workThinkingLevel }), reports: this.memoryReports,
         trackRuntimeMetrics: !deps.dialogAgent, context: { identity: () => this.identityInstructions(), started: () => { this.workEpoch++; } },
         memory: deps.memory ? {
           documents: () => this.instructionDocuments(), retrieve: query => this.retrieveMemory(query), readPeriod: request => this.readMemoryPeriod(request), propose: proposal => this.memory().propose(proposal),
@@ -642,6 +644,11 @@ export class AppController {
     } finally { this.stopDeferrals--; this.flushAfterStop(); }
   }
   async savePreferences(patch: Partial<Preferences>): Promise<void> {
+    const thinkingKeys = THINKING_PREFERENCES.filter(key => Object.hasOwn(patch, key));
+    for (const key of thinkingKeys) patch = { ...patch, [key]: parseThinkingLevel(patch[key]) };
+    if (thinkingKeys.length) await this.stateJournal.ready();
+    const previousThinking = thinkingPreferences(this.state.preferences);
+    const thinkingChanged = thinkingKeys.some(key => patch[key] !== previousThinking[key]);
     if (Object.hasOwn(patch, 'speechProvider')) patch = { ...patch, speechProvider: parseSpeechProvider(patch.speechProvider) };
     if (Object.hasOwn(patch, 'elevenlabsVoiceId')) patch = { ...patch, elevenlabsVoiceId: parseVoiceId(patch.elevenlabsVoiceId) };
     if (Object.hasOwn(patch, 'voiceId')) patch = { ...patch, voiceId: parseVoiceId(patch.voiceId) };
@@ -694,9 +701,13 @@ export class AppController {
       this.invalidateThread();
       this.activity('system', 'Gesprächseinstellungen gelten ab der nächsten Nachricht', 'Laufende Aufgaben behalten ihren bisherigen Kontext.'); this.changed();
     }
-    if (profileChanged || patch.onboarding || speechChanged) {
+    if (profileChanged || patch.onboarding || speechChanged || thinkingChanged) {
       try { await this.stateJournal.durableCommit(); }
       catch (error) {
+        if (thinkingChanged) {
+          for (const key of thinkingKeys) if (this.state.preferences[key] === patch[key]) this.state.preferences[key] = previousThinking[key];
+          this.changed();
+        }
         if (speechChanged) {
           for (const key of speechFields) if (patch[key] !== undefined && this.state.preferences[key] === patch[key]) {
             Object.assign(this.state.preferences, { [key]: previousSpeech[key] });

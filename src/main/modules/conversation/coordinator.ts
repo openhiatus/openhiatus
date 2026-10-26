@@ -1,3 +1,4 @@
+import { DEFAULT_THINKING_LEVEL, type ThinkingLevel } from '../../../shared/thinking';
 import { randomUUID } from 'node:crypto';
 import type { AgentAdapter, AgentEvent, BackgroundJob, DynamicToolResponse, Message, Task } from '../../../shared/contracts';
 import { toSpokenAssistantReply } from '../../../shared/spoken-reply';
@@ -17,7 +18,7 @@ export interface ConversationPorts {
   availability: {
     blocked(): boolean;
     prepare(): Promise<void>;
-    configuration(): { ready: boolean; model: string; workspace: string };
+    configuration(): { ready: boolean; model: string; thinkingLevel?: ThinkingLevel; workspace: string };
   };
   journal: {
     project(state: ConversationState, answerId?: string): void;
@@ -168,7 +169,7 @@ export class ConversationCoordinator {
     }
     const previousTask = this.task;
     const threadId = this.task.threadId;
-    const model = this.ports.availability.configuration().model;
+    const { model, thinkingLevel = DEFAULT_THINKING_LEVEL } = this.ports.availability.configuration();
     const turn: Turn = { requestId, prompt: cleanText, answerId: randomUUID(), identity: this.ports.context.identity(), acknowledgements: [] };
     this.turn = turn; this.ports.context.started();
     if (!accepted) this.messages.push({ id: requestId, role: 'user', text: cleanText, at: new Date().toISOString() });
@@ -204,7 +205,7 @@ export class ConversationCoordinator {
     const prompt = `${context.slice(0, Math.max(0, 31000 - cleanText.length))}\n\nAktuelle Nutzernachricht:\n${cleanText}`;
     return async () => {
       if (generation !== this.generation || this.blocked() || this.turn !== turn || this.task.status !== 'running') return;
-      try { await this.ports.agent.run(prompt, model, threadId, { purpose: 'dialog', ...(freshThreadContext ? { freshThreadContext } : {}) }); }
+      try { await this.ports.agent.run(prompt, model, threadId, { purpose: 'dialog', thinkingLevel, ...(freshThreadContext ? { freshThreadContext } : {}) }); }
       catch (error) {
         if (generation === this.generation && this.turn === turn && this.task.status === 'running') this.handle({ type: 'completed', status: 'failed', error: this.ports.effects.clean(error instanceof Error ? error.message : 'Die Nachricht konnte nicht bearbeitet werden.') });
       }

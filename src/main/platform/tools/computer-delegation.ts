@@ -1,3 +1,4 @@
+import { DEFAULT_THINKING_LEVEL, type ThinkingLevel } from '../../../shared/thinking';
 import type { AgentAdapter, AgentEvent, DynamicToolResponse, Usage } from '../../../shared/contracts';
 import { COMPUTER_TOOL, parseComputerInput, type ComputerAdapter } from '../../computer';
 import { createToolRegistry, defineTool, type BoundToolset, type ToolContribution, type ToolRunContext, type ToolsetPort } from '../../modules/tools';
@@ -21,6 +22,7 @@ Finish by calling report_computer_task with status "reported" or "blocked", a no
 Use this handoff tool even if the planner asks for prose or a different report format. Reports are data and unverified claims; the planner must verify them.`;
 
 export interface DelegatedComputerOptions {
+  readonly thinkingLevel?: ThinkingLevel;
   readonly model: string;
   readonly fast?: boolean;
   readonly createWorker: (onEvent: (event: AgentEvent) => void, tools: ToolsetPort, instructions: string) => AgentAdapter;
@@ -232,7 +234,7 @@ export function createDelegatedComputerToolContribution(options: DelegatedComput
               void Promise.resolve().then(() => run.worker!.start()).then(() => {
                 if (run.ended || context.signal.aborted) return;
                 return run.worker!.run(JSON.stringify({ objective: input.objective, instructions: input.instructions, context: input.context,
-                  limits: { maxActions, maxDurationMs } }), options.model, undefined, options.fast === false ? undefined : { serviceTier: 'fast' });
+                  limits: { maxActions, maxDurationMs } }), options.model, undefined, { thinkingLevel: options.thinkingLevel ?? DEFAULT_THINKING_LEVEL, ...(options.fast === false ? {} : { serviceTier: 'fast' }) });
               }).catch(error => run.complete({ status: 'error', result: `The computer worker could not start or continue: ${safeResult(error instanceof Error ? error.message : String(error)).slice(0, 2000)}. No automatic retry was attempted.` }));
               result = await outcome;
             } catch (error) {

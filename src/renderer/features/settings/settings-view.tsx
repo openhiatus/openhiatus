@@ -8,6 +8,7 @@ import { COMPUTER_DETAIL_FACTORS, COMPUTER_OVERVIEW_FACTORS } from '../../../sha
 import { COMPUTER_IMAGE_RETENTION_CALLS, COMPUTER_WORKING_MEMORY_CALLS } from '../../../shared/computer-task-settings';
 import { ACTIVITY_OVERLAY_DEFAULT_SIZE, type SidebarMode } from '../../../shared/workspace-preferences';
 import { ProvidersView } from '../../ProvidersView';
+import { ThinkingSelect } from '../../ThinkingSelect';
 import type { AudioPhase } from '../voice';
 import { AutostartCard } from './autostart-card';
 import { SpeechAccessCard } from './speech-access-card';
@@ -223,6 +224,8 @@ export function SettingsView({ state, navigationRequest, onOpenIdentity, onOpenO
             {computerModel && !computerConfigured && <option value={computerModel}>{computerModel}{t(" – nicht verfügbar")}</option>}
             {computerModels.map(model => <option key={model.id} value={model.id}>{modelOptionLabel(model)}</option>)}
           </select><ChevronDown size={15} aria-hidden="true" /></div>
+          <ThinkingSelect id="role-computerThinkingLevel" value={state?.preferences.computerThinkingLevel} disabled={computerSettingsBusy} onChange={value => preference({ computerThinkingLevel: value })} />
+          <p className="billing-note">{t('Thinking steuert den Denkaufwand. Höhere Stufen können länger dauern und mehr kosten. Nicht jedes Modell unterstützt jede Stufe; die Auswahl wird an das Modell angepasst. Änderungen gelten für neue Anfragen. Fast bleibt unabhängig davon.')}</p>
           <label className="settings-toggle"><span><strong>{t("Fast für das Computer-Modell")}</strong><small>{t("Fordert die schnelle Verarbeitung beim Modellanbieter an.")}</small></span><input type="checkbox" checked={state?.preferences.computerFast !== false}
             disabled={computerSettingsBusy || !computerConfigured} onChange={event => preference({ computerFast: event.target.checked })} /></label>
           <p className="billing-note" id={`${id}-computer-model-description`}>{t("Die getrennte Bedienung ist freiwillig und gilt ab dem nächsten Auftrag. Ohne Aktivierung bedient das Arbeitsmodell den Computer. Wähle ein Modell, das Bilder und Werkzeuge unterstützt. Fast wird separat angefordert; bei API-Zugängen können dafür höhere Kosten entstehen. Fast ist derzeit für ChatGPT- und OpenAI-Responses-Verbindungen umgesetzt.")}</p>

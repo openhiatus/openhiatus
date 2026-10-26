@@ -1,8 +1,10 @@
+import { DEFAULT_THINKING_LEVEL, type ThinkingLevel } from '../../../shared/thinking';
 import { APP_DISPLAY_NAME } from '../../../shared/branding';
 import type { SummaryJobState } from '../../../shared/memory';
 import { MemorySummarizer, type SummaryBackend, type SummaryCallEvidence } from './summarizer';
 
 export interface MemoryReportSettings {
+  thinkingLevel?: ThinkingLevel;
   memoryModel: string;
   workModel: string;
   automatic: boolean;
@@ -15,7 +17,7 @@ export interface MemoryReportTiming {
 }
 export interface MemoryReportPorts {
   memory?: SummaryBackend;
-  modelClient?: { complete(prompt: string, model: string, signal: AbortSignal, evidence: SummaryCallEvidence): Promise<string> };
+  modelClient?: { complete(prompt: string, model: string, signal: AbortSignal, evidence: SummaryCallEvidence, thinkingLevel?: ThinkingLevel): Promise<string> };
   settings(): MemoryReportSettings;
   availability: {
     assertIdle(): void;
@@ -40,6 +42,7 @@ interface Lease {
   stop?: Promise<void>;
   stopping: boolean;
   model: string;
+  thinkingLevel: ThinkingLevel;
   rejectStart(error: Error): void;
 }
 interface ScheduledReport { timer?: { cancel(): void }; }
@@ -92,7 +95,7 @@ export class MemoryReportCoordinator {
     let resolveStart!: () => void, rejectStart!: (error: Error) => void;
     const admitted = new Promise<void>((resolve, reject) => { resolveStart = resolve; rejectStart = reject; });
     void admitted.catch(() => {});
-    const lease: Lease = { mode, model, abort: new AbortController(), stopping: false, rejectStart };
+    const lease: Lease = { mode, model, thinkingLevel: this.ports.settings().thinkingLevel ?? DEFAULT_THINKING_LEVEL, abort: new AbortController(), stopping: false, rejectStart };
     this.lease = lease;
     let published = false;
     lease.done = Promise.resolve().then(async () => {
@@ -155,7 +158,7 @@ export class MemoryReportCoordinator {
       signal.addEventListener('abort', cancel, { once: true });
     });
     let result: string;
-    try { result = await Promise.race([this.ports.modelClient.complete(prompt, model, signal, evidence), cancelled]); }
+    try { result = await Promise.race([this.ports.modelClient.complete(prompt, model, signal, evidence, lease.thinkingLevel), cancelled]); }
     finally { signal.removeEventListener('abort', cancel); }
     this.checkLease(lease);
     return this.ports.effects.clean(result);
