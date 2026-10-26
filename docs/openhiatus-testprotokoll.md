@@ -9,6 +9,7 @@ Gespräch, Arbeit, Gedächtnis und separates Computermodell haben jeweils eine e
 - `node scripts/fast-model-ui-check.mjs`: bestanden. Auswahl ausgehend von `medium`, tatsächliche Gesprächs- und Arbeitsanfragen an den lokalen Testserver, unveränderte Stufe beim Fast-Wechsel sowie getrennte Werte nach Neustart. Layout in sieben Sprachen bei 560 × 440 und 1360 × 900 bestanden; Screenshot visuell geprüft.
 - `npm run test:computer-model-ui`: bestanden. Computerstufe unabhängig auswählbar, beim Arbeiten gesperrt und anschließend erhalten. Die ältere Renderer-Fixture benötigte eine ausdrücklich simulierte Autostart-Leseantwort für die inzwischen vorhandene Autostartkarte; es erfolgen weiterhin keine Betriebssystemeingaben oder Cloudanfragen.
 - `node scripts/package.mjs` und `npm run test:package`: Windows-Paket 0.0.27 erstellt und alle zwölf Abläufe bestanden. Der erweiterte Modellrollentest bestätigt in der verpackten App auch Computerstufe und Neustart. Alle verpackten Builddateien stimmen per SHA-256 mit dem geprüften Build überein.
+- `node scripts/installer.mjs`: Setup 0.0.27 erstellt und SHA-256-Prüfsumme bestätigt. Der unveränderte Installations-, Update- und Deinstallationszyklus wurde für diese Version nicht erneut vollständig geprüft; das Setup bleibt unsigniert.
 
 Die Prüfungen verwenden synthetische Profile, Konten und Modellantworten. Die Stufe ist eine Anforderung, die Pi an die Modellfähigkeiten anpasst; sie ist keine Garantie eines bestimmten Verbrauchs oder einer bestimmten Antwortqualität.
 
