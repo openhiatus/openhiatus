@@ -55,7 +55,7 @@ test('a persistent Windows lock has a bounded delay and preserves the last error
   }) });
   const changed = structuredClone(original); changed.task = { id: 'held-request', status: 'interrupted' };
   assert.throws(() => store.save(changed), error => error === failure);
-  assert.equal(attempts, 5); assert.deepEqual(pauses, [10, 20, 40, 80]); assert.equal(pauses.reduce((sum, value) => sum + value, 0), 150);
+  assert.equal(attempts, 8); assert.deepEqual(pauses, [10, 20, 40, 80, 160, 320, 640]); assert.equal(pauses.reduce((sum, value) => sum + value, 0), 1270);
   assert.equal(readFileSync(primary, 'utf8'), before);
   assert.equal(JSON.parse(readFileSync(`${primary}.tmp`, 'utf8')).state.task.status, 'interrupted');
 });

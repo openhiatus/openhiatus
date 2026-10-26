@@ -3,6 +3,7 @@ import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { innoCompiler, run } from './inno-compiler.mjs';
+import { checkWindowsPackageDependencies } from './windows-package-dependencies.mjs';
 
 export async function buildInstaller({ packageDirectory, outputDirectory, appId = 'openhiatus.desktop', displayName = 'openHiatus', autostartName = 'openHiatus', version, suffix = '', testProfileDirectory } = {}) {
   const manifest = JSON.parse(await readFile('package.json', 'utf8'));
@@ -17,6 +18,8 @@ export async function buildInstaller({ packageDirectory, outputDirectory, appId 
   outputDirectory = path.resolve(outputDirectory ?? path.join('release', manifest.version, 'installer'));
   const packaged = JSON.parse(await readFile(path.join(packageDirectory, 'resources/app/package.json'), 'utf8'));
   if (packaged.name !== manifest.name || packaged.version !== manifest.version) throw Error('Build the matching Windows package before creating Setup.');
+  // Only the synthetic 0.0.0 upgrade fixture may omit the real runtime.
+  if (!(appId.startsWith('openhiatus.installer.test.') && version === '0.0.0')) await checkWindowsPackageDependencies(packageDirectory);
   const files = [];
   async function inventory(directory, prefix = '') {
     for (const entry of await readdir(directory, { withFileTypes: true })) {

@@ -16,7 +16,10 @@ interface Write<State> {
 }
 
 export class StateWriteInvalidatedError extends Error {
-  constructor() { super('Der Speicherstand wurde nach einem fehlgeschlagenen Schreibzugriff verworfen. Bitte erneut versuchen.'); }
+  constructor(cause?: unknown) {
+    super('Der Speicherstand wurde nach einem fehlgeschlagenen Schreibzugriff verworfen. Bitte erneut versuchen.'
+      + (cause instanceof Error ? `\n${cause.message}` : ''), { cause });
+  }
 }
 
 /** Ordered durable barriers and coalesced checkpoints, independently of UI delivery. */
@@ -43,7 +46,7 @@ export class StateJournal<State> {
   ready(): Promise<void> { return this.recovery ?? Promise.resolve(); }
 
   durableCommit(): Promise<void> {
-    if (this.recovery) return Promise.reject(new StateWriteInvalidatedError());
+    if (this.recovery) return Promise.reject(new StateWriteInvalidatedError(this.failure?.error));
     const generation = ++this.generation;
     let state: State;
     try { state = structuredClone(this.ports.snapshot()); }
@@ -117,7 +120,7 @@ export class StateJournal<State> {
     const cancelled = this.barriers.splice(0);
     this.failure = { generation: Math.max(generation, ...cancelled.map(write => write.generation)), error };
     if (!this.recovery) this.recovery = new Promise<void>(resolve => { this.recovered = resolve; });
-    for (const write of cancelled) write.reject?.(new StateWriteInvalidatedError());
+    for (const write of cancelled) write.reject?.(new StateWriteInvalidatedError(error));
     if (this.recoveryTimer !== undefined) clearTimeout(this.recoveryTimer);
     // Async port wrappers may add multiple Promise hops before module rollbacks.
     // Recapture only in the next event-loop turn, never from speculative old queue snapshots.

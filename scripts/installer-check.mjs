@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 import { buildInstaller } from './installer.mjs';
 import { run } from './inno-compiler.mjs';
 import { inspectInstaller } from './installer-ui-check.mjs';
+import { checkPackagedRuntime } from './package-runtime-check.mjs';
 
 await mkdir('.test-data', { recursive: true }); await mkdir('artifacts', { recursive: true });
 const directory = await mkdtemp(path.resolve('.test-data/installer-'));
@@ -160,7 +161,8 @@ try {
   assert.equal(await page.getByRole('button', { name: 'Verstanden, Vollzugriff bestätigen', exact: true }).count(), 0);
   await instance.close(); instance = undefined;
   // Use the installed, unmodified application with no global Node or Codex on its PATH.
-  for (const check of ['scripts/ui-workflow-check.mjs', 'scripts/desktop-control-ui-check.mjs']) await run(process.execPath, [path.resolve(check)], { env: { ...env, OPENHIATUS_TEST_APP: executable } });
+  await checkPackagedRuntime(installDirectory);
+  for (const check of ['scripts/installation-recovery-check.mjs', 'scripts/ui-workflow-check.mjs', 'scripts/desktop-control-ui-check.mjs']) await run(process.execPath, [path.resolve(check)], { env: { ...env, OPENHIATUS_TEST_APP: executable } });
   // Electron closes its test connection before every child has released its image.
   await waitForAppExit();
   assert.equal(await setup(registeredUninstaller()), 0);

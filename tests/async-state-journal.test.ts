@@ -60,7 +60,11 @@ test('failed barriers invalidate speculative queued states and recapture only af
     catch (error) { state[key] = false; journal.checkpoint(); throw error; }
   };
   const first = assert.rejects(admit('first'), error => error === failure);
-  const second = assert.rejects(admit('second'), StateWriteInvalidatedError);
+  const second = assert.rejects(admit('second'), error => {
+    assert.ok(error instanceof StateWriteInvalidatedError);
+    assert.equal(error.cause, failure); assert.match(error.message, /disk failed/);
+    return true;
+  });
   await until(() => Boolean(failFirst)); failFirst(failure); await Promise.all([first, second]);
   await journal.ready(); state.retry = true; await journal.durableCommit(); await journal.flush();
   assert.deepEqual(written, [{ first: true, second: false, retry: false }, { first: false, second: false, retry: true }]);

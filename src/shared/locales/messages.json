@@ -1,4 +1,19 @@
 {
+  "Das Speichern oder Beenden dauert länger als erwartet.": [
+    "Saving or closing is taking longer than expected.", "Guardar o cerrar está tardando más de lo esperado.", "L’enregistrement ou la fermeture prend plus de temps que prévu.", "保存或关闭所需时间比预期更长。", "保存または終了に予想以上の時間がかかっています。", "Salvar ou fechar está demorando mais que o esperado."
+  ],
+  "Die letzten Änderungen konnten nicht sicher gespeichert werden.": [
+    "The latest changes could not be saved safely.", "No se pudieron guardar de forma segura los últimos cambios.", "Les dernières modifications n’ont pas pu être enregistrées de façon sûre.", "无法安全保存最近的更改。", "最新の変更を安全に保存できませんでした。", "Não foi possível salvar as últimas alterações com segurança."
+  ],
+  "Du kannst es erneut versuchen oder die App trotzdem beenden. Beim erzwungenen Beenden können ungespeicherte Änderungen verloren gehen. Laufende Agentenprozesse werden beendet.": [
+    "You can try again or close the app anyway. Forcing it to close may lose unsaved changes. Running agent processes will be stopped.", "Puedes volver a intentarlo o cerrar la aplicación de todos modos. Al forzar el cierre se pueden perder los cambios sin guardar. Se detendrán los procesos del agente en ejecución.", "Vous pouvez réessayer ou quitter quand même. Une fermeture forcée peut entraîner la perte des modifications non enregistrées. Les processus de l’agent en cours seront arrêtés.", "你可以重试，也可以仍然退出应用。强制退出可能会丢失尚未保存的更改。正在运行的智能体进程将被停止。", "再試行するか、そのまま終了できます。強制終了すると、未保存の変更が失われる可能性があります。実行中のエージェントプロセスは停止します。", "Você pode tentar novamente ou fechar o aplicativo mesmo assim. Forçar o fechamento pode perder alterações não salvas. Os processos do agente em execução serão interrompidos."
+  ],
+  "Weiter warten": ["Keep waiting", "Seguir esperando", "Continuer à attendre", "继续等待", "待機を続ける", "Continuar aguardando"],
+  "Erneut versuchen": ["Try again", "Volver a intentar", "Réessayer", "重试", "再試行", "Tentar novamente"],
+  "Trotzdem beenden": ["Quit anyway", "Cerrar de todos modos", "Quitter quand même", "仍然退出", "そのまま終了", "Fechar mesmo assim"],
+  "Die Bestätigung konnte nicht im lokalen Profil gespeichert werden. Es wurde kein Vollzugriff freigegeben. Prüfe die Details und versuche es erneut. Du kannst die App weiterhin schließen.": [
+    "The confirmation could not be saved in the local profile. Full access has not been granted. Check the details and try again. You can still close the app.", "No se pudo guardar la confirmación en el perfil local. No se ha concedido acceso completo. Revisa los detalles e inténtalo de nuevo. Puedes cerrar la aplicación.", "La confirmation n’a pas pu être enregistrée dans le profil local. L’accès complet n’a pas été accordé. Consultez les détails et réessayez. Vous pouvez toujours fermer l’application.", "无法将确认信息保存到本地配置文件。尚未授予完全访问权限。请查看详情后重试。你仍然可以关闭应用。", "確認をローカルプロファイルに保存できませんでした。フルアクセスは許可されていません。詳細を確認して再試行してください。アプリは引き続き終了できます。", "Não foi possível salvar a confirmação no perfil local. O acesso completo não foi concedido. Verifique os detalhes e tente novamente. Você ainda pode fechar o aplicativo."
+  ],
   "Thinking-Stufe": [
     "Thinking level", "Nivel de razonamiento", "Niveau de raisonnement", "思考级别", "思考レベル", "Nível de raciocínio"
   ],

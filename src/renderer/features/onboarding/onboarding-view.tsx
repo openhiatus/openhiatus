@@ -19,8 +19,10 @@ export function OnboardingView({ state, session, fromStart = false, onClose }: {
   const [busy, setBusy] = useState('');
   const pending = useRef(false), mounted = useRef(true);
   const [error, setError] = useState('');
+  const [failedAction, setFailedAction] = useState('');
   const [answer, setAnswer] = useState<{ model: string; answer: string }>();
   const heading = useRef<HTMLHeadingElement>(null);
+  const errorNotice = useRef<HTMLDivElement>(null);
   const titles = [t('Willkommen bei openHiatus'), t('Du und dein Agent'), t('Konto verbinden'), t('Sprechen oder schreiben'), t('Die erste Antwort')];
   const model = state.models.find(model => model.id === state.preferences.dialogModel);
   const blocked = !!busy || session.workBusy || session.summaryInProgress;
@@ -29,11 +31,14 @@ export function OnboardingView({ state, session, fromStart = false, onClose }: {
   const preference = (patch: PreferencesPatch) => { void window.openhiatus.savePreferences(patch).catch(session.report); };
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   useEffect(() => { heading.current?.focus(); }, [step]);
+  useEffect(() => {
+    if (error) { errorNotice.current?.focus({ preventScroll: true }); errorNotice.current?.scrollIntoView({ block: 'nearest' }); }
+  }, [error]);
   async function action(name: string, work: () => Promise<void>) {
     if (pending.current) return;
     pending.current = true; setBusy(name); setError('');
     try { await work(); }
-    catch (error) { if (mounted.current) setError(error instanceof Error ? error.message : String(error)); }
+    catch (error) { if (mounted.current) { setFailedAction(name); setError(error instanceof Error ? error.message : String(error)); } }
     finally { pending.current = false; if (mounted.current) setBusy(''); }
   }
   async function progress(next: OnboardingProgress['step'], status: OnboardingProgress['status'] = 'active', skipIdentity = false) {
@@ -125,7 +130,7 @@ export function OnboardingView({ state, session, fromStart = false, onClose }: {
         {verified && <div className="onboarding-success" role="status"><h2><Check size={22} />{t('Deine Textverbindung funktioniert.')}</h2><p>{answer.answer}</p>
           <p>{t('Du kannst jetzt eine Frage stellen oder dir einen nächsten Schritt erklären lassen.')}</p></div>}
       </>}
-      {error && <div className="onboarding-error" role="alert"><strong>{t('Das hat noch nicht geklappt.')}</strong><p>{step === 1 ? t('Deine Änderungen sind noch nicht vollständig gespeichert. Versuche es erneut. Falls die Angaben inzwischen anderswo geändert wurden, lade sie neu.') : t('Prüfe deinen Zugang und die Internetverbindung. Du kannst zurückgehen oder es erneut versuchen.')}</p><details><summary>{t('Details')}</summary><p>{error}</p></details></div>}
+      {error && <div ref={errorNotice} className="onboarding-error" role="alert" tabIndex={-1}><strong>{t('Das hat noch nicht geklappt.')}</strong><p>{failedAction === 'consent' ? t('Die Bestätigung konnte nicht im lokalen Profil gespeichert werden. Es wurde kein Vollzugriff freigegeben. Prüfe die Details und versuche es erneut. Du kannst die App weiterhin schließen.') : step === 1 ? t('Deine Änderungen sind noch nicht vollständig gespeichert. Versuche es erneut. Falls die Angaben inzwischen anderswo geändert wurden, lade sie neu.') : t('Prüfe deinen Zugang und die Internetverbindung. Du kannst zurückgehen oder es erneut versuchen.')}</p><details open={step === 0}><summary>{t('Details')}</summary><p>{error}</p></details></div>}
     </div></div>
       <footer className="onboarding-actions"><div className="onboarding-footer-content">
         {step > 0 && <button className="secondary-button" disabled={blocked || signingIn} onClick={() => void action('back', () => progress((step - 1) as OnboardingProgress['step']))}><ChevronLeft size={18} />{t('Zurück')}</button>}

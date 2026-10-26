@@ -5,7 +5,7 @@ interface StateFileReplacePorts {
   rename(temporary: string, target: string): void;
   wait(milliseconds: number): void;
 }
-const retryDelays = [10, 20, 40, 80] as const;
+const retryDelays = [10, 20, 40, 80, 160, 320, 640] as const;
 const waitCell = new Int32Array(new SharedArrayBuffer(4));
 const systemPorts: StateFileReplacePorts = {
   platform: process.platform,

@@ -39,6 +39,7 @@ import { sharedDesktopCoordinator } from './desktop-coordinator';
 import { DesktopControlOverlay } from './desktop-control-overlay';
 import { startDesktopProtection, type ProtectDesktop } from './desktop-protection';
 import { AUTOSTART_ARGUMENT, autostartUnavailableReason, WindowsAutostart } from './windows-autostart';
+import { ShutdownCoordinator } from './shutdown';
 
 app.setName(APP_DISPLAY_NAME);
 app.setAppUserModelId('local.openhiatus.assistant');
@@ -322,11 +323,33 @@ app.on('second-instance', (_event, argv) => {
   window?.show(); window?.restore(); window?.focus();
 });
 app.on('window-all-closed', () => app.quit());
+const shutdown = new ShutdownCoordinator({
+  busy: value => { quitting = value; if (value) stopActivityPresence(); },
+  shutdown: async () => {
+    await controller?.dispose(); await googleCalendarAuth?.dispose();
+    await memoryWriter?.dispose(); await stateWriter?.dispose();
+    services?.dispose(); guidanceOverlay?.dispose(); activityOverlay?.dispose();
+    await screenMonitor?.dispose(); await voiceHotkeys?.dispose();
+  },
+  choose: async reason => {
+    const result = await dialog.showMessageBox({ type: 'warning', title: t('{0} konnte die Arbeit nicht sicher beenden', APP_DISPLAY_NAME),
+      message: reason === 'timeout' ? t('Das Speichern oder Beenden dauert länger als erwartet.') : t('Die letzten Änderungen konnten nicht sicher gespeichert werden.'),
+      detail: t('Du kannst es erneut versuchen oder die App trotzdem beenden. Beim erzwungenen Beenden können ungespeicherte Änderungen verloren gehen. Laufende Agentenprozesse werden beendet.'),
+      buttons: [reason === 'timeout' ? t('Weiter warten') : t('Erneut versuchen'), t('Trotzdem beenden'), t('Abbrechen')], defaultId: 0, cancelId: 2,
+      noLink: true });
+    return result.response === 1 ? 'force' : result.response === 0 ? 'retry' : 'cancel';
+  },
+  finish: force => {
+    disposed = true; globalShortcut.unregisterAll();
+    if (force) {
+      // The process host and input guard independently observe parent exit and
+      // terminate managed jobs / release input, even if storage cannot finish.
+      try { stopDesktopControl(); } finally { app.exit(1); }
+    } else app.quit();
+  },
+});
 app.on('before-quit', event => {
-  if (disposed) return; event.preventDefault(); if (quitting) return; quitting = true; stopActivityPresence();
-  void (controller?.dispose() ?? Promise.resolve()).then(async () => { await googleCalendarAuth?.dispose(); await memoryWriter?.dispose(); await stateWriter?.dispose(); services?.dispose(); guidanceOverlay?.dispose(); activityOverlay?.dispose(); await screenMonitor?.dispose(); await voiceHotkeys?.dispose(); disposed = true; globalShortcut.unregisterAll(); app.quit(); }).catch(() => {
-    quitting = false; if (controller) activityOverlay?.update(activityOverlayState(controller.snapshot(), voicePresence));
-    void dialog.showMessageBox({ type: 'error', title: t('{0} konnte die Arbeit nicht sicher beenden', APP_DISPLAY_NAME), message: t('Die laufende Arbeit oder das Speichern konnte nicht sicher abgeschlossen werden. {0} bleibt geöffnet. Bitte erneut versuchen.', APP_DISPLAY_NAME) });
-  });
+  if (disposed) return; event.preventDefault();
+  void shutdown.close().catch(() => { quitting = false; });
 });
 if (locked) app.whenReady().then(createApp).catch(() => { void dialog.showMessageBox({ type: 'error', title: APP_DISPLAY_NAME, message: t('{0} konnte nicht starten. Bitte prüfen, ob das vollständige App-Paket und das lokale Datenverzeichnis zugänglich sind.', APP_DISPLAY_NAME) }).then(async () => { await Promise.allSettled([memoryWriter?.dispose(), stateWriter?.dispose()]); disposed = true; app.quit(); }); });
