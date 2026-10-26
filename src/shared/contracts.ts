@@ -1,5 +1,6 @@
 import type { SkillFavorites } from './skill-favorites';
 import type { OnboardingProgress } from './onboarding';
+import type { SpeechProvider } from './speech-settings';
 import type { WorkItem, WorkActionEvent } from './work-history';
 import type { SidebarMode } from './workspace-preferences';
 import type { UiLanguage } from './ui-language';
@@ -29,6 +30,8 @@ export interface Message { id: string; role: 'user' | 'assistant'; text: string;
 export interface Activity { id: string; at: string; kind: 'system' | 'command' | 'file' | 'error'; title: string; detail?: string; }
 export interface Task { id: string; status: TaskStatus; threadId?: string; turnId?: string; error?: string; }
 export interface Preferences {
+  speechProvider?: SpeechProvider;
+  elevenlabsVoiceId?: string;
   onboarding?: OnboardingProgress;
   uiLanguage?: UiLanguage;
   assistantProfile?: AssistantProfile;
@@ -90,8 +93,8 @@ export interface OpenhiatusApi extends GoogleCalendarApi {
   removeProvider(id: string): Promise<void>;
   listSkills(): Promise<SkillCatalog>;
   openSkillsFolder(): Promise<void>;
-  saveSpeechKey(key: string): Promise<void>;
-  removeSpeechKey(): Promise<void>;
+  saveSpeechKey(key: string, provider?: SpeechProvider): Promise<void>;
+  removeSpeechKey(provider?: SpeechProvider): Promise<void>;
   testSpeech(): Promise<AudioClip>;
   transcribe(clip: AudioClip): Promise<string>;
   synthesize(text: string): Promise<AudioClip>;

@@ -1,4 +1,5 @@
 import type { AudioClip } from '../../shared/contracts';
+import { parseSpeechProvider } from '../../shared/speech-settings';
 import { command, inputObject, inputText, noArgs, type HandlerMap } from './command';
 import type { IpcPorts } from './ports';
 
@@ -10,8 +11,8 @@ function audioClip(value: unknown): AudioClip {
 }
 export function speechHandlers({ controller }: IpcPorts): Pick<HandlerMap, 'saveSpeechKey' | 'removeSpeechKey' | 'testSpeech' | 'transcribe' | 'synthesize'> {
   return {
-    saveSpeechKey: command('saveSpeechKey', 1, args => [inputText(args[0], 4096, 'Inworld-Key')], key => controller.saveSpeechKey(key)),
-    removeSpeechKey: command('removeSpeechKey', 0, noArgs, () => controller.removeSpeechKey()),
+    saveSpeechKey: command('saveSpeechKey', 2, args => [inputText(args[0], 4096, 'API-Key'), parseSpeechProvider(args[1])], (key, provider) => controller.saveSpeechKey(key, provider)),
+    removeSpeechKey: command('removeSpeechKey', 1, args => [parseSpeechProvider(args[0])], provider => controller.removeSpeechKey(provider)),
     testSpeech: command('testSpeech', 0, noArgs, () => controller.testSpeech()),
     transcribe: command('transcribe', 1, args => [audioClip(args[0])], clip => controller.transcribe(clip)),
     synthesize: command('synthesize', 1, args => [inputText(args[0], 20000, 'Sprachausgabe')], text => controller.synthesize(text)),

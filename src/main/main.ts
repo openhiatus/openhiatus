@@ -106,7 +106,9 @@ async function createApp(): Promise<void> {
   }, onChange: syncCalendarConnection });
   googleCalendarAuth = calendarAuth;
   const calendar = new GoogleCalendarService(calendarAuth); initialSecrets.push(...calendarAuth.secrets());
-  try { const key = credentials.get('inworld'); if (key) initialSecrets.push(key); } catch { /* Never expose unavailable credentials. */ }
+  for (const provider of ['inworld', 'elevenlabs']) {
+    try { const key = credentials.get(provider); if (key) initialSecrets.push(key); } catch { /* Never expose unavailable credentials. */ }
+  }
   const memory = new WorkerMemoryStore(path.join(dataDirectory, 'Gedächtnis'), {
     workerPath: path.join(__dirname, 'memory-worker.cjs'),
     getSecrets: () => controller?.redactionSecrets() ?? initialSecrets,
@@ -175,7 +177,8 @@ async function createApp(): Promise<void> {
       tools: createToolRegistry([desktop, serviceBroker.createTools(job.id, ['read', 'write'])]),
       getIdentityInstructions: () => job.identityInstructions ?? '', onEvent });
   };
-  const speech = new SpeechService({ getKey: () => credentials.get('inworld'), getVoice: () => controller?.snapshot().preferences.voiceId || 'Dennis', cacheDirectory: path.join(dataDirectory, 'speech-cache') });
+  const speech = new SpeechService({ getKey: provider => credentials.get(provider), getProvider: () => controller?.snapshot().preferences.speechProvider ?? 'inworld',
+    getVoice: provider => (provider === 'elevenlabs' ? controller?.snapshot().preferences.elevenlabsVoiceId : controller?.snapshot().preferences.voiceId) ?? '', cacheDirectory: path.join(dataDirectory, 'speech-cache') });
   controller = new AppController({ version: app.getVersion(), store, credentials, speech, memory, providers, chatgpt, modelClient: new ModelClient(providers), agent: runtime, dialogAgent: dialogRuntime, createWorker, workspace, profileDirectory: dataDirectory,
     serviceContext: { instructions: () => calendar.instructions(), secrets: () => calendarAuth.secrets() },
     publishComputerFrame: frame => { if (window && !window.isDestroyed()) window.webContents.send('openhiatus:computer-frame', decodeComputerFrame(frame)); },

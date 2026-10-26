@@ -28,8 +28,9 @@ mit ChatGPT benötigen eine zusätzliche Freigabe und sind standardmäßig ausge
 Alternativ einen eigenen Modellanbieter einrichten: Anthropic, Google, OpenRouter,
 OpenAI API oder einen lokalen OpenAI-kompatiblen Modellserver. Lokale Modelle brauchen keinen API-Key.
 Schlüssel und ChatGPT-Zugangstoken bleiben im geschützten lokalen Zugangsspeicher.
-Sprechen verwendet Inworld für Spracherkennung und Sprachausgabe;
-den Zugang unter Einstellungen → Sprache & Geräte einrichten.
+Sprechen verwendet wahlweise Inworld oder ElevenLabs für Spracherkennung und Sprachausgabe;
+den Zugang unter Einstellungen → Sprache & Geräte einrichten. Eine eigene Voice-ID ist
+freiwillig: Ohne eigene Auswahl funktioniert die voreingestellte Stimme.
 Für Gespräch, Arbeitsaufträge und Gedächtnis sind getrennte Modelle wählbar.
 Eigene Skills können unter %APPDATA%\\openhiatus\\pi\\skills abgelegt werden.
 Der Hilfe-Skill bildschirmhilfe wird einmalig ins Profil kopiert und bleibt dort bearbeitbar.

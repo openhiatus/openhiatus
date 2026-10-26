@@ -6,7 +6,7 @@ import { onboardingStep, type OnboardingProgress } from '../../../shared/onboard
 import { modelOptionLabel } from '../../../shared/model-selection';
 import type { PreferencesPatch, Snapshot } from '../../../shared/contracts';
 import type { AppSession } from '../session';
-import { AudioDeviceSelect } from '../settings';
+import { AudioDeviceSelect, SpeechAccessCard } from '../settings';
 import { ChatGPTCard } from '../../ChatGPTCard';
 import { ProviderCard } from '../../ProvidersView';
 import { FullAccessNotice } from '../../FullAccessNotice';
@@ -20,7 +20,6 @@ export function OnboardingView({ state, session, fromStart = false, onClose }: {
   const pending = useRef(false), mounted = useRef(true);
   const [error, setError] = useState('');
   const [answer, setAnswer] = useState<{ model: string; answer: string }>();
-  const [speechKey, setSpeechKey] = useState('');
   const heading = useRef<HTMLHeadingElement>(null);
   const titles = [t('Willkommen bei openHiatus'), t('Du und dein Agent'), t('Konto verbinden'), t('Sprechen oder schreiben'), t('Die erste Antwort')];
   const model = state.models.find(model => model.id === state.preferences.dialogModel);
@@ -100,16 +99,14 @@ export function OnboardingView({ state, session, fromStart = false, onClose }: {
       {step === 3 && <>
         <p className="onboarding-lead">{t('Du kannst sofort mit Text arbeiten. Sprechen richtest du auf Wunsch jetzt oder später ein.')}</p>
         <details className="onboarding-voice"><summary>{t('Mikrofon und Stimme einrichten (optional)')}</summary>
-          <p>{t('Der Mikrofontest bleibt auf deinem Rechner. Für Spracherkennung und Antworten zum Anhören brauchst du einen separaten Inworld-Zugang.')}</p>
+          <p>{t('Der Mikrofontest bleibt auf deinem Rechner. Für Spracherkennung und Antworten zum Anhören verbindest du Inworld oder ElevenLabs.')}</p>
           <label className="field-label" htmlFor="setup-microphone">{t('Mikrofon')}</label>
           <AudioDeviceSelect id="setup-microphone" kind="audioinput" preferences={state.preferences} devices={session.devices} disabled={session.audioBusy} onChange={preference} />
           <button className="secondary-button" disabled={blocked || (session.audioBusy && session.phase !== 'mic-test')} onClick={() => session.phase === 'mic-test' ? session.cancelAudio() : void session.startRecording(true)}><Mic size={18} />{session.phase === 'mic-test' ? t('Audio beenden') : t('Mikrofon testen')}</button>
           {session.phase === 'mic-test' && <div role="status"><p>{t('Sprich kurz. Bewegt sich der Pegel?')}</p><meter aria-label={t('Mikrofonpegel')} min={0} max={1} value={session.level} /></div>}
-          <label className="field-label" htmlFor="setup-speech-key">{t('Inworld API-Key (Base64)')}</label>
-          <input id="setup-speech-key" type="password" autoComplete="off" value={speechKey} disabled={blocked} onChange={event => setSpeechKey(event.target.value)} />
-          <p className="billing-note">{t('Inworld erhält Audio und Antworttext. Die Nutzung wird separat abgerechnet.')}</p>
-          <button className="secondary-button" disabled={blocked || !speechKey.trim()} onClick={() => void action('speech', async () => { await window.openhiatus.saveSpeechKey(speechKey.trim()); if (mounted.current) setSpeechKey(''); })}>{t('Speichern')}</button>
-          <p role="status">{state.connections.speech === 'verified' ? t('Ausgabe geprüft') : session.speechReady ? t('Key gespeichert') : t('Nicht verbunden')}</p>
+          <SpeechAccessCard state={state} idPrefix="setup" disabled={blocked || session.audioBusy} onError={session.report}
+            resetAudio={() => { session.clearSpeech(); session.cancelAudio(); }} savePreferences={patch => window.openhiatus.savePreferences(patch)}
+            saveKey={(key, provider) => window.openhiatus.saveSpeechKey(key, provider)} removeKey={provider => window.openhiatus.removeSpeechKey(provider)} />
           <label className="field-label" htmlFor="setup-speaker">{t('Lautsprecher')}</label>
           <AudioDeviceSelect id="setup-speaker" kind="audiooutput" preferences={state.preferences} devices={session.devices} disabled={session.audioBusy} onChange={preference} />
           <button className="secondary-button" disabled={blocked || session.audioBusy || !session.speechReady} onClick={() => void session.testSpeech()}><Volume2 size={18} />{t('Sprachausgabe testen')}</button>

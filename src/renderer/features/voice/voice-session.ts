@@ -78,8 +78,14 @@ export class VoiceSession {
 
   updateSnapshot(snapshot: Snapshot | undefined): void {
     if (this.disposed) return;
+    const previous = this.snapshot;
     this.snapshot = snapshot;
     if (!snapshot) return;
+    if (previous && (previous.preferences.speechProvider !== snapshot.preferences.speechProvider
+      || previous.preferences.voiceId !== snapshot.preferences.voiceId || previous.preferences.elevenlabsVoiceId !== snapshot.preferences.elevenlabsVoiceId
+      || (previous.connections.speech !== 'missing' && snapshot.connections.speech === 'missing'))) {
+      this.clearSpeech(); this.cancelAudio();
+    }
     const running = new Set(snapshot.jobs?.filter(job => job.status === 'running').map(job => job.id));
     this.queue.ingest(snapshot.speech, snapshot.preferences.speakReplies && snapshot.connections.speech !== 'missing', running);
     if (this.activeSpeech?.kind === 'progress' && (!this.activeSpeech.jobId || !running.has(this.activeSpeech.jobId))) this.cancelAudio();
@@ -138,7 +144,7 @@ export class VoiceSession {
     if (!test && current.summary?.mode === 'manual' && ['running', 'stopping'].includes(current.summary.status)) return;
     if (!['idle', 'playing', 'synthesizing'].includes(this.phase)) return;
     if (!test && current.connections.speech === 'missing') {
-      this.events.connectionsRequired(); this.events.notice(t("Verbinde zuerst Inworld in den Einstellungen unter Sprache & Geräte, damit openHiatus deine Aufnahme transkribieren kann.")); return;
+      this.events.connectionsRequired(); this.events.notice(t('Verbinde zuerst Inworld oder ElevenLabs unter Sprache & Geräte, damit openHiatus deine Aufnahme transkribieren kann.')); return;
     }
     this.cancelAudio(); const epoch = this.epoch;
     this.events.inputStarted(); this.change({ phase: 'opening' });
