@@ -14,7 +14,7 @@ function fixture(initial: Partial<MemoryReportSettings> = {}) {
   const settings: MemoryReportSettings = { memoryModel: 'api/memory', workModel: 'api/work', automatic: true, chatgptBackgroundUsage: false, ...initial };
   let now = new Date('2026-10-21T10:00:00Z'), blocked = false, pending = true, revision = 1, captures = 0;
   const timers: Array<{ fire(): void; cancelled: boolean; delay: number }> = [];
-  const calls: Array<{ prompt: string; model: string; signal: AbortSignal; evidence: SummaryCallEvidence }> = [];
+  const calls: Array<{ prompt: string; model: string; signal: AbortSignal; evidence: SummaryCallEvidence; thinkingLevel?: import('../src/shared/thinking').ThinkingLevel }> = [];
   const results: MemorySummaryResult[] = [], publications: SummaryJobState[] = [], events: Array<{ kind: string; title: string; detail?: string }> = [], errors: unknown[] = [];
   let complete = async (_prompt: string, _signal: AbortSignal): Promise<string> => JSON.stringify({ items: [{ category: 'open', text: 'Die Planung blieb offen.', sourceIds: ['original-source'] }] });
   const input = (): MemorySummaryInput => ({ documentId: 'day:2026-10-01', kind: 'day', title: 'Tag 2026-10-01', baseVersion: revision, inputHash: `revision-${revision}`, inputDocuments: [],
@@ -29,7 +29,7 @@ function fixture(initial: Partial<MemoryReportSettings> = {}) {
       summaryInput: () => input(),
       applySummary(_input, result) { results.push(result); pending = false; return {} as MemorySnapshot; },
     },
-    modelClient: { async complete(prompt, model, signal, evidence) { assert.ok(captures > 0); calls.push({ prompt, model, signal, evidence }); return complete(prompt, signal); } },
+    modelClient: { async complete(prompt, model, signal, evidence, thinkingLevel) { assert.ok(captures > 0); calls.push({ prompt, model, signal, evidence, thinkingLevel }); return complete(prompt, signal); } },
     settings: () => settings,
     availability: { assertIdle() { if (blocked) throw new Error('Arbeit läuft.'); }, blocked: () => blocked },
     capture() { captures++; },
@@ -42,12 +42,19 @@ function fixture(initial: Partial<MemoryReportSettings> = {}) {
     block: (value: boolean) => { blocked = value; }, reopen: () => { pending = true; revision++; }, noPending: () => { pending = false; }, captures: () => captures };
 }
 
+test('memory reports without a saved thinking preference explicitly request medium', async () => {
+  const f = fixture(); await f.reports.start();
+  await until(() => f.reports.snapshot().status === 'completed');
+  assert.equal(f.calls[0].thinkingLevel, 'medium'); await f.reports.dispose();
+});
+
 test('memory reports freeze the selected direct model, own their projection and retain evidence across the public boundary', async () => {
-  const f = fixture({ memoryModel: '', workModel: 'api/fallback' });
+  const f = fixture({ memoryModel: '', workModel: 'api/fallback', thinkingLevel: 'high' });
   let release!: (text: string) => void;
   f.setComplete(async () => new Promise<string>(resolve => { release = resolve; }));
   await f.reports.start(); await until(() => f.calls.length === 1);
-  f.settings.workModel = 'api/later';
+  f.settings.workModel = 'api/later'; f.settings.thinkingLevel = 'low';
+  assert.equal(f.calls[0].thinkingLevel, 'high');
   assert.equal(f.reports.busy(), true);
   assert.equal(f.calls[0].model, 'api/fallback');
   assert.deepEqual(f.calls[0].evidence.sourceIds, ['original-source']);

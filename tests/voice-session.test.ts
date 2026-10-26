@@ -119,6 +119,23 @@ test('completed model work retains the round activity status through synthesis a
   assert.equal(current.working, false);
 });
 
+test('changing speech provider cancels old recording, synthesis and playback without publishing a late transcript', async () => {
+  const f = fixture();
+  try {
+    await f.session.startRecording();
+    const next = snapshot(); next.preferences.speechProvider = 'elevenlabs'; f.session.updateSnapshot(next);
+    assert.equal(f.recorders[0].cancelled, 1); assert.equal(f.session.phase, 'idle');
+    const late = deferred<AudioClip>(); f.environment.api.synthesize = () => late.promise;
+    const pending = f.session.speak('Old voice');
+    const changed = structuredClone(next); changed.preferences.elevenlabsVoiceId = 'Custom123'; f.session.updateSnapshot(changed);
+    late.resolve(clip); await pending; assert.equal(f.players.length, 0);
+    f.environment.api.synthesize = async () => clip;
+    void f.session.speak('Current voice'); await flush(); assert.equal(f.session.phase, 'playing');
+    const missing = structuredClone(changed); missing.connections.speech = 'missing'; f.session.updateSnapshot(missing);
+    assert.ok(f.players[0].paused > 0); assert.equal(f.session.phase, 'idle'); assert.deepEqual(f.transcripts, []);
+  } finally { f.session.dispose(); }
+});
+
 test('Stop invalidates a pending TTS result and permits future speech without replaying it', async () => {
   const f = fixture(), result = deferred<AudioClip>();
   f.environment.api.synthesize = () => result.promise;

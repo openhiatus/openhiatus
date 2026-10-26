@@ -1,4 +1,16 @@
 .settings-feature{min-height:0;color:var(--text);font-size:14px}
+.model-role-options{display:grid;grid-template-columns:minmax(0,1fr) minmax(150px,180px);gap:12px;align-items:end;flex:1;min-width:0;width:100%}
+.settings-feature .thinking-control>.field-label{display:block;flex:none;width:auto;margin:0 0 7px}
+.settings-feature .settings-card>.thinking-control{margin-top:18px;max-width:240px}
+.thinking-control{min-width:0}
+@container settings-content (max-width:600px){.model-role-options{grid-template-columns:minmax(0,1fr)}}
+.settings-speech-access > select,.speech-voice-options > input{display:block;width:100%;max-width:100%;min-height:44px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:#131c10;color:var(--text);font:inherit}
+.settings-speech-access > .field-label{display:block;margin:14px 0 7px}
+.speech-voice-options{margin-top:16px;padding:12px 14px;border:1px solid var(--border);border-radius:9px}
+.speech-voice-options summary{cursor:pointer;min-height:32px;line-height:1.6;font-weight:600}
+.speech-voice-options .field-label{display:block;margin:12px 0 7px}
+.speech-voice-options .provider-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:12px}
+.speech-voice-options summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 .settings-feature .settings-content{max-width:1050px;padding:36px clamp(20px,4vw,48px) 42px;container-type:inline-size;container-name:settings-content}
 .settings-feature-heading .eyebrow{font-size:12px;letter-spacing:1.6px}
 .settings-feature .settings-feature-heading h1{font-size:clamp(30px,3.3vw,38px);margin:10px 0 12px}

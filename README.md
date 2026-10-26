@@ -59,7 +59,7 @@ npm start
 ### First-time setup
 
 1. **Choose your language** and review the access notice. Give your assistant a name if you like.
-2. **Connect a model account** or local server. Start with text, or add an Inworld account for voice.
+2. **Connect a model account** or local server. Start with text, or connect Inworld or ElevenLabs for voice. A custom voice is optional.
 3. **Test your first reply**, then ask for help with something on your screen.
 
 The interface supports English, Spanish, French, German, Simplified Chinese, Japanese and Brazilian Portuguese. Model and speech services use your own accounts and may incur charges. [Setup details →](docs/user-guide.md#first-time-setup)
@@ -86,7 +86,7 @@ Desktop interaction currently supports the **primary display only** and uses scr
 
 | I want to… | Start here |
 | --- | --- |
-| Set up models, Fast, voice or everyday controls | [User guide](docs/user-guide.md) |
+| Set up models, Thinking, Fast, voice or everyday controls | [User guide](docs/user-guide.md) |
 | Install, update or remove the Windows app | [Windows installation](docs/windows-installation.md) |
 | Get help directly on my screen | [Screen help](docs/screen-help.md) |
 | Change the assistant's personality or memory | [Identity and memory](docs/identity-and-memory-files.md) |

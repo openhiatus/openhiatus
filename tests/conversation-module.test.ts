@@ -57,6 +57,18 @@ function fixture() {
 
 const task = { requestId: 'subtask', title: 'Projekt prüfen', resources: ['C:\\project'], acknowledgement: 'Ich prüfe das Projekt.' };
 
+test('dialog thinking freezes before context lookup and changes on the next turn of the same conversation', async () => {
+  const f = fixture(); let thinkingLevel: import('../src/shared/thinking').ThinkingLevel = 'low';
+  f.ports.availability.configuration = () => ({ ready: true, model: 'dialog-model', workspace: 'C:\\synthetic', thinkingLevel });
+  f.ports.context.memory = () => { thinkingLevel = 'high'; return ''; };
+  await f.conversation.send('First request', 'thinking-one');
+  assert.equal(f.runs[0].options?.thinkingLevel, 'low');
+  f.conversation.handle({ type: 'completed', status: 'completed', text: 'Synthetic response' });
+  await f.conversation.send('Second request', 'thinking-two');
+  assert.equal(f.runs[1].options?.thinkingLevel, 'high'); assert.equal(f.runs[1].threadId, 'thread-1');
+  await f.conversation.stop();
+});
+
 test('dialogue measures the spoken text after link cleanup instead of replacing a short answer with a pointer', async () => {
   const f = fixture(); await f.conversation.send('Ist die Installation aktuell?', 'spoken-answer');
   const target = `https://example.org/reference/${'very-long-reference-'.repeat(100)}`;

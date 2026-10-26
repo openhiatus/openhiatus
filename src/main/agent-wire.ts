@@ -1,3 +1,4 @@
+import { parseThinkingLevel, type ThinkingLevel } from '../shared/thinking.js';
 import type { AgentEvent, DynamicFunctionTool, DynamicToolResponse } from '../shared/contracts.js';
 import { MODEL_SERVICE_TIERS } from '../shared/model-requests.js';
 import { decodeWorkActionEvent } from '../shared/work-history.js';
@@ -10,6 +11,7 @@ const MAX_TOOL_TEXT = 2_000_000;
 const MAX_IMAGE_BASE64 = 56_000_000;
 type Empty = Record<string, never>;
 export interface HostRun {
+  thinkingLevel?: ThinkingLevel;
   runId: string; text: string; workspace: string; home: string; model: ResolvedModel; threadId?: string;
   dialog: boolean; tools: DynamicFunctionTool[]; instructions: string; freshThreadContext?: string;
   computerOnly?: boolean; serviceTier?: 'fast';
@@ -77,6 +79,8 @@ export function decodeRun(value: unknown): HostRun {
   if (input.computerOnly !== undefined && typeof input.computerOnly !== 'boolean') fail();
   if (input.computerOnly && input.dialog) fail();
   if (input.serviceTier !== undefined && input.serviceTier !== 'fast') fail();
+  let thinkingLevel: ThinkingLevel | undefined;
+  if (input.thinkingLevel !== undefined) { try { thinkingLevel = parseThinkingLevel(input.thinkingLevel); } catch { return fail(); } }
   const tools = Array.from(input.tools, toolDefinition);
   if (new Set(tools.map(tool => tool.name)).size !== tools.length) fail();
   const threadId = input.threadId === undefined ? undefined : uuid(input.threadId);
@@ -90,7 +94,7 @@ export function decodeRun(value: unknown): HostRun {
     try { workingMemory = computerWorkingMemoryCalls(input.computerWorkingMemoryCalls); } catch { return fail(); }
   }
   return { runId: uuid(input.runId), text: text(input.text, MAX_PROMPT_CHARS, true), workspace: text(input.workspace, 32_768, true), home: text(input.home, 32_768, true),
-    instructions: text(input.instructions, MAX_PROMPT_CHARS), model: model(input.model), dialog: input.dialog, tools,
+    ...(thinkingLevel === undefined ? {} : { thinkingLevel }), instructions: text(input.instructions, MAX_PROMPT_CHARS), model: model(input.model), dialog: input.dialog, tools,
     ...(input.computerOnly === undefined ? {} : { computerOnly: input.computerOnly }), ...(input.serviceTier === undefined ? {} : { serviceTier: input.serviceTier }),
     ...(imageRetention === undefined ? {} : { computerImageRetentionCalls: imageRetention }),
     ...(workingMemory === undefined ? {} : { computerWorkingMemoryCalls: workingMemory }),

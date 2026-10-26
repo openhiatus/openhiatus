@@ -1,6 +1,8 @@
+import { THINKING_PREFERENCES, parseThinkingLevel } from '../../shared/thinking';
 import type { PreferencesPatch, ProviderInput } from '../../shared/contracts';
 import { parseUiLanguage } from '../../shared/ui-language';
 import { parseOnboarding } from '../../shared/onboarding';
+import { parseSpeechProvider, parseVoiceId } from '../../shared/speech-settings';
 import { parseSkillFavorites } from '../../shared/skill-favorites';
 import { computerDetailDivisor, computerOverviewDivisor } from '../../shared/computer-views';
 import { computerImageRetentionCalls, computerWorkingMemoryCalls } from '../../shared/computer-task-settings';
@@ -13,8 +15,11 @@ const booleanPreferences = ['speakReplies', 'voiceConversation', 'earcons', 'mem
 const textPreferences = ['inputDeviceId', 'outputDeviceId', 'voiceId', 'model', 'dialogModel', 'memoryModel', 'computerModel'] as const;
 const deviceMetadata = ['inputDeviceLabel', 'inputDeviceGroupId', 'outputDeviceLabel', 'outputDeviceGroupId'] as const;
 function preferences(value: unknown): PreferencesPatch {
-  const input = inputObject(value, [...booleanPreferences, ...textPreferences, ...deviceMetadata, 'onboarding', 'uiLanguage', 'skillFavorites', 'computerOverviewScaleDivisor', 'computerDetailScaleDivisor', 'computerImageRetentionCalls', 'computerWorkingMemoryCalls', 'sidebarMode', 'activityOverlaySize', 'assistantProfile'], 'Ungültige Einstellungen.');
+  const input = inputObject(value, [...THINKING_PREFERENCES, ...booleanPreferences, ...textPreferences, ...deviceMetadata, 'speechProvider', 'elevenlabsVoiceId', 'onboarding', 'uiLanguage', 'skillFavorites', 'computerOverviewScaleDivisor', 'computerDetailScaleDivisor', 'computerImageRetentionCalls', 'computerWorkingMemoryCalls', 'sidebarMode', 'activityOverlaySize', 'assistantProfile'], 'Ungültige Einstellungen.');
   const patch: PreferencesPatch = {};
+  for (const key of THINKING_PREFERENCES) if (Object.hasOwn(input, key)) patch[key] = parseThinkingLevel(input[key]);
+  if (Object.hasOwn(input, 'speechProvider')) patch.speechProvider = parseSpeechProvider(input.speechProvider);
+  if (Object.hasOwn(input, 'elevenlabsVoiceId')) patch.elevenlabsVoiceId = parseVoiceId(input.elevenlabsVoiceId);
   if (Object.hasOwn(input, 'onboarding')) patch.onboarding = parseOnboarding(input.onboarding);
   if (Object.hasOwn(input, 'uiLanguage')) patch.uiLanguage = parseUiLanguage(input.uiLanguage);
   if (Object.hasOwn(input, 'assistantProfile')) patch.assistantProfile = parseAssistantProfile(input.assistantProfile);
@@ -24,6 +29,7 @@ function preferences(value: unknown): PreferencesPatch {
   for (const key of textPreferences) if (Object.hasOwn(input, key)) {
     const item = input[key]; if (typeof item !== 'string' || item.length > 300) throw new Error('Ungültige Einstellung.'); patch[key] = item;
   }
+  if (Object.hasOwn(input, 'voiceId')) patch.voiceId = parseVoiceId(input.voiceId);
   for (const key of deviceMetadata) if (Object.hasOwn(input, key)) {
     const item = input[key]; if (typeof item !== 'string' || item.length > 1000) throw new Error('Ungültige Geräteeinstellung.'); patch[key] = item;
   }

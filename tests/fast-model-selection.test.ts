@@ -60,11 +60,12 @@ test('selected Fast reaches dialog and worker descriptors without changing the r
       { connect: () => ({ request: fakeCommandRequest(request => { if (request.method === 'run') inputs.push(request.params); return request.method === 'hello' ? { protocol: 1 } : { accepted: true }; }),
         notify: () => {}, respond: () => {}, terminate: async () => {}, managedProcessCount: async () => 0 }) });
     try {
-      await adapter.run('Synthetic request', 'chatgpt/gpt-6.1-sol::fast');
+      await adapter.run('Synthetic request', 'chatgpt/gpt-6.1-sol::fast', undefined, { thinkingLevel: 'high' });
+      assert.equal(inputs[0].thinkingLevel, 'high');
       assert.equal(inputs[0].serviceTier, 'fast'); assert.equal(inputs[0].model.modelId, 'gpt-6.1-sol'); assert.equal(inputs[0].model.apiKey, '');
       await adapter.stop();
       await adapter.run('Ordinary request', 'chatgpt/gpt-6.1-sol');
-      assert.equal(inputs[1].serviceTier, undefined);
+      assert.equal(inputs[1].serviceTier, undefined); assert.equal(inputs[1].thinkingLevel, 'medium');
     } finally { await adapter.dispose(); }
   }
 });
@@ -81,6 +82,26 @@ function response(): Response {
   ];
   return new Response(events.map(event => `data: ${JSON.stringify(event)}\n\n`).join(''), { headers: { 'content-type': 'text/event-stream' } });
 }
+
+test('explicit memory thinking reaches the provider independently of Fast and unsupported models omit reasoning', async t => {
+  const f = await setup(t), requests: any[] = [];
+  const client = new ModelClient(f.providers, { fetch: async (input, init) => {
+    requests.push(await new Request(input, init).json()); return response();
+  } });
+  for (const level of ['low', 'medium', 'high'] as const) for (const fast of [false, true]) {
+    await client.complete('Synthetic report', `openai/gpt-6.1-sol${fast ? '::fast' : ''}`, AbortSignal.timeout(10000), undefined, level);
+    assert.equal(requests.at(-1).reasoning?.effort, level);
+    assert.equal(requests.at(-1).service_tier, fast ? 'priority' : undefined);
+    assert.ok(!requests.at(-1).tools?.length);
+  }
+  await assert.rejects(client.complete('Synthetic', 'openai/gpt-6.1-sol', AbortSignal.timeout(10000), undefined, 'ultra' as never));
+  assert.equal(requests.length, 6);
+  await client.complete('Synthetic report', 'openai/gpt-6.1-sol', AbortSignal.timeout(10000), undefined, 'off');
+  assert.equal(requests.at(-1).reasoning?.effort, 'low', 'the SDK raises an unsupported off request to the model minimum');
+  await f.providers.save({ id: 'openai', models: ['gpt-4o'] });
+  await client.complete('Synthetic report', 'openai/gpt-4o', AbortSignal.timeout(10000), undefined, 'high');
+  assert.equal(requests.at(-1).reasoning, undefined);
+});
 
 test('direct memory requests send priority with the base model for ChatGPT and API; provider rejection never falls back', async t => {
   const f = await setup(t), requests: Record<string, unknown>[] = [];

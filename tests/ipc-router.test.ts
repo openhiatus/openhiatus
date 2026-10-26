@@ -42,7 +42,7 @@ const validArgs: { [Name in CommandName]: CommandArgs<Name> } = {
   googleCalendarEvents: [{ timeMin: '2026-10-24T00:00:00Z', timeMax: '2026-10-25T00:00:00Z' }], openGoogleCalendarSetup: [],
   snapshot: [], send: ['Hallo', 'request'], stop: [], stopJob: ['job'], savePreferences: [{ speakReplies: false }], acknowledgeFullAccess: [],
   signInChatGPT: [], cancelChatGPTSignIn: [], signOutChatGPT: [], openChatGPTUsage: [], saveProvider: [{ id: 'local', models: ['test'] }], testProvider: ['local'], removeProvider: ['local'],
-  listSkills: [], openSkillsFolder: [], saveSpeechKey: ['key'], removeSpeechKey: [], testSpeech: [], transcribe: [{ base64: '', mimeType: 'audio/wav' }], synthesize: ['Hallo'],
+  listSkills: [], openSkillsFolder: [], saveSpeechKey: ['key', 'inworld'], removeSpeechKey: ['inworld'], testSpeech: [], transcribe: [{ base64: '', mimeType: 'audio/wav' }], synthesize: ['Hallo'],
   openWorkspace: [], revealFile: ['result.txt'], newConversation: [], memorySnapshot: [], rebuildMemory: [], startMemorySummary: [], readMemoryPeriod: [{}],
   editMemory: [{ id: 'core', content: 'Neue Fassung', expectedVersion: 1 }], decideMemoryProposal: ['proposal', 'approve'], memorySource: ['source'], searchMemory: ['Grüße'],
 };
@@ -55,6 +55,24 @@ test('language updates cross IPC without unrelated preference changes and reject
   }
   const count = f.calls.length;
   for (const value of [null, 'zh', 'pt', 'en-US', '__proto__', {}, 0]) assert.equal((await f.router.dispatch('savePreferences', [{ uiLanguage: value }])).ok, false);
+  assert.equal(f.calls.length, count);
+});
+
+test('speech provider and optional voice fields cross IPC while unknown providers and unsafe IDs are rejected', async () => {
+  const f = fixture();
+  for (const provider of ['inworld', 'elevenlabs']) {
+    assert.equal((await f.router.dispatch('saveSpeechKey', ['synthetic-key', provider])).ok, true);
+    assert.deepEqual(f.calls.at(-1), { name: 'saveSpeechKey', args: ['synthetic-key', provider] });
+    assert.equal((await f.router.dispatch('removeSpeechKey', [provider])).ok, true);
+    assert.equal((await f.router.dispatch('savePreferences', [{ speechProvider: provider, elevenlabsVoiceId: '', voiceId: 'Custom123' }])).ok, true);
+  }
+  const count = f.calls.length;
+  for (const value of ['unknown', '__proto__', null, {}]) {
+    assert.equal((await f.router.dispatch('saveSpeechKey', ['synthetic', value])).ok, false);
+    assert.equal((await f.router.dispatch('removeSpeechKey', [value])).ok, false);
+    assert.equal((await f.router.dispatch('savePreferences', [{ speechProvider: value }])).ok, false);
+  }
+  for (const value of ['x'.repeat(201), 'bad\nvoice', 3]) assert.equal((await f.router.dispatch('savePreferences', [{ elevenlabsVoiceId: value }])).ok, false);
   assert.equal(f.calls.length, count);
 });
 
@@ -158,6 +176,18 @@ test('validated handlers preserve normalization, explicit acknowledgement and St
   assert.deepEqual(f.calls.at(-1), { name: 'saveProvider', args: [{ id: 'local', apiKey: 'key', baseUrl: 'http://localhost', models: ['model'] }] });
   await f.router.dispatch('stop', []); assert.deepEqual(f.calls.slice(-2).map(call => call.name), ['stopActivityPresence', 'stop']);
   await f.router.dispatch('acknowledgeFullAccess', []); assert.equal(f.calls.at(-1)?.name, 'acknowledgeFullAccess');
+});
+
+test('IPC preserves each thinking preference and rejects unsupported values before side effects', async () => {
+  const f = fixture();
+  const patch = { workThinkingLevel: 'high', dialogThinkingLevel: 'low', memoryThinkingLevel: 'off', computerThinkingLevel: 'max' };
+  assert.equal((await f.router.dispatch('savePreferences', [patch])).ok, true);
+  assert.deepEqual(f.calls.at(-1), { name: 'savePreferences', args: [patch] });
+  const count = f.calls.length;
+  for (const key of Object.keys(patch)) for (const value of ['ultra', null, undefined, 3]) {
+    assert.equal((await f.router.dispatch('savePreferences', [{ [key]: value }])).ok, false);
+  }
+  assert.equal(f.calls.length, count);
 });
 
 test('outbound projection happens in the main handler before the transport receives the envelope', async () => {

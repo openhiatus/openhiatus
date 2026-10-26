@@ -20,6 +20,7 @@ import ${source('src/renderer/providers.css')};
 import ${source('src/renderer/features/settings/index.css')};
 import ${source('src/renderer/features/tasks/index.css')};
 globalThis.fetch=()=>{throw new Error('No network is permitted in this UI fixture.')};
+window.openhiatus={autostartSettings:async()=>({available:false,enabled:false,disabledByWindows:false,unavailableReason:'Synthetic renderer fixture'})};
 const initial=snapshotFixture(); initial.models=[{id:'chatgpt/gpt-6.1-sol',label:'Sol'},{id:'chatgpt/gpt-6-luna',label:'Luna'}];
 Object.assign(initial.preferences,{model:'chatgpt/gpt-6.1-sol',computerModel:'chatgpt/gpt-6-luna',computerDelegationEnabled:false,computerFast:true});
 const job={id:'fixture',computer:{delegationEnabled:true,model:'chatgpt/gpt-6-luna',fast:true,overviewScaleDivisor:16},modelRequests:[
@@ -42,6 +43,9 @@ try {
   await page.getByRole('tab', { name: 'Bedienung', exact: true }).click();
   const enabled = page.getByRole('checkbox', { name: /^Eigenes Computer-Modell verwenden/ });
   const fast = page.getByRole('checkbox', { name: /^Fast für das Computer-Modell/ });
+  const thinking = page.locator('#role-computerThinkingLevel');
+  await expect(thinking).toHaveValue('medium'); await thinking.selectOption('high');
+  await expect.poll(() => page.evaluate(() => window.fixture.state.preferences.computerThinkingLevel)).toBe('high');
   await expect(enabled).not.toBeChecked(); await expect(fast).toBeChecked();
   const detailScale = page.getByLabel('Auflösung der Details', { exact: true });
   const imageRetention = page.getByLabel('Bildaufbewahrung im Modellkontext', { exact: true });
@@ -63,8 +67,10 @@ try {
   assert.deepEqual(await page.evaluate(() => ({ model: window.fixture.state.preferences.model, computer: window.fixture.state.preferences.computerModel, factor: window.fixture.state.preferences.computerOverviewScaleDivisor, fast: window.fixture.state.preferences.computerFast })),
     { model: 'chatgpt/gpt-6.1-sol', computer: 'chatgpt/gpt-6-luna', factor: 16, fast: true });
   await page.evaluate(() => window.fixture.setBusy(true));
+  await expect(thinking).toBeDisabled();
   await expect(enabled).toBeDisabled(); await expect(fast).toBeDisabled(); await expect(page.getByLabel('Computer-Modell', { exact: true })).toBeDisabled();
   await page.evaluate(() => window.fixture.setBusy(false));
+  await expect(thinking).toBeEnabled(); await expect(thinking).toHaveValue('high');
   await page.getByLabel('Computer-Modell', { exact: true }).selectOption(''); await expect(enabled).not.toBeChecked(); await expect(enabled).toBeDisabled();
   await expect(detailScale).toBeEnabled(); await expect(imageRetention).toBeEnabled(); await expect(workingMemory).toBeEnabled();
   await expect(detailScale).toHaveValue('2'); await expect(imageRetention).toHaveValue('3');

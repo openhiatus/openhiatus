@@ -1,19 +1,19 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { BackgroundTaskCoordinator, type BackgroundTaskPorts, type TaskAdmission } from '../src/main/modules/tasks';
-import type { AgentAdapter, AgentEvent, BackgroundJob, Message, SpeechCue } from '../src/shared/contracts';
+import type { AgentRunOptions, AgentAdapter, AgentEvent, BackgroundJob, Message, SpeechCue } from '../src/shared/contracts';
 import type { CoreProposalInput, MemoryPeriodPage } from '../src/shared/memory';
 import { parseMemoryReply } from '../src/main/instructions';
 
 const tick = () => new Promise<void>(resolve => setImmediate(resolve));
 class Worker implements AgentAdapter {
-  runs: Array<{ text: string; model: string; threadId?: string }> = [];
+  runs: Array<{ text: string; model: string; threadId?: string; options?: AgentRunOptions }> = [];
   stops = 0; disposals = 0; managed = true;
   stopResult: () => Promise<void> = async () => {};
   constructor(readonly createdJob: BackgroundJob, readonly emit: (event: AgentEvent) => void) {}
   async start() {}
-  async run(text: string, model: string, threadId?: string) {
-    this.runs.push({ text, model, threadId });
+  async run(text: string, model: string, threadId?: string, options?: AgentRunOptions) {
+    this.runs.push({ text, model, threadId, options });
     this.emit({ type: 'started', threadId: threadId ?? `thread-${this.createdJob.id}`, turnId: `turn-${this.runs.length}` });
   }
   async stop() { this.stops++; await this.stopResult(); }
@@ -119,16 +119,17 @@ test('canonical identity files are frozen together and replace legacy persona in
 
 test('desktop model, Fast and image scale are captured before asynchronous admission and never borrowed from later settings', async () => {
   const f = fixture();
-  const settings = { model: 'sol', progressSpeech: false, computerDelegationEnabled: true,
+  const settings = { thinkingLevel: 'high' as import('../src/shared/thinking').ThinkingLevel, computerThinkingLevel: 'low' as import('../src/shared/thinking').ThinkingLevel, model: 'sol', progressSpeech: false, computerDelegationEnabled: true,
     computerModel: 'chatgpt/gpt-6-luna', computerFast: true, computerOverviewScaleDivisor: 16,
     computerDetailScaleDivisor: 2, computerImageRetentionCalls: 3, computerWorkingMemoryCalls: 15 };
   f.ports.settings = () => settings;
   const pending = f.tasks.accept(f.admission('computer'));
-  settings.computerModel = 'different'; settings.computerFast = false; settings.computerOverviewScaleDivisor = 4;
+  settings.thinkingLevel = 'off'; settings.computerThinkingLevel = 'max'; settings.computerModel = 'different'; settings.computerFast = false; settings.computerOverviewScaleDivisor = 4;
   settings.computerDetailScaleDivisor = 4; settings.computerImageRetentionCalls = 10; settings.computerWorkingMemoryCalls = 0;
   const accepted = await pending; await tick();
-  const expected = { delegationEnabled: true, model: 'chatgpt/gpt-6-luna', fast: true, overviewScaleDivisor: 16,
+  const expected = { thinkingLevel: 'low', delegationEnabled: true, model: 'chatgpt/gpt-6-luna', fast: true, overviewScaleDivisor: 16,
     detailScaleDivisor: 2, imageRetentionCalls: 3, workingMemoryCalls: 15 };
+  assert.equal(accepted.job.thinkingLevel, 'high'); assert.equal(f.workers[0].runs[0].options?.thinkingLevel, 'high');
   assert.deepEqual(accepted.job.computer, expected);
   assert.deepEqual(f.workers[0].createdJob.computer, expected);
   accepted.job.computer!.model = 'changed externally';
@@ -139,7 +140,7 @@ test('desktop model, Fast and image scale are captured before asynchronous admis
 test('direct computer jobs freeze legacy image defaults and independently selected image settings', async () => {
   const f = fixture();
   const legacy = await f.tasks.accept(f.admission('legacy-images')); await tick();
-  assert.deepEqual(legacy.job.computer, { delegationEnabled: false, model: '', fast: true, overviewScaleDivisor: 1,
+  assert.deepEqual(legacy.job.computer, { thinkingLevel: 'medium', delegationEnabled: false, model: '', fast: true, overviewScaleDivisor: 1,
     detailScaleDivisor: 1, imageRetentionCalls: 0, workingMemoryCalls: 0 });
   f.ports.settings = () => ({ ...f.settings, computerDetailScaleDivisor: 2, computerImageRetentionCalls: 3, computerWorkingMemoryCalls: 10 });
   const selected = await f.tasks.accept(f.admission('selected-images')); await tick();

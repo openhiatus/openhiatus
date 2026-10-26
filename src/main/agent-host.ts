@@ -1,3 +1,4 @@
+import { DEFAULT_THINKING_LEVEL } from '../shared/thinking.js';
 import { APP_DISPLAY_NAME } from '../shared/branding.js';
 import { workActionTarget } from '../shared/work-history.js';
 import { randomUUID } from 'node:crypto';
@@ -188,7 +189,7 @@ export class AgentHost {
       await resourceLoader.reload();
       const customTools = input.tools.map(definition => this.tool(input, definition));
       const { session } = await pi.createAgentSession({ cwd: input.workspace, agentDir: input.home, modelRuntime, model,
-        settingsManager, sessionManager, resourceLoader, tools, customTools, thinkingLevel: 'medium' });
+        settingsManager, sessionManager, resourceLoader, tools, customTools, thinkingLevel: input.thinkingLevel ?? DEFAULT_THINKING_LEVEL });
       this.session = session;
       const threadId = session.sessionId, imageHistoryPath = join(referenceDirectory, `${threadId}.computer-images.json`);
       let savedImages: unknown;

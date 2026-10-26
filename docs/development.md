@@ -45,6 +45,7 @@ Use isolated test profiles and synthetic data. Keep generated builds, test outpu
 npm run build
 npm run test:ui
 npm run test:audio-devices-ui
+npm run test:speech-providers-ui
 npm run test:chatgpt-ui
 npm run test:conversation
 node scripts/fast-model-ui-check.mjs

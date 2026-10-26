@@ -1,7 +1,9 @@
+import { parseThinkingLevel } from '../thinking';
 import type { ComputerFrame, Snapshot } from '../contracts';
 import { decodeWorkItems } from '../work-history';
 import { parseUiLanguage } from '../ui-language';
 import { parseOnboarding } from '../onboarding';
+import { parseSpeechProvider, parseVoiceId } from '../speech-settings';
 import { computerDetailDivisor, MAX_COMPUTER_DETAIL_PIXELS, type ComputerObservation, type ComputerRect } from '../computer-views';
 import { parseSkillFavorites } from '../skill-favorites';
 import { computerImageRetentionCalls, computerWorkingMemoryCalls, parseComputerTaskSettings } from '../computer-task-settings';
@@ -28,7 +30,7 @@ export const decodeSnapshot: Decoder<Snapshot> = object({
   messages: array(object(messageFields), 10000),
   activity: array(object({ id, at, kind: choice(['system', 'command', 'file', 'error']), title: body, detail: optional(body) }), 20000),
   task: object({ id, status: taskStatus, threadId: optional(body), turnId: optional(body), error: optional(body) }),
-  preferences: object({ onboarding: optional(parseOnboarding), uiLanguage: optional(parseUiLanguage), assistantProfile: optional(parseAssistantProfile), sidebarMode: optional(sidebarMode), activityOverlayEnabled: optional(boolean), activityOverlaySize: optional(activityOverlaySize), inputDeviceId: short, outputDeviceId: short, speakReplies: boolean, voiceId: short, model: short, dialogModel: short, memoryModel: short,
+  preferences: object({ workThinkingLevel: optional(parseThinkingLevel), dialogThinkingLevel: optional(parseThinkingLevel), memoryThinkingLevel: optional(parseThinkingLevel), computerThinkingLevel: optional(parseThinkingLevel), speechProvider: optional(parseSpeechProvider), elevenlabsVoiceId: optional(parseVoiceId), onboarding: optional(parseOnboarding), uiLanguage: optional(parseUiLanguage), assistantProfile: optional(parseAssistantProfile), sidebarMode: optional(sidebarMode), activityOverlayEnabled: optional(boolean), activityOverlaySize: optional(activityOverlaySize), inputDeviceId: short, outputDeviceId: short, speakReplies: boolean, voiceId: parseVoiceId, model: short, dialogModel: short, memoryModel: short,
     inputDeviceLabel: optional(text(1000)), inputDeviceGroupId: optional(text(1000)), outputDeviceLabel: optional(text(1000)), outputDeviceGroupId: optional(text(1000)),
     memoryAutoSummarize: optional(boolean), voiceConversation: optional(boolean), earcons: optional(boolean), skillFavorites: optional(parseSkillFavorites), itSupporter: optional(boolean),
     fullAccessAcknowledged: optional(boolean), chatgptBackgroundUsage: optional(boolean), computerOverviewScaleDivisor: optional(overviewPreference),
@@ -43,7 +45,7 @@ export const decodeSnapshot: Decoder<Snapshot> = object({
   desktopControl: optional(choice(['free', 'preparing', 'active', 'stopping', 'error'])),
   workspace: short, version: short, workItems: optional(decodeWorkItems),
   jobs: optional(array(object({ id, requestId: short, title: body, prompt: body, status: choice(['queued', 'running', 'stopping', 'completed', 'interrupted', 'failed']),
-    createdAt: at, updatedAt: at, model: short, resources: array(short, 24), parentRequestId: optional(id), threadId: optional(body), turnId: optional(body), result: optional(body), error: optional(body),
+    createdAt: at, updatedAt: at, model: short, thinkingLevel: optional(parseThinkingLevel), resources: array(short, 24), parentRequestId: optional(id), threadId: optional(body), turnId: optional(body), result: optional(body), error: optional(body),
     runtimeRetained: optional(boolean), usage: optional(usage), computer: optional(parseComputerTaskSettings), modelRequests: optional(parseModelRequestSummaries) }), 1000)),
   speech: optional(array(object({ id, text: body, at, jobId: optional(id), kind: optional(choice(['progress', 'receipt'])) }), 1000)),
   summary: optional(summary), context: optional(object({ threadId: body, usedTokens: number, windowTokens: optional(number), at })), usage: optional(usage),

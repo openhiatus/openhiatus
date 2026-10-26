@@ -80,7 +80,7 @@ export default function App() {
         onPreference={session.preference} onError={session.report} onNotice={session.setNotice}
         voice={{ phase: session.phase, seconds: session.seconds, devices: session.devices, audioBusy: session.audioBusy, speechReady: session.speechReady,
           startRecording: session.startRecording, testSpeech: session.testSpeech, cancelAudio: session.cancelAudio, clearSpeech: session.clearSpeech, stopEarcons: session.stopEarcons,
-          saveSpeechKey: key => window.openhiatus.saveSpeechKey(key), removeSpeechKey: () => window.openhiatus.removeSpeechKey() }} />
+          saveSpeechKey: (key, provider) => window.openhiatus.saveSpeechKey(key, provider), removeSpeechKey: provider => window.openhiatus.removeSpeechKey(provider) }} />
     </div>
     {view === 'onboarding' && state && <OnboardingView state={state} session={session} fromStart={setupFromStart} onClose={() => navigate('chat')} />}
   </WorkspaceShell>;

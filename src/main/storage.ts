@@ -1,6 +1,8 @@
+import { thinkingPreferences, parseThinkingLevel } from '../shared/thinking';
 import { APP_DISPLAY_NAME } from '../shared/branding';
 import { parseUiLanguage } from '../shared/ui-language';
 import { parseOnboarding } from '../shared/onboarding';
+import { parseSpeechProvider, parseVoiceId } from '../shared/speech-settings';
 import { validateUsage } from './modules/tasks';
 export { validateUsage } from './modules/tasks';
 import { closeSync, existsSync, fsyncSync, mkdirSync, openSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
@@ -23,7 +25,7 @@ const taskStatuses = new Set<TaskStatus>(['idle', 'running', 'stopping', 'comple
 export function defaultState(): SavedState {
   return {
     messages: [], activity: [], task: { id: '', status: 'idle' },
-    preferences: { uiLanguage: 'de', itSupporter: false, assistantProfile: structuredClone(DEFAULT_ASSISTANT_PROFILE), sidebarMode: 'auto', activityOverlayEnabled: false, activityOverlaySize: ACTIVITY_OVERLAY_DEFAULT_SIZE, inputDeviceId: 'default', outputDeviceId: 'default', speakReplies: true, voiceId: 'Dennis', model: '', dialogModel: '', memoryModel: '', memoryAutoSummarize: true, voiceConversation: true, fullAccessAcknowledged: false, chatgptBackgroundUsage: false, computerOverviewScaleDivisor: 1, computerDetailScaleDivisor: 1, computerImageRetentionCalls: 0, computerWorkingMemoryCalls: 0, computerDelegationEnabled: false, computerModel: '', computerFast: true },
+    preferences: { ...thinkingPreferences({}), speechProvider: 'inworld', elevenlabsVoiceId: '', uiLanguage: 'de', itSupporter: false, assistantProfile: structuredClone(DEFAULT_ASSISTANT_PROFILE), sidebarMode: 'auto', activityOverlayEnabled: false, activityOverlaySize: ACTIVITY_OVERLAY_DEFAULT_SIZE, inputDeviceId: 'default', outputDeviceId: 'default', speakReplies: true, voiceId: 'Dennis', model: '', dialogModel: '', memoryModel: '', memoryAutoSummarize: true, voiceConversation: true, fullAccessAcknowledged: false, chatgptBackgroundUsage: false, computerOverviewScaleDivisor: 1, computerDetailScaleDivisor: 1, computerImageRetentionCalls: 0, computerWorkingMemoryCalls: 0, computerDelegationEnabled: false, computerModel: '', computerFast: true },
   };
 }
 
@@ -98,7 +100,8 @@ function validateState(value: unknown): SavedState {
     ...(p.inputDeviceGroupId !== undefined ? { inputDeviceGroupId: string(p.inputDeviceGroupId, 1000) } : {}),
     ...(p.outputDeviceLabel !== undefined ? { outputDeviceLabel: string(p.outputDeviceLabel, 1000) } : {}),
     ...(p.outputDeviceGroupId !== undefined ? { outputDeviceGroupId: string(p.outputDeviceGroupId, 1000) } : {}),
-    speakReplies: p.speakReplies, voiceId: string(p.voiceId, 200), model: string(p.model, 300), dialogModel: string(p.dialogModel ?? '', 300), memoryModel: string(p.memoryModel ?? '', 300), memoryAutoSummarize, voiceConversation,
+    ...thinkingPreferences(p), speechProvider: parseSpeechProvider(p.speechProvider ?? 'inworld'), elevenlabsVoiceId: parseVoiceId(p.elevenlabsVoiceId ?? ''),
+    speakReplies: p.speakReplies, voiceId: parseVoiceId(p.voiceId), model: string(p.model, 300), dialogModel: string(p.dialogModel ?? '', 300), memoryModel: string(p.memoryModel ?? '', 300), memoryAutoSummarize, voiceConversation,
     fullAccessAcknowledged: p.fullAccessAcknowledged === true, chatgptBackgroundUsage: p.chatgptBackgroundUsage === true,
     ...(typeof p.earcons === 'boolean' ? { earcons: p.earcons } : {}),
     ...(p.skillFavorites !== undefined ? { skillFavorites: parseSkillFavorites(p.skillFavorites) } : {}),
@@ -115,6 +118,7 @@ function validateState(value: unknown): SavedState {
         status: row.status as BackgroundJob['status'], createdAt: string(row.createdAt, 100), updatedAt: string(row.updatedAt, 100),
         model: string(row.model, 300), resources: row.resources.map(value => redact(string(value, 4096))),
       };
+      if (row.thinkingLevel !== undefined) job.thinkingLevel = parseThinkingLevel(row.thinkingLevel);
       if (row.usage !== undefined) job.usage = validateUsage(row.usage);
       if (row.parentRequestId !== undefined) job.parentRequestId = string(row.parentRequestId, 512);
       if (row.computer !== undefined) job.computer = parseComputerTaskSettings(row.computer);

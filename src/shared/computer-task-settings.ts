@@ -1,3 +1,4 @@
+import { parseThinkingLevel } from './thinking';
 import type { ComputerTaskSettings } from './contracts';
 import { computerDetailDivisor, computerOverviewDivisor } from './computer-views';
 
@@ -20,7 +21,7 @@ export function parseComputerTaskSettings(value: unknown): ComputerTaskSettings 
   if (typeof row.delegationEnabled !== 'boolean' || typeof row.fast !== 'boolean'
     || typeof row.model !== 'string' || row.model.length > 300 || /[\r\n\0]/.test(row.model)
     || (row.delegationEnabled && !row.model.trim())) throw new Error('Ungültige Bildschirmkonfiguration.');
-  return { delegationEnabled: row.delegationEnabled, model: row.model, fast: row.fast,
+  return { ...(row.thinkingLevel === undefined ? {} : { thinkingLevel: parseThinkingLevel(row.thinkingLevel) }), delegationEnabled: row.delegationEnabled, model: row.model, fast: row.fast,
     overviewScaleDivisor: computerOverviewDivisor(row.overviewScaleDivisor),
     detailScaleDivisor: row.detailScaleDivisor === undefined ? 1 : computerDetailDivisor(row.detailScaleDivisor),
     imageRetentionCalls: row.imageRetentionCalls === undefined ? 0 : computerImageRetentionCalls(row.imageRetentionCalls),
