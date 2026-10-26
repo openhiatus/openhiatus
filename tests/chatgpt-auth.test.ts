@@ -23,6 +23,7 @@ async function fixture(options: { callback?: 'state' | 'error' | 'client' | 'non
   const credentials = { get: (key: string) => values.get(key), set: (key: string, value: string) => { values.set(key, value); writes.push(JSON.parse(value)); }, remove: (key: string) => { values.delete(key); } };
   let now = 1_800_000_000_000, calls = 0, refreshes = 0, modelCalls = 0, revocations = 0, latestUrl: URL | undefined;
   let tokenError = options.tokenError, refreshError: string | undefined, refreshDelay = 0, scopes = options.scopes ?? 'openid profile email offline_access resource.invoke chatgpt.tokens.use.direct';
+  let catalog: unknown = { models: [{ slug: 'gpt-6.1-sol', display_name: 'Work model', visibility: 'list' }, { slug: 'hidden', display_name: 'Hidden', visibility: 'hidden' }, { slug: 'gpt-6.1-sol', display_name: 'Duplicate', visibility: 'list' }, { slug: 'gpt-5.4', display_name: 'Small model', visibility: 'list' }] }, catalogStatus = 200;
   const requests: { url: string; init?: RequestInit }[] = [], browserUrls: URL[] = [];
   const mockFetch: typeof fetch = async (url, init) => {
     const address = String(url); requests.push({ url: address, init });
@@ -48,7 +49,7 @@ async function fixture(options: { callback?: 'state' | 'error' | 'client' | 'non
     }
     if (address === `${API}/models`) {
       modelCalls++; assert.match(new Headers(init?.headers).get('authorization') ?? '', /^Bearer access-/);
-      return json({ models: [{ slug: 'gpt-6.1-sol', display_name: 'Work model', visibility: 'list' }, { slug: 'hidden', display_name: 'Hidden', visibility: 'hidden' }, { slug: 'gpt-6.1-sol', display_name: 'Duplicate', visibility: 'list' }, { slug: 'gpt-5.4', display_name: 'Small model', visibility: 'list' }] });
+      return json(catalog, catalogStatus);
     }
     if (address === `${AUTH}/api/accounts/oauth/revoke`) {
       revocations++; const body = new URLSearchParams(String(init?.body)); assert.equal(body.get('client_id'), 'oaiapp_openhiatus_test'); assert.equal(body.get('token_type_hint'), 'refresh_token');
@@ -73,6 +74,7 @@ async function fixture(options: { callback?: 'state' | 'error' | 'client' | 'non
   };
   const auth = new ChatGPTAuth(directory, credentials, { fetch: mockFetch, openBrowser, now: () => now, timeoutMs: options.timeoutMs ?? 5000 });
   return { auth, directory, credentials, writes, values, requests, browserUrls, mockFetch, openBrowser,
+    setCatalog: (value: unknown, status = 200) => { catalog = value; catalogStatus = status; },
     counts: () => ({ calls, refreshes, modelCalls, revocations }), advance: (milliseconds: number) => { now += milliseconds; },
     setTokenError: (value?: string) => { tokenError = value; }, setRefreshError: (value?: string) => { refreshError = value; }, setRefreshDelay: (value: number) => { refreshDelay = value; }, setScopes: (value: string) => { scopes = value; }, now: () => now };
 }
@@ -95,6 +97,34 @@ test('official registration: PKCE + verified identity, issued client persisted b
   assert.equal(resolved.apiKey, 'access-1'); assert.equal(resolved.provider, 'openai'); assert.equal(resolved.api, 'openai-responses'); assert.equal(resolved.baseUrl, API);
   assert.equal((await piModel(resolved)).cost.input, 0); assert.ok(providers.secrets().includes(saved.idToken));
   await assert.rejects(providers.save({ id: 'chatgpt', apiKey: 'must-not-overwrite' }));
+});
+
+test('a restored ChatGPT account can discover Terra and persist the new catalog without signing in again', async () => {
+  const f = await fixture(); await f.auth.signIn();
+  const restored = new ChatGPTAuth(f.directory, f.credentials, { fetch: f.mockFetch, openBrowser: f.openBrowser, now: f.now });
+  const providers = new ProviderStore(f.directory, f.credentials, restored);
+  assert.throws(() => providers.resolve('chatgpt/gpt-6.1-terra'));
+  f.setCatalog({ models: [{ slug: 'gpt-6.1-sol', display_name: 'Work model', visibility: 'list' },
+    { slug: 'gpt-6.1-terra', display_name: 'GPT-6.1 Terra', visibility: 'list' }, { slug: 'hidden', display_name: 'Hidden', visibility: 'hidden' }] });
+  await restored.refreshModels();
+  assert.deepEqual(restored.listModels().map(model => model.id), ['chatgpt/gpt-6.1-sol', 'chatgpt/gpt-6.1-terra']);
+  const resolved = await providers.resolveForRun('chatgpt/gpt-6.1-terra');
+  assert.equal(resolved.modelId, 'gpt-6.1-terra'); assert.equal((await piModel(resolved)).reasoning, true);
+  const restarted = new ChatGPTAuth(f.directory, f.credentials, { fetch: f.mockFetch, openBrowser: f.openBrowser, now: f.now });
+  assert.deepEqual(restarted.listModels(), restored.listModels()); assert.equal(restarted.snapshot().status, 'signed-in');
+  assert.equal(f.browserUrls.length, 1); assert.deepEqual(f.counts(), { calls: 1, refreshes: 0, modelCalls: 2, revocations: 0 });
+});
+
+test('failed or malformed catalog refresh retains the signed-in account and its last working model list', async () => {
+  const f = await fixture(); await f.auth.signIn(); const saved = f.values.get('provider:chatgpt'), models = f.auth.listModels();
+  for (const [payload, status] of [[{ error: 'temporarily_unavailable' }, 503], [{ models: null }, 200]] as const) {
+    f.setCatalog(payload, status); await assert.rejects(f.auth.refreshModels());
+    assert.deepEqual(f.auth.listModels(), models); assert.equal(f.values.get('provider:chatgpt'), saved); assert.equal(f.auth.snapshot().status, 'signed-in');
+  }
+  f.setCatalog({ models: [{ slug: 'gpt-6.1-sol', display_name: 'Work model', visibility: 'list' }] });
+  await f.auth.refreshModels();
+  assert.equal(f.auth.listModels().some(model => model.id.includes('terra')), false, 'account availability remains authoritative');
+  assert.equal(f.browserUrls.length, 1);
 });
 
 test('single-flight refresh atomically rotates tokens; logout retains registration, removes all tokens, returning signin reuses exact client and host', async () => {

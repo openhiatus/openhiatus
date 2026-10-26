@@ -11,7 +11,7 @@ export interface ModelManagementState {
 }
 export interface ModelManagementPorts {
   providers?: { list(): ProviderView[]; save(input: ProviderInput): Promise<void>; test(id: string): Promise<void>; remove(id: string): Promise<void>; secrets(): string[]; };
-  chatgpt?: { snapshot(): ChatGPTConnection; signIn(): Promise<void>; cancelSignIn(): Promise<void>; signOut(): Promise<void>; };
+  chatgpt?: { snapshot(): ChatGPTConnection; signIn(): Promise<void>; cancelSignIn(): Promise<void>; signOut(): Promise<void>; refreshModels?(signal?: AbortSignal): Promise<void>; };
   lifecycle: {
     assertIdle(): void;
     closed(): boolean;
@@ -30,6 +30,7 @@ export class ModelManagementCoordinator {
   private state: ModelManagementState;
   private updating = false;
   private authEpoch = 0;
+  private refreshingModels?: AbortController;
   private closed = false;
   private readonly knownSecrets = new Set<string>();
   private computerSelectionInitialized = false;
@@ -116,12 +117,31 @@ export class ModelManagementCoordinator {
   }
   async cancelChatGPTSignIn(): Promise<void> {
     ++this.authEpoch;
+    this.refreshingModels?.abort();
     if (!this.ports.chatgpt) return;
     await this.ports.chatgpt.cancelSignIn(); this.refreshChatGPT();
   }
   async signOutChatGPT(): Promise<void> {
     if (!this.ports.chatgpt) throw new Error('Die ChatGPT-Anmeldung ist in diesem Build nicht verfügbar.');
     await this.authChange(() => this.ports.chatgpt!.signOut());
+  }
+  async refreshChatGPTModels(): Promise<void> {
+    this.assertIdle();
+    if (this.closed || this.ports.lifecycle.closed()) throw new Error('openHiatus wird beendet.');
+    const auth = this.ports.chatgpt;
+    if (!auth?.refreshModels) throw new Error('Die ChatGPT-Modellliste kann in diesem Build nicht aktualisiert werden.');
+    if (!auth.snapshot().planUsage) throw new Error('Bitte mit ChatGPT anmelden und die Nutzung des ChatGPT-Plans freigeben.');
+    const controller = new AbortController(), previous = { ...this.state.selections };
+    this.refreshingModels = controller; this.updating = true;
+    try { await auth.refreshModels(AbortSignal.any([controller.signal, AbortSignal.timeout(30_000)])); }
+    finally {
+      this.refreshingModels = undefined; this.updating = false;
+      if (!this.closed && !this.ports.lifecycle.closed()) {
+        this.refreshAuth(); this.refreshProviders();
+        if (Object.keys(previous).some(key => previous[key as keyof ModelSelections] !== this.state.selections[key as keyof ModelSelections])) this.ports.lifecycle.invalidateThread();
+        this.changed();
+      }
+    }
   }
   private async providerChange(change: () => Promise<void>): Promise<void> {
     this.assertIdle(); this.updating = true;
@@ -144,5 +164,5 @@ export class ModelManagementCoordinator {
     if (!this.ports.providers) throw new Error('Anbieter-Verwaltung ist nicht verfügbar.');
     await this.providerChange(() => this.ports.providers!.remove(id));
   }
-  dispose(): void { this.closed = true; ++this.authEpoch; }
+  dispose(): void { this.closed = true; ++this.authEpoch; this.refreshingModels?.abort(); }
 }

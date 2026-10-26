@@ -6,7 +6,8 @@ import assert from 'node:assert/strict';
 
 await mkdir('.test-data', { recursive: true }); await mkdir('artifacts', { recursive: true });
 const profile = await mkdtemp(path.resolve('.test-data/fast-model-ui-'));
-const base = 'openai/gpt-6.1-sol', fast = `${base}::fast`, requests = [], errors = [];
+const modelId = process.env.OPENHIATUS_TEST_MODEL || 'gpt-6.1-sol';
+const base = `openai/${modelId}`, fast = `${base}::fast`, requests = [], errors = [];
 function respond(response, tool, text) {
   const args = tool ? JSON.stringify({ requestId: 'fast-ui-task', title: 'Fast prüfen', acknowledgement: 'Ich prüfe Fast.', resources: ['*'] }) : '';
   const item = tool ? { id: 'fc_fast', type: 'function_call', call_id: 'call_fast', name: 'start_task', arguments: args }
@@ -27,7 +28,7 @@ const server = createServer(async (request, response) => {
     assert.equal(request.url, '/v1/responses');
     let body = ''; for await (const chunk of request) body += chunk;
     const input = JSON.parse(body), dialog = input.tools?.some(tool => tool.name === 'start_task');
-    assert.equal(input.model, 'gpt-6.1-sol', 'local variant suffix must not reach the provider');
+    assert.equal(input.model, modelId, 'local variant suffix must not reach the provider');
     const thinking = input.input.filter(item => item.type === 'configuration_update').at(-1)?.reasoning?.effort ?? input.reasoning?.effort;
     requests.push({ role: dialog ? 'dialog' : 'worker', tier: input.service_tier, thinking });
     const tool = dialog && JSON.stringify(input.input).includes('[fast-worker]') && !input.input.some(item => item.type === 'function_call_output');
@@ -48,15 +49,15 @@ const launch = async () => {
 try {
   let page = await launch();
   await page.getByRole('button', { name: 'Verstanden, Vollzugriff bestätigen', exact: true }).click();
-  await page.evaluate(async url => {
-    await window.openhiatus.saveProvider({ id: 'openai', apiKey: 'synthetic-fast-ui-key', baseUrl: url, models: ['gpt-6.1-sol'] });
+  await page.evaluate(async ({ url, modelId }) => {
+    await window.openhiatus.saveProvider({ id: 'openai', apiKey: 'synthetic-fast-ui-key', baseUrl: url, models: [modelId] });
     await window.openhiatus.savePreferences({ memoryAutoSummarize: false, speakReplies: false, earcons: false });
-  }, `http://127.0.0.1:${server.address().port}/v1`);
+  }, { url: `http://127.0.0.1:${server.address().port}/v1`, modelId });
   await page.getByRole('button', { name: 'Einstellungen', exact: true }).click();
   for (const role of ['model', 'dialogModel', 'memoryModel']) {
     const select = page.locator(`#role-${role}`);
     assert.deepEqual(await select.locator('option').evaluateAll(options => options.map(option => ({ value: option.value, label: option.textContent }))), [
-      { value: base, label: 'OpenAI · gpt-6.1-sol' }, { value: fast, label: 'OpenAI · gpt-6.1-sol (fast)' },
+      { value: base, label: `OpenAI · ${modelId}` }, { value: fast, label: `OpenAI · ${modelId} (fast)` },
     ]);
     await select.selectOption(fast);
     await expect.poll(() => page.evaluate(async key => (await window.openhiatus.snapshot()).preferences[key], role)).toBe(fast);
@@ -68,11 +69,11 @@ try {
     await select.selectOption(value);
     await expect.poll(() => page.evaluate(async key => (await window.openhiatus.snapshot()).preferences[key], key)).toBe(value);
   }
-  await expect(page.locator('#openai-models')).toHaveAttribute('placeholder', 'gpt-6.1-sol');
+  await expect(page.locator('#openai-models')).toHaveAttribute('placeholder', modelId);
   await page.screenshot({ path: 'artifacts/openhiatus-fast-modellauswahl.png' });
   await page.getByRole('button', { name: 'Gespräch', exact: true }).click();
-  await expect(page.locator('.composer-footer')).toContainText('Gespräch · OpenAI · gpt-6.1-sol (fast)');
-  await expect(page.locator('.composer-footer')).toContainText('Arbeit · OpenAI · gpt-6.1-sol (fast)');
+  await expect(page.locator('.composer-footer')).toContainText(`Gespräch · OpenAI · ${modelId} (fast)`);
+  await expect(page.locator('.composer-footer')).toContainText(`Arbeit · OpenAI · ${modelId} (fast)`);
   await page.getByRole('textbox', { name: 'Dein Auftrag', exact: true }).fill('[fast-worker] Prüfe den synthetischen Arbeitsauftrag.');
   await page.getByRole('button', { name: 'Auftrag senden', exact: true }).click();
   await expect.poll(() => page.evaluate(async () => (await window.openhiatus.snapshot()).jobs?.[0]?.status), { timeout: 30000 }).toBe('completed');
@@ -94,6 +95,8 @@ try {
   assert.equal(requests.at(-1).tier, undefined, 'switching back removes Fast'); assert.equal(requests.at(-1).thinking, 'low');
   await page.getByRole('button', { name: 'Einstellungen', exact: true }).click();
   await page.getByRole('tab', { name: 'Bedienung', exact: true }).click();
+  await page.getByLabel('Computer-Modell', { exact: true }).selectOption(base);
+  await expect.poll(() => page.evaluate(async () => (await window.openhiatus.snapshot()).preferences.computerModel)).toBe(base);
   await expect(page.locator('#role-computerThinkingLevel')).toHaveValue('medium');
   await page.locator('#role-computerThinkingLevel').selectOption('max');
   await expect.poll(() => page.evaluate(async () => (await window.openhiatus.snapshot()).preferences.computerThinkingLevel)).toBe('max');
@@ -102,6 +105,7 @@ try {
   const restored = await page.evaluate(() => window.openhiatus.snapshot());
   assert.equal(restored.preferences.model, fast); assert.equal(restored.preferences.dialogModel, base); assert.equal(restored.preferences.memoryModel, fast);
   assert.equal(restored.preferences.computerThinkingLevel, 'max');
+  assert.equal(restored.preferences.computerModel, base);
   assert.equal(requests.length, count, 'restart does not replay work'); assert.deepEqual(errors, []);
   await page.getByRole('button', { name: 'Einstellungen', exact: true }).click();
   await expect(page.locator('#role-model')).toHaveValue(fast); await expect(page.locator('#role-memoryModel')).toHaveValue(fast); await expect(page.locator('#role-dialogModel')).toHaveValue(base);

@@ -14,7 +14,7 @@ function fixture() {
   const controller: IpcControllerPort = {
     checkSetup: () => ({ model: 'local/test', answer: 'Hallo!' }),
     snapshot: () => snapshot, send: capture('send'), stop: capture('stop'), stopJob: capture('stopJob'), savePreferences: capture('savePreferences'), acknowledgeFullAccess: capture('acknowledgeFullAccess'),
-    signInChatGPT: capture('signInChatGPT'), cancelChatGPTSignIn: capture('cancelChatGPTSignIn'), signOutChatGPT: capture('signOutChatGPT'),
+    signInChatGPT: capture('signInChatGPT'), refreshChatGPTModels: capture('refreshChatGPTModels'), cancelChatGPTSignIn: capture('cancelChatGPTSignIn'), signOutChatGPT: capture('signOutChatGPT'),
     saveProvider: capture('saveProvider'), testProvider: capture('testProvider'), removeProvider: capture('removeProvider'),
     listSkills: () => ({ skills: [], errors: [], directory: 'C:\\Skills' }), saveSpeechKey: capture('saveSpeechKey'), removeSpeechKey: capture('removeSpeechKey'),
     testSpeech: () => audio, transcribe: async clip => { await capture('transcribe')(clip); return 'Präzise Grüße'; }, synthesize: () => audio, newConversation: capture('newConversation'),
@@ -41,7 +41,7 @@ const validArgs: { [Name in CommandName]: CommandArgs<Name> } = {
   googleCalendarSnapshot: [], saveGoogleCalendarClient: [{ clientId: 'synthetic-client.apps.googleusercontent.com' }], connectGoogleCalendar: [], cancelGoogleCalendarLogin: [], disconnectGoogleCalendar: [], selectGoogleCalendar: ['primary'],
   googleCalendarEvents: [{ timeMin: '2026-10-24T00:00:00Z', timeMax: '2026-10-25T00:00:00Z' }], openGoogleCalendarSetup: [],
   snapshot: [], send: ['Hallo', 'request'], stop: [], stopJob: ['job'], savePreferences: [{ speakReplies: false }], acknowledgeFullAccess: [],
-  signInChatGPT: [], cancelChatGPTSignIn: [], signOutChatGPT: [], openChatGPTUsage: [], saveProvider: [{ id: 'local', models: ['test'] }], testProvider: ['local'], removeProvider: ['local'],
+  signInChatGPT: [], refreshChatGPTModels: [], cancelChatGPTSignIn: [], signOutChatGPT: [], openChatGPTUsage: [], saveProvider: [{ id: 'local', models: ['test'] }], testProvider: ['local'], removeProvider: ['local'],
   listSkills: [], openSkillsFolder: [], saveSpeechKey: ['key', 'inworld'], removeSpeechKey: ['inworld'], testSpeech: [], transcribe: [{ base64: '', mimeType: 'audio/wav' }], synthesize: ['Hallo'],
   openWorkspace: [], revealFile: ['result.txt'], newConversation: [], memorySnapshot: [], rebuildMemory: [], startMemorySummary: [], readMemoryPeriod: [{}],
   editMemory: [{ id: 'core', content: 'Neue Fassung', expectedVersion: 1 }], decideMemoryProposal: ['proposal', 'approve'], memorySource: ['source'], searchMemory: ['Grüße'],

@@ -5,12 +5,13 @@ import type { ProviderInput, ProviderView, ModelOption } from '../shared/contrac
 import type { ChatGPTAuth } from './chatgpt-auth.js';
 import { baseModelSelection, isFastModelSelection, supportsFastSelection, withFastModelOptions } from '../shared/model-selection';
 import { applyRequestedServiceTier } from './model-request-diagnostics';
+import { openAILaunchModel } from './openai-launch-models';
 
 export interface CredentialStore { get(name: string): string | undefined; set(name: string, value: string): void; remove(name: string): void; }
 interface ProviderConfig { baseUrl?: string; models?: string[]; verified?: boolean; error?: string; }
 export interface ResolvedModel { provider: string; modelId: string; apiKey: string; baseUrl?: string; api: string; authType?: 'chatgpt'; serviceTier?: 'fast'; }
 const PRESETS: Record<string, { label: string; api: string; baseUrl: string; models: string[] }> = {
-  openai: { label: 'OpenAI', api: 'openai-responses', baseUrl: 'https://api.openai.com/v1', models: ['gpt-5.4', 'gpt-5.4-mini'] },
+  openai: { label: 'OpenAI', api: 'openai-responses', baseUrl: 'https://api.openai.com/v1', models: ['gpt-5.4', 'gpt-5.4-mini', 'gpt-6.1-terra'] },
   anthropic: { label: 'Anthropic', api: 'anthropic-messages', baseUrl: 'https://api.anthropic.com', models: ['claude-sonnet-4-6', 'claude-opus-4-6'] },
   google: { label: 'Google Gemini', api: 'google-generative-ai', baseUrl: 'https://generativelanguage.googleapis.com/v1beta', models: ['gemini-2.5-pro', 'gemini-2.5-flash'] },
   openrouter: { label: 'OpenRouter', api: 'openai-completions', baseUrl: 'https://openrouter.ai/api/v1', models: ['anthropic/claude-sonnet-4.6'] },
@@ -144,7 +145,8 @@ export function redactError(error: unknown, secrets: string[] = []): string {
 }
 export async function piModel(resolved: ResolvedModel): Promise<any> {
   const ai = await import('@earendil-works/pi-ai/compat');
-  const known = ai.getModels(resolved.provider as any).find(model => model.id === resolved.modelId);
+  const known = ai.getModels(resolved.provider as any).find(model => model.id === resolved.modelId)
+    ?? (resolved.provider === 'openai' ? openAILaunchModel(resolved.modelId) : undefined);
   if (known) return { ...known, ...(resolved.baseUrl ? { baseUrl: resolved.baseUrl } : {}),
     ...(resolved.authType === 'chatgpt' ? { api: 'openai-responses', provider: 'openai', baseUrl: 'https://api.openai.com/v1',
       cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 } } : {}) };

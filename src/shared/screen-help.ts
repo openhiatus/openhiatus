@@ -13,23 +13,23 @@ export function parseScreenHelpInput(value: unknown): ScreenHelpInput {
   const invalid = () => new Error('Ungültige Bildschirmhilfe. Aktion, Bildkennung und Zielrechteck prüfen.');
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw invalid();
   const v = value as Record<string, unknown>;
-  const keys = v.action === 'observe' ? ['action', 'resolution'] : v.action === 'clear' ? ['action']
-    : v.action === 'inspect' ? ['action', 'frameId', 'viewId', 'x', 'y', 'width', 'height']
-      : v.action === 'mark' ? ['action', 'frameId', 'viewId', 'x', 'y', 'width', 'height', 'label', 'color'] : [];
-  if (!keys.length || Object.keys(v).some(k => !keys.includes(k))) throw invalid();
+  // The flat tool schema exposes fields for all four actions. Models can fill
+  // inactive fields too; only the selected action's fields reach the service.
+  const keys = ['action', 'resolution', 'frameId', 'viewId', 'x', 'y', 'width', 'height', 'label', 'color'];
+  if (!['observe', 'inspect', 'mark', 'clear'].includes(v.action as string) || Object.keys(v).some(k => !keys.includes(k))) throw invalid();
   if (v.action === 'clear') return { action: 'clear' };
   if (v.action === 'observe') {
-    if (v.resolution !== undefined && v.resolution !== 'original') throw invalid();
+    if (v.resolution != null && v.resolution !== 'original') throw new Error('Für observe resolution weglassen, null oder "original" verwenden.');
     return { action: 'observe', ...(v.resolution === 'original' ? { resolution: 'original' } : {}) };
   }
   if (typeof v.frameId !== 'string' || !/^[a-zA-Z0-9_-]{1,100}$/.test(v.frameId)
     || typeof v.viewId !== 'string' || !/^[a-zA-Z0-9_-]{1,100}$/.test(v.viewId)) throw invalid();
   for (const k of ['x', 'y', 'width', 'height']) if (!Number.isSafeInteger(v[k]) || (v[k] as number) < (k === 'x' || k === 'y' ? 0 : 1) || (v[k] as number) > 32768) throw invalid();
-  if (v.label !== undefined && (typeof v.label !== 'string' || !v.label.trim() || v.label.length > 100 || /[\x00-\x1f\x7f]/.test(v.label))) throw invalid();
   const rect = { frameId: v.frameId, viewId: v.viewId, x: v.x as number, y: v.y as number, width: v.width as number, height: v.height as number };
   if (v.action === 'inspect') return { action: 'inspect', ...rect };
+  if (v.label != null && (typeof v.label !== 'string' || v.label.length > 100 || /[\x00-\x1f\x7f]/.test(v.label))) throw invalid();
   if (v.color !== 'red' && v.color !== 'black' && v.color !== 'white') throw new Error('Für mark die am besten sichtbare Farbe mit color: red, black oder white wählen.');
-  return { action: 'mark', ...rect, color: v.color, ...(typeof v.label === 'string' ? { label: v.label.trim() } : {}) };
+  return { action: 'mark', ...rect, color: v.color, ...(typeof v.label === 'string' && v.label.trim() ? { label: v.label.trim() } : {}) };
 }
 export interface GuidanceGeometry { cx: number; cy: number; radius: number; arrowX: number; arrowY: number; tipX: number; tipY: number; labelX: number; labelY: number; }
 /** Image coordinates become display-local DIP exactly once, using actual captured dimensions. */

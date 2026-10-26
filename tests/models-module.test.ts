@@ -31,6 +31,41 @@ function fixture(withProvider = true, computerModel?: string) {
 }
 const tick = () => new Promise<void>(resolve => setImmediate(resolve));
 
+test('explicit catalog refresh publishes new account models without resetting selected roles or the conversation', async () => {
+  const f = fixture(); f.models.initialize(); f.auth({ status: 'signed-in', planUsage: true });
+  const before = f.models.snapshot().selections, original = f.ports.providers!.list();
+  f.ports.chatgpt!.refreshModels = async () => { f.ports.providers!.list = () => [...original,
+    { id: 'chatgpt', label: 'ChatGPT', configured: true, verified: true, models: [{ id: 'chatgpt/gpt-6.1-terra', label: 'GPT-6.1 Terra' }] }]; };
+  await f.models.refreshChatGPTModels();
+  assert.ok(f.models.snapshot().models.some(model => model.id === 'chatgpt/gpt-6.1-terra'));
+  assert.deepEqual(f.models.snapshot().selections, before); assert.deepEqual(f.counts(), { starts: 0, stops: 0, invalidations: 0 });
+});
+
+test('catalog refresh checks access and idle state and releases its mutation lock on failure', async () => {
+  const f = fixture(); f.models.initialize(); let release!: () => void;
+  f.ports.chatgpt!.refreshModels = async () => { await new Promise<void>(resolve => { release = resolve; }); throw new Error('Catalog offline'); };
+  f.auth({ status: 'signed-in', planUsage: false }); await assert.rejects(f.models.refreshChatGPTModels(), /freigeben/);
+  f.auth({ status: 'signed-in', planUsage: true }); f.active(true); await assert.rejects(f.models.refreshChatGPTModels(), /laufenden Auftrag/);
+  f.active(false); const before = f.models.snapshot(), refresh = f.models.refreshChatGPTModels();
+  await assert.rejects(f.models.refreshChatGPTModels(), /geändert/); await assert.rejects(f.models.signOutChatGPT(), /geändert/);
+  assert.throws(() => f.models.assertUnlocked(), /geändert/);
+  release(); await assert.rejects(refresh, /Catalog offline/); f.models.assertUnlocked();
+  assert.deepEqual(f.models.snapshot().models, before.models); assert.deepEqual(f.models.snapshot().selections, before.selections);
+  assert.deepEqual(f.counts(), { starts: 0, stops: 0, invalidations: 0 });
+});
+
+test('stop and disposal abort an in-flight catalog refresh without a runtime restart', async () => {
+  for (const dispose of [false, true]) {
+    const f = fixture(); f.models.initialize(); f.auth({ status: 'signed-in', planUsage: true }); let signal!: AbortSignal;
+    f.ports.chatgpt!.refreshModels = async input => { signal = input!; await new Promise<void>((_, reject) => signal.addEventListener('abort', () => reject(new Error('Aborted')), { once: true })); };
+    const refresh = f.models.refreshChatGPTModels(), rejection = assert.rejects(refresh, /Aborted/);
+    const published = f.published.length;
+    if (dispose) f.models.dispose(); else await f.models.cancelChatGPTSignIn();
+    await rejection; assert.equal(signal.aborted, true); f.models.assertUnlocked(); assert.equal(f.counts().starts, 0);
+    if (dispose) assert.equal(f.published.length, published);
+  }
+});
+
 test('model initialization discovers secrets before auth projection and retains removed keys while owning copied state', async () => {
   const f = fixture(); assert.equal(f.published.length, 0);
   f.auth({ status: 'error', planUsage: true, account: 'synthetic-old-key', error: 'Failure synthetic-old-key' });

@@ -33,7 +33,7 @@ function respond(response: ServerResponse, tool: boolean, tier: string): void {
   response.writeHead(200, { 'content-type': 'text/event-stream' }); response.end(responseBody(tool, tier));
 }
 
-test('real Pi computer-only host requests Fast, exposes no ambient SDK tools, records returned tier, and rejects cross-role resume', { timeout: 30_000 }, async t => {
+for (const modelId of ['gpt-6-luna', 'gpt-6.1-terra']) test(`real Pi computer-only host (${modelId}) requests Fast, exposes no ambient SDK tools, records returned tier, and rejects cross-role resume`, { timeout: 30_000 }, async t => {
   const directory = await mkdtemp(join(tmpdir(), 'openhiatus-computer-runtime-'));
   const home = join(directory, 'home'), workspace = join(directory, 'workspace');
   await mkdir(join(home, 'skills', 'ambient-test'), { recursive: true }); await mkdir(workspace);
@@ -60,7 +60,7 @@ test('real Pi computer-only host requests Fast, exposes no ambient SDK tools, re
   });
   const input: HostRun = { runId: randomUUID(), text: 'Inspect the synthetic UI and report.', workspace, home, dialog: false, computerOnly: true, serviceTier: 'fast', thinkingLevel: 'high',
     instructions: 'COMPUTER_ONLY_INSTRUCTION_MARKER: use only the provided computer tool.',
-    model: { provider: 'openai', modelId: 'gpt-6-luna', apiKey: 'synthetic-local-test-key', api: 'openai-responses', baseUrl: `http://127.0.0.1:${(server.address() as { port: number }).port}/v1` },
+    model: { provider: 'openai', modelId, apiKey: 'synthetic-local-test-key', api: 'openai-responses', baseUrl: `http://127.0.0.1:${(server.address() as { port: number }).port}/v1` },
     tools: [{ type: 'function', name: 'computer', description: 'Synthetic screenshots only', inputSchema: { type: 'object', properties: { action: { type: 'string' } }, required: ['action'] } }] };
   await host.receive({ id: 'run', method: 'run', params: input });
   const deadline = Date.now() + 15_000;
@@ -69,6 +69,7 @@ test('real Pi computer-only host requests Fast, exposes no ambient SDK tools, re
   assert.ok(completion?.method === 'event' && completion.params.event.type === 'completed' && completion.params.event.status === 'completed', JSON.stringify(packets));
   assert.equal(computerCalls, 1); assert.equal(requests.length, 2);
   for (const request of requests) {
+    assert.equal(request.model, modelId);
     // This SDK expresses mid-conversation effort in configuration_update items for eligible models.
     assert.equal(request.input.filter((item: any) => item.type === 'configuration_update').at(-1)?.reasoning?.effort ?? request.reasoning?.effort, 'high');
     assert.equal(request.service_tier, 'priority'); assert.deepEqual(request.tools.map((tool: any) => tool.name), ['computer']);

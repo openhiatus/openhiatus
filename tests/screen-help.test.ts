@@ -37,6 +37,42 @@ test('help capture loads the skill and maps an inspected target back to physical
   assert.deepEqual(f.shown()[2], { x: -1280, y: 40, width: 1280, height: 720 });
   await assert.rejects(f.service.execute({ action: 'mark', color: 'red', frameId: initial.frameId, viewId: 'misspelled', x: 1, y: 1, width: 1, height: 1 }, f.signal), /Unbekannte/);
 });
+test('flat-schema placeholders do not block observe or clear and never become a marker', async () => {
+  const f = fixture(), registry = createToolRegistry([createScreenHelpTools(f.service)]);
+  const dialog = registry.bind({ runId: 'dialog', role: 'dialog', signal: f.signal, emit() {} });
+  for (const placeholders of [
+    { frameId: '', viewId: '', x: 0, y: 0, width: 1, height: 1, label: '', color: 'red' },
+    { frameId: 'current', viewId: 'current', x: 0, y: 0, width: 1, height: 1, label: 'Synthetic target', color: 'red' },
+    { frameId: null, viewId: null, x: null, y: null, width: null, height: null, label: null, color: null },
+  ]) {
+    const input = { action: 'observe', resolution: 'original', ...placeholders };
+    assert.deepEqual(parseScreenHelpInput(input), { action: 'observe', resolution: 'original' });
+    const result = await dialog.call('screen_help', input);
+    assert.equal(result.success, true); assert.ok(result.contentItems.some(item => item.type === 'inputImage'));
+    assert.deepEqual(f.shown(), []);
+    assert.deepEqual(parseScreenHelpInput({ ...input, action: 'clear' }), { action: 'clear' });
+    assert.equal((await dialog.call('screen_help', { ...input, action: 'clear' })).success, true);
+  }
+  assert.deepEqual(parseScreenHelpInput({ action: 'observe', resolution: null }), { action: 'observe' });
+  await assert.rejects(dialog.call('screen_help', { action: 'observe', click: true }));
+  await registry.dispose();
+});
+
+test('inspect and mark ignore inactive fields but still require genuine IDs, rectangles and a mark color', async () => {
+  const f = fixture(), m = await f.observe();
+  const rect = { frameId: m.frameId, viewId: m.views[0].viewId, x: 20, y: 30, width: 12, height: 12 };
+  assert.deepEqual(parseScreenHelpInput({ action: 'inspect', ...rect, resolution: 'original', label: '', color: null }), { action: 'inspect', ...rect });
+  for (const label of ['', '  ', null, undefined]) {
+    const input = parseScreenHelpInput({ action: 'mark', ...rect, resolution: null, label, color: 'white' });
+    assert.deepEqual(input, { action: 'mark', ...rect, color: 'white' });
+    await f.service.execute(input, f.signal); assert.equal(f.shown()[3], 'Hier');
+  }
+  for (const patch of [{ frameId: '' }, { viewId: null }, { x: null }, { width: 0 }, { color: null }, { click: true }]) {
+    assert.throws(() => parseScreenHelpInput({ action: 'mark', ...rect, color: 'red', ...patch }));
+  }
+  await assert.rejects(f.service.execute(parseScreenHelpInput({ action: 'mark', ...rect, frameId: 'current', color: 'red' }), f.signal), /veraltet/);
+});
+
 test('the model selects one allowed color and the host passes it to the marker', async () => {
   for (const color of ['red', 'black', 'white'] as const) {
     const f = fixture(), m = await f.observe();
@@ -73,7 +109,7 @@ test('circle and arrow geometry uses actual image dimensions and display-local D
     assert.ok(Math.abs(Math.hypot(g.tipX-g.cx,g.tipY-g.cy) - (g.radius+3)) < 1e-7);
     assert.ok(g.arrowX >= 0 && g.arrowX <= 1920 && g.arrowY >= 0 && g.arrowY <= 1080);
   }
-  for (const value of [{ action: 'mark', color: 'red', frameId:'f',viewId:'v',x:-1,y:0,width:10,height:10 }, { action: 'observe', click: true }, { action: 'clear', label: 'bad' }]) assert.throws(() => parseScreenHelpInput(value));
+  for (const value of [{ action: 'mark', color: 'red', frameId:'f',viewId:'v',x:-1,y:0,width:10,height:10 }, { action: 'observe', click: true }, { action: 'click', x: 1, y: 1 }]) assert.throws(() => parseScreenHelpInput(value));
 });
 test('a cleared overlay cannot reappear after its asynchronous document load', async () => {
   let loaded!: () => void, shows=0;

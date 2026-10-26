@@ -1,6 +1,6 @@
 import { t } from '../shared/i18n';
 import { useRef, useState } from 'react';
-import { ArrowUpRight, Check, LoaderCircle, LogIn } from 'lucide-react';
+import { ArrowUpRight, Check, LoaderCircle, LogIn, RefreshCw } from 'lucide-react';
 import type { Preferences, ProviderView, Snapshot } from '../shared/contracts';
 
 export function ChatGPTCard({ state, provider, disabled, onError, onPreference, guided = false }: {
@@ -8,6 +8,7 @@ export function ChatGPTCard({ state, provider, disabled, onError, onPreference, 
   onError(error: unknown): void; onPreference(value: Partial<Preferences>): void;
 }) {
   const [pending, setPending] = useState('');
+  const [modelsRefreshed, setModelsRefreshed] = useState(false);
   const pendingRef = useRef('');
   const connection = state?.chatgpt;
   const signedIn = connection?.status === 'signed-in';
@@ -20,8 +21,8 @@ export function ChatGPTCard({ state, provider, disabled, onError, onPreference, 
   const headingId = guided ? 'setup-chatgpt-heading' : 'chatgpt-heading';
   async function action(name: string, run: () => Promise<void>) {
     if ((disabled && name !== 'cancel') || !state || (pendingRef.current && !(name === 'cancel' && pendingRef.current === 'signin'))) return;
-    pendingRef.current = name; setPending(name);
-    try { await run(); }
+    pendingRef.current = name; setPending(name); setModelsRefreshed(false);
+    try { await run(); if (name === 'refresh') setModelsRefreshed(true); }
     catch (error) { onError(error); }
     finally {
       if (pendingRef.current === name) { pendingRef.current = ''; setPending(''); }
@@ -36,6 +37,9 @@ export function ChatGPTCard({ state, provider, disabled, onError, onPreference, 
     {signedIn && !signingIn && (allowed ? <div className="chatgpt-plan-state"><strong>{t("ChatGPT-Kontingent verwenden")}</strong><p>{guided ? t("Dein Konto ist verbunden. Im letzten Schritt prüfen wir eine kurze Antwort.") : t("Wähle oben für Arbeit, Gespräch oder Gedächtnis eines der Modelle deines ChatGPT-Kontos. Diese Anfragen zählen zu deinem ChatGPT-Plan.")}</p></div>
       : <div className="chatgpt-plan-unavailable" role="status"><strong>{t("Kein Modellzugriff freigeschaltet")}</strong><p>{t("Dein Konto ist angemeldet. Gib den Modellzugriff erneut frei oder prüfe deinen Zugang unter „Nutzung verwalten“.")}</p><button className="secondary-button" disabled={busy} onClick={() => void action('signin', () => window.openhiatus.signInChatGPT())}>{t("ChatGPT-Zugang freigeben")}</button></div>)}
     {error && <p className="provider-error" role="alert">{error}</p>}
+    {allowed && !signingIn && <div className="provider-actions"><button className="secondary-button" disabled={busy} onClick={() => void action('refresh', () => window.openhiatus.refreshChatGPTModels())}>
+      {pending === 'refresh' ? <LoaderCircle size={14} className="spin" /> : <RefreshCw size={14} />}{t('Modelle aktualisieren')}</button>
+      {modelsRefreshed && <span role="status">{t('Modellliste aktualisiert.')}</span>}</div>}
     {!guided && <label className="chatgpt-background-consent"><input type="checkbox" checked={state?.preferences.chatgptBackgroundUsage === true} disabled={busy || signingIn || !allowed} onChange={event => onPreference({ chatgptBackgroundUsage: event.target.checked })} /><span>{t("Automatische Gedächtnisberichte mit ChatGPT erlauben")}<small>{t("Gilt für Berichte im Hintergrund und ist standardmäßig ausgeschaltet. Von dir gestartete Aufträge kannst du direkt nutzen.")}</small></span></label>}
     {canForget && !signingIn && <div className="provider-actions">{(signedIn || provider?.configured) && <><button className="secondary-button" disabled={busy} onClick={() => void action('usage', () => window.openhiatus.openChatGPTUsage())}>{t("Nutzung verwalten ")}<ArrowUpRight size={14} /></button><button className="text-button" disabled={busy} onClick={() => void action('signout', () => window.openhiatus.signOutChatGPT())}>{t("Abmelden")}</button></>}<button className="text-button subtle-danger" disabled={busy} onClick={() => void action('remove', () => window.openhiatus.removeProvider('chatgpt'))}>{t("Verbindung entfernen")}</button></div>}
   </section>;

@@ -58,7 +58,7 @@ function providerInput(value: unknown): ProviderInput {
   }
   return result;
 }
-export function settingsHandlers({ controller, platform }: IpcPorts): Pick<HandlerMap, 'autostartSettings' | 'setAutostart' | 'savePreferences' | 'signInChatGPT' | 'cancelChatGPTSignIn' | 'signOutChatGPT' | 'openChatGPTUsage' | 'saveProvider' | 'testProvider' | 'checkSetup' | 'removeProvider' | 'listSkills' | 'openSkillsFolder'> {
+export function settingsHandlers({ controller, platform }: IpcPorts): Pick<HandlerMap, 'autostartSettings' | 'setAutostart' | 'savePreferences' | 'signInChatGPT' | 'refreshChatGPTModels' | 'cancelChatGPTSignIn' | 'signOutChatGPT' | 'openChatGPTUsage' | 'saveProvider' | 'testProvider' | 'checkSetup' | 'removeProvider' | 'listSkills' | 'openSkillsFolder'> {
   return {
     autostartSettings: command('autostartSettings', 0, noArgs, () => platform.autostartSettings()),
     setAutostart: command('setAutostart', 1, args => {
@@ -67,6 +67,7 @@ export function settingsHandlers({ controller, platform }: IpcPorts): Pick<Handl
     }, enabled => platform.setAutostart(enabled)),
     savePreferences: command('savePreferences', 1, args => [preferences(args[0])], patch => controller.savePreferences(patch)),
     signInChatGPT: command('signInChatGPT', 0, noArgs, () => controller.signInChatGPT()),
+    refreshChatGPTModels: command('refreshChatGPTModels', 0, noArgs, () => controller.refreshChatGPTModels()),
     cancelChatGPTSignIn: command('cancelChatGPTSignIn', 0, noArgs, () => controller.cancelChatGPTSignIn()),
     signOutChatGPT: command('signOutChatGPT', 0, noArgs, () => controller.signOutChatGPT()),
     openChatGPTUsage: command('openChatGPTUsage', 0, noArgs, () => platform.openChatGPTUsage()),
