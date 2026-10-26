@@ -1,5 +1,18 @@
 # openHiatus – Testprotokoll
 
+## 0.0.26: ElevenLabs und freiwillige Stimmenwahl – 26. Oktober 2026
+
+Einstellungen und Einrichtung bieten dieselbe Anbieterauswahl für Inworld und ElevenLabs. Der gewählte Anbieter übernimmt STT und TTS; pro Anbieter bleiben Schlüssel und Stimme getrennt erhalten. Eine eigene Voice-ID ist freiwillig und lässt sich wieder auf die Standardstimme zurücksetzen. Alte Profile behalten Inworld. Die neuen Bedienelemente sind in allen sieben Oberflächensprachen verfügbar.
+
+- `npm run check`: Architektur, Typprüfung und alle **848 Tests bestanden**. Neue Prüfungen decken Multipart-WAV, binäre MP3-Antworten, Standard-/eigene Stimme, Anfragegrenzen, sichere Fehler, Abbruch, getrennte Caches, Schlüsseltrennung, alte Profile, IPC, dauerhafte Speicherung und Rücknahme bei Schreibfehlern ab. Nur erfolgreiche Sprachausgabe bestätigt den Ausgabestatus; STT allein tut dies nicht. Die Audiositzung verwirft Aufnahme, Wiedergabe und verspätete Antworten beim Wechsel.
+- `npm run build`: bestanden.
+- `npm run test:speech-providers-ui`: bestanden. Echter Hauptprozess, Preload und Renderer in einer eigenen App-Kopie mit lokalem synthetischem HTTP-Transport. Geprüft sind Standardstimme ohne Personalisierung, eigene Voice-ID, Zurücksetzen, verschlüsselte getrennte Zugänge, STT-/TTS-Anfragen, Fehler, Stopp und Neustart. Speichern und Neustart erzeugen keine ElevenLabs-Anfrage. Alle sieben Sprachen bestehen bei 560 × 440 und 1360 × 900; Anbieter- und Stimmenfelder bleiben mindestens 44 Pixel hoch. Der Screenshot wurde visuell geprüft.
+- `npm run test:onboarding-ui`: bestanden, einschließlich Auswahl und Speicherung von ElevenLabs ohne eigene Voice-ID im optionalen Sprachschritt. Die bestehenden Prüfungen von Identität, direkter Schrittauswahl, Modellauswahl, erster Textantwort, Fehlern und Neustart bestehen weiter.
+- `node scripts/package.mjs` und `npm run test:package`: Windows-Paket 0.0.26 erstellt; alle zwölf Abläufe bestehen mit der verpackten EXE ohne globales Node oder Codex im App-PATH. Auch der erweiterte Einrichtungstest mit ElevenLabs besteht im Paket. Alle verpackten Builddateien stimmen per SHA-256 mit dem geprüften Build überein.
+- `node scripts/installer.mjs`: Setup 0.0.26 erstellt und seine SHA-256-Prüfsumme bestätigt. Der unveränderte Installations-, Update- und Deinstallationszyklus wurde für diese Version nicht erneut vollständig geprüft; das Setup bleibt unsigniert.
+
+Alle Zugänge und Audioantworten sind synthetisch. Die Tests bestätigen die Schnittstellen und Abläufe, keine reale Klangqualität oder Kontofreigabe einer Stimme. Eine manuelle Abnahme mit eigenem ElevenLabs-Konto bleibt erforderlich. Technische Einzelheiten und offizielle API-Quellen stehen unter [Sprachanbieter](speech-providers.md).
+
 ## 0.0.25: Persönlicher Einstieg und direkte Schrittauswahl – 26. Oktober 2026
 
 Die Einrichtung bietet direkt nach der Begrüßung freiwillige Angaben zu Agentenname, Anrede, Rolle, persönlichem Kontext und Antwortverhalten. Überspringen verwirft ungespeicherte Änderungen; Schrittwechsel und Aufschub speichern über die vorhandenen versionierten Identitätsdateien. Bestehende Inhalte bleiben erhalten. Die Modellwahl steht bei Konto und Antworttest offen sichtbar zur Verfügung. Jeder Schritt ist direkt anwählbar; manuelles Öffnen über Einstellungen oder Seitenleiste beginnt bei Willkommen, während **Einrichtung fortsetzen** den gespeicherten Schritt verwendet.

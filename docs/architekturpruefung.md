@@ -1,5 +1,7 @@
 # openHiatus – Architekturprüfung und Zielstruktur
 
+> Ergänzung vom 26. Oktober 2026 (0.0.26): `shared/speech-settings.ts` beschreibt die Sprachanbieter Inworld und ElevenLabs samt Standardstimmen und Eingabeprüfung. `main/speech.ts` kapselt beide STT-/TTS-Protokolle; Schlüssel bleiben im Hauptprozess. Einstellungen und Einrichtung verwenden dieselbe `SpeechAccessCard`. Anbieter- und Stimmwechsel werden dauerhaft bestätigt und brechen ausstehende Audioarbeit ab. Details und Prüfgrenzen: [Sprachanbieter](speech-providers.md).
+
 > Ergänzung vom 25. Oktober 2026 (0.0.21): App und Windows-Setup unterstützen sieben Sprachen. Sprachcodes und Validierung liegen in `shared/ui-language.ts`, die Anzeigetexte und Formatierung in `shared/i18n.ts` und dem lokalen Katalog. Die persistierte Präferenz gelangt über den bestehenden typisierten Snapshot in den Renderer; Ansichten und Agentensitzungen werden beim Wechsel nicht neu aufgebaut. Main aktualisiert die nativen Hintergrund- und Übernahmeanzeigen ausdrücklich. Setup setzt ausschließlich die Sprachvorgabe für neue Profile. Details und Prüfungen: [Mehrsprachigkeit](localization.md).
 
 Stand: 21. Oktober 2026. Die Bestandsaufnahme unten bezieht sich auf den Quellstand 0.1.4 vor der Refaktorierung. Sieben Abschnitte sind inzwischen im Code umgesetzt; ihr Umfang steht am Ende dieses Dokuments. Die vollständige Zielstruktur bleibt der weitere Ausbauplan.

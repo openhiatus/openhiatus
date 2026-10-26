@@ -23,7 +23,7 @@ openHiatus is a desktop app that operates visible Windows applications with your
 - 📅 **Google Calendar (optional).** Read your agenda and create or change personal events through your own Google OAuth client.
 - 🔌 **Bring your own models.** Sign in with ChatGPT or use your own credentials for Anthropic, Google, OpenRouter, OpenAI, or a local OpenAI-compatible server.
 
-openHiatus is built on Electron, React, and TypeScript. It uses [Pi](https://www.npmjs.com/package/@earendil-works/pi-coding-agent) as its agent runtime and [Inworld](https://inworld.ai) for speech. No separate Codex or OpenClaw installation is needed.
+openHiatus is built on Electron, React, and TypeScript. It uses [Pi](https://www.npmjs.com/package/@earendil-works/pi-coding-agent) as its agent runtime, with [Inworld](https://inworld.ai) or [ElevenLabs](https://elevenlabs.io) for speech. No separate Codex or OpenClaw installation is needed.
 
 Under **Aufgaben → Arbeitsverlauf** (Tasks → Work history), each newly accepted conversation request and direct-agent request has its own record. Delegated jobs link back to that request; the parent remains active while its subtasks run. Open, failed and interrupted records can be filtered together. **Hintergrundaufgaben** (Background tasks) retains the existing individual Stop and usage controls. The global Stop remains available in both views.
 
@@ -65,13 +65,15 @@ New profiles open a guided setup with five steps. Each step explains what to do;
 1. **Welcome:** Choose a language, read the access notice and explicitly acknowledge it. Stop and Esc remain accessible throughout setup.
 2. **You and your agent (optional):** Choose an agent name, how the agent addresses you, its role, relevant personal context and response preferences. Leave fields unchanged or choose **Skip** to continue without saving this draft. Moving to another step or choosing **Continue later** saves edits in the existing `IDENTITY.md`, `USER.md` and `SOUL.md` files; other content is preserved. Edit these details later under **Memory → Agent & user**. They become model context in subsequent conversations, so only enter information you want to share with your model provider.
 3. **Account:** Sign in with ChatGPT or open the alternative-provider section for an API account or local server. The conversation model selector is directly visible here and in the final step. It lists models from connected accounts. Separate role settings remain under **Settings → Models & access**.
-4. **Voice (optional):** Continue with text, or open microphone and voice setup. The local microphone test requires no cloud account. Speech recognition and spoken replies require a separate Inworld key; choose devices and test the output if desired.
+4. **Voice (optional):** Continue with text, or open microphone and voice setup. The local microphone test requires no cloud account. Choose Inworld or ElevenLabs and save your own provider key for speech recognition and spoken replies. Voice customization is optional: leave the Voice ID empty for the built-in default, or enter an ID from your provider under **Customize voice (optional)**. Choose devices and test the output if desired.
 5. **First reply:** Explicitly request a short greeting. This uses the selected conversation model and its normal provider quota, with no tools, files, screenshots, identity details or conversation history. Finishing requires a nonempty successful reply from the current model; changing models clears the result. Errors, Stop and a 30-second timeout allow retry. This checks text connectivity, not desktop tools or voice recognition. The agent name and response preferences apply from the first regular conversation.
 
 **Continue later** saves the current step. **Continue setup** resumes it, including after restart. Already configured profiles keep their normal entry point; **Settings → Set up step by step** always reopens the guide at Welcome, with saved values retained and direct navigation to every step. Incomplete older setup progress offers the new optional identity step; completed profiles are not forced through setup again. Merely opening or navigating the guide does not sign in, contact a model, start recording or activate desktop control.
 
 Eligible ChatGPT and OpenAI models appear as adjacent choices such as **gpt-6.1-sol** and **gpt-6.1-sol (fast)**. Each role saves its own choice. The Fast variant requests faster processing with the same underlying model; a choice without `(fast)` sends no explicit Fast request. The provider determines the actual processing tier, which can differ from the request. API Fast requests may cost more. The conversation view shows both the selected conversation and work model, including `(fast)`. Existing model selections remain unchanged. The experimental separate computer model retains its own Fast switch under **Bedienung**.
 Speech devices and credentials remain available under **Einstellungen → Sprache & Geräte** (Settings → Speech & devices) after setup. Text input works without a speech service.
+
+The speech provider applies to both recognition and output. Each provider keeps its own encrypted key and voice preference; switching providers or removing one key preserves the other. Existing profiles continue using Inworld and their previous voice. Empty voice fields select Dennis for Inworld or Eldrin for ElevenLabs; **Use default voice** clears a custom choice. IDs are text, not necessarily numbers. Saving an ElevenLabs key or opening setup sends no speech request. A successful output test confirms TTS; recognition alone does not mark the output as tested. See [speech providers](docs/speech-providers.md) for protocols and test coverage.
 
 Model and speech providers are used with your own accounts. Their availability, usage limits, and costs depend on the service you choose.
 
@@ -200,6 +202,7 @@ The existing [planning issues](https://github.com/openhiatus/openhiatus/issues?q
 npm run build
 npm run test:ui
 npm run test:audio-devices-ui
+npm run test:speech-providers-ui
 npm run test:chatgpt-ui
 npm run test:conversation
 node scripts/fast-model-ui-check.mjs

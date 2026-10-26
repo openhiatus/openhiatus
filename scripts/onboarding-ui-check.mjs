@@ -145,6 +145,15 @@ try {
   await expect(setup.locator('h1')).toHaveText('Sprechen oder schreiben');
   await setup.getByText('Mikrofon und Stimme einrichten (optional)', { exact: true }).click();
   await checkStep('Sprechen oder schreiben');
+  const speechAccess = setup.locator('.settings-speech-access');
+  await speechAccess.locator('select').selectOption('elevenlabs');
+  await speechAccess.locator('input[type=password]').fill('synthetic-onboarding-speech-key');
+  await speechAccess.getByRole('button', { name: 'Speichern', exact: true }).click();
+  await expect.poll(async () => (await snapshot()).connections.speech).toBe('saved');
+  assert.equal((await snapshot()).preferences.elevenlabsVoiceId ?? '', '');
+  await expect(speechAccess.locator('details')).not.toHaveAttribute('open');
+  await speechAccess.getByRole('button', { name: 'Gespeicherten Sprachzugang entfernen', exact: true }).click();
+  await expect.poll(async () => (await snapshot()).connections.speech).toBe('missing');
   assert.equal((await snapshot()).connections.speech, 'missing'); assert.equal(calls, 0);
   await instance.close(); instance = undefined;
   page = await launch(); setup = page.locator('.onboarding-view');

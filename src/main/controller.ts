@@ -1,6 +1,7 @@
 import { APP_DISPLAY_NAME } from '../shared/branding';
 import { parseUiLanguage } from '../shared/ui-language';
 import { parseOnboarding } from '../shared/onboarding';
+import { SPEECH_PROVIDERS, SPEECH_DEFAULTS, parseSpeechProvider, parseVoiceId, type SpeechProvider } from '../shared/speech-settings';
 import { randomUUID } from 'node:crypto';
 import { nextReceipt, RECEIPT_PHRASES } from '../shared/receipts';
 import { favoriteLevel, parseSkillFavorites } from '../shared/skill-favorites';
@@ -104,6 +105,7 @@ export class AppController {
     const saved = deps.store.load();
     saved.preferences.assistantProfile = parseAssistantProfile(saved.preferences.assistantProfile ?? DEFAULT_ASSISTANT_PROFILE);
     saved.preferences.voiceConversation ??= true;
+    saved.preferences.speechProvider = parseSpeechProvider(saved.preferences.speechProvider ?? 'inworld');
     saved.preferences.fullAccessAcknowledged = saved.preferences.fullAccessAcknowledged === true;
     saved.preferences.dialogModel ??= '';
     saved.preferences.memoryModel ??= '';
@@ -120,7 +122,9 @@ export class AppController {
     saved.task = recoverForegroundTask(saved.task);
     if ((!deps.dialogAgent || !deps.createWorker) && saved.jobs) saved.jobs = recoverBackgroundJobs(saved.jobs);
     let hasSpeech = false;
-    try { const key = deps.credentials.get('inworld'); if (key) { this.secrets.push(key); hasSpeech = true; } } catch { /* credential read fails closed */ }
+    for (const provider of SPEECH_PROVIDERS) {
+      try { const key = deps.credentials.get(provider); if (key) { this.secrets.push(key); if (provider === saved.preferences.speechProvider) hasSpeech = true; } } catch { /* credential read fails closed */ }
+    }
     this.state = { ...saved, connections: { agent: 'offline', account: '', speech: hasSpeech ? 'saved' : 'missing' }, models: [], providers: [], workspace: deps.workspace, version: deps.version ?? 'Entwicklung' };
     this.workHistory = new WorkHistory(saved.workItems, text => this.clean(text));
     delete this.state.workItems; // The journal owns this projection; avoid cloning a stale second copy.
@@ -344,6 +348,8 @@ export class AppController {
   }
   /** Vertont die Bestätigungssätze vorab im Hintergrund. Fehler bleiben still; dann wird bei Bedarf direkt vertont. */
   private prewarmReceipts(): void {
+    // ElevenLabs is used on demand; saving its key or opening setup never bills a voice request.
+    if (this.state.preferences.speechProvider === 'elevenlabs') return;
     if (!this.deps.speech.prewarm || this.state.connections.speech === 'missing' || this.closing || this.shuttingDown) return;
     this.receiptWarmup?.abort();
     const control = new AbortController(); this.receiptWarmup = control; this.audio.add(control);
@@ -636,6 +642,10 @@ export class AppController {
     } finally { this.stopDeferrals--; this.flushAfterStop(); }
   }
   async savePreferences(patch: Partial<Preferences>): Promise<void> {
+    if (Object.hasOwn(patch, 'speechProvider')) patch = { ...patch, speechProvider: parseSpeechProvider(patch.speechProvider) };
+    if (Object.hasOwn(patch, 'elevenlabsVoiceId')) patch = { ...patch, elevenlabsVoiceId: parseVoiceId(patch.elevenlabsVoiceId) };
+    if (Object.hasOwn(patch, 'voiceId')) patch = { ...patch, voiceId: parseVoiceId(patch.voiceId) };
+    if (['speechProvider', 'elevenlabsVoiceId', 'voiceId'].some(key => Object.hasOwn(patch, key))) await this.stateJournal.ready();
     if (Object.hasOwn(patch, 'onboarding')) patch = { ...patch, onboarding: parseOnboarding(patch.onboarding) };
     if (Object.hasOwn(patch, 'uiLanguage')) patch = { ...patch, uiLanguage: parseUiLanguage(patch.uiLanguage) };
     if (Object.hasOwn(patch, 'itSupporter') && typeof patch.itSupporter !== 'boolean') throw new Error('Ungültiger IT-Supporter-Modus.');
@@ -668,20 +678,31 @@ export class AppController {
     const favoritesChanged = patch.skillFavorites !== undefined && JSON.stringify(patch.skillFavorites) !== JSON.stringify(this.state.preferences.skillFavorites ?? {});
     const previousProfile = structuredClone(this.state.preferences.assistantProfile);
     const previousOnboarding = this.state.preferences.onboarding;
+    const speechFields = ['speechProvider', 'voiceId', 'elevenlabsVoiceId'] as const;
+    const previousSpeech = { speechProvider: this.state.preferences.speechProvider, voiceId: this.state.preferences.voiceId, elevenlabsVoiceId: this.state.preferences.elevenlabsVoiceId };
+    const speechChanged = speechFields.some(key => patch[key] !== undefined && patch[key] !== previousSpeech[key]);
+    if (speechChanged) this.cancelSpeechRequests();
     const profileChanged = patch.assistantProfile !== undefined && JSON.stringify(patch.assistantProfile) !== JSON.stringify(this.state.preferences.assistantProfile);
-    this.state.preferences = { ...this.state.preferences, ...patch }; this.modelManagement.select(patch); this.changed();
+    this.state.preferences = { ...this.state.preferences, ...patch }; this.modelManagement.select(patch);
+    if (speechChanged) this.refreshSpeechConnection();
+    this.changed();
     if (patch.memoryAutoSummarize !== undefined || patch.chatgptBackgroundUsage !== undefined) {
       await this.memoryReports.preferencesChanged({ automatic: patch.memoryAutoSummarize, chatgptBackgroundUsage: patch.chatgptBackgroundUsage });
     }
-    if (patch.voiceId !== undefined) this.prewarmReceipts();
     if (favoritesChanged || dialogChanged || workChanged || profileChanged || supportChanged) {
       // The dialogue keeps its developer context per thread; a fresh thread picks up the new favourites.
       this.invalidateThread();
       this.activity('system', 'Gesprächseinstellungen gelten ab der nächsten Nachricht', 'Laufende Aufgaben behalten ihren bisherigen Kontext.'); this.changed();
     }
-    if (profileChanged || patch.onboarding) {
+    if (profileChanged || patch.onboarding || speechChanged) {
       try { await this.stateJournal.durableCommit(); }
       catch (error) {
+        if (speechChanged) {
+          for (const key of speechFields) if (patch[key] !== undefined && this.state.preferences[key] === patch[key]) {
+            Object.assign(this.state.preferences, { [key]: previousSpeech[key] });
+          }
+          this.refreshSpeechConnection(); this.changed();
+        }
         if (profileChanged && JSON.stringify(this.state.preferences.assistantProfile) === JSON.stringify(patch.assistantProfile)) {
           this.state.preferences.assistantProfile = previousProfile; this.invalidateThread(); this.changed();
         }
@@ -720,27 +741,39 @@ export class AppController {
       if (this.setupCheck === control) this.setupCheck = undefined;
     }
   }
-  async saveSpeechKey(key: string): Promise<void> {
-    this.secrets.push(key); this.deps.credentials.set('inworld', key);
-    this.state.connections.speech = 'saved'; this.activity('system', 'Inworld-Zugang geschützt gespeichert'); this.changed();
-    this.prewarmReceipts();
+  private cancelSpeechRequests(): void {
+    for (const request of this.audio) if (request !== this.setupCheck) request.abort();
   }
-  async removeSpeechKey(): Promise<void> {
-    for (const request of this.audio) request.abort();
-    this.deps.credentials.remove('inworld'); this.state.connections.speech = 'missing'; this.changed();
+  private refreshSpeechConnection(): void {
+    let key: string | undefined;
+    try { key = this.deps.credentials.get(this.state.preferences.speechProvider ?? 'inworld'); } catch { /* fail closed */ }
+    this.state.connections.speech = key ? 'saved' : 'missing';
   }
-  private async speechRequest<T>(fn: (signal: AbortSignal) => Promise<T>): Promise<T> {
+  async saveSpeechKey(key: string, provider: SpeechProvider = 'inworld'): Promise<void> {
+    provider = parseSpeechProvider(provider);
+    this.secrets.push(key); this.deps.credentials.set(provider, key);
+    if (provider === this.state.preferences.speechProvider) { this.cancelSpeechRequests(); this.state.connections.speech = 'saved'; }
+    this.activity('system', `${SPEECH_DEFAULTS[provider].label}-Zugang geschützt gespeichert`); this.changed();
+    if (provider === this.state.preferences.speechProvider) this.prewarmReceipts();
+  }
+  async removeSpeechKey(provider: SpeechProvider = 'inworld'): Promise<void> {
+    provider = parseSpeechProvider(provider);
+    this.deps.credentials.remove(provider);
+    if (provider === this.state.preferences.speechProvider) { this.cancelSpeechRequests(); this.state.connections.speech = 'missing'; }
+    this.changed();
+  }
+  private async speechRequest<T>(fn: (signal: AbortSignal) => Promise<T>, verifiesOutput = false): Promise<T> {
     const control = new AbortController(); this.audio.add(control);
     try {
       const result = await fn(control.signal);
       if (control.signal.aborted) throw new Error('Sprachanfrage gestoppt.');
-      this.state.connections.speech = 'verified'; this.changed(false); return result;
+      if (verifiesOutput) { this.state.connections.speech = 'verified'; this.changed(false); } return result;
     } catch (error) { throw new Error(this.clean(error instanceof Error ? error.message : 'Sprachanfrage fehlgeschlagen.')); }
     finally { this.audio.delete(control); }
   }
   transcribe(clip: AudioClip): Promise<string> { return this.speechRequest(signal => this.deps.speech.transcribe(clip, signal)); }
-  synthesize(text: string): Promise<AudioClip> { return this.speechRequest(signal => this.deps.speech.synthesize(text, signal)); }
-  testSpeech(): Promise<AudioClip> { return this.speechRequest(signal => this.deps.speech.test(signal)); }
+  synthesize(text: string): Promise<AudioClip> { return this.speechRequest(signal => this.deps.speech.synthesize(text, signal), true); }
+  testSpeech(): Promise<AudioClip> { return this.speechRequest(signal => this.deps.speech.test(signal), true); }
   private ensureIdle(): void {
     this.modelManagement.assertUnlocked();
     this.memoryReports.assertIdle(); this.ensureWorkIdle();

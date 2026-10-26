@@ -7123,5 +7123,157 @@
     "请先在“欢迎使用 openHiatus”中确认访问权限说明。",
     "まず「openHiatus へようこそ」でアクセスに関する案内を確認してください。",
     "Primeiro confirme o aviso de acesso em “Boas-vindas ao openHiatus”."
+  ],
+  "Der Mikrofontest bleibt auf deinem Rechner. Für Spracherkennung und Antworten zum Anhören verbindest du Inworld oder ElevenLabs.": [
+    "The microphone test stays on your computer. Connect Inworld or ElevenLabs for speech recognition and spoken replies.",
+    "La prueba del micrófono se realiza en tu ordenador. Conecta Inworld o ElevenLabs para el reconocimiento de voz y las respuestas habladas.",
+    "Le test du microphone reste sur votre ordinateur. Connectez Inworld ou ElevenLabs pour la reconnaissance vocale et les réponses audio.",
+    "麦克风测试仅在您的电脑上进行。连接 Inworld 或 ElevenLabs 即可使用语音识别和语音回答。",
+    "マイクのテストはパソコン内で行われます。音声認識と読み上げには Inworld または ElevenLabs を接続してください。",
+    "O teste do microfone fica no seu computador. Conecte Inworld ou ElevenLabs para reconhecimento de fala e respostas em áudio."
+  ],
+  "Wähle einen Anbieter für Spracherkennung und Sprachausgabe.": [
+    "Choose a provider for speech recognition and speech output.",
+    "Elige un proveedor para el reconocimiento de voz y la síntesis de voz.",
+    "Choisissez un fournisseur pour la reconnaissance et la synthèse vocales.",
+    "选择语音识别和语音合成服务商。",
+    "音声認識と読み上げの提供元を選択します。",
+    "Escolha um provedor para reconhecimento e síntese de fala."
+  ],
+  "Sprachanbieter": [
+    "Speech provider",
+    "Proveedor de voz",
+    "Fournisseur vocal",
+    "语音服务商",
+    "音声サービス",
+    "Provedor de voz"
+  ],
+  "ElevenLabs API-Key": [
+    "ElevenLabs API key",
+    "Clave API de ElevenLabs",
+    "Clé API ElevenLabs",
+    "ElevenLabs API 密钥",
+    "ElevenLabs API キー",
+    "Chave de API da ElevenLabs"
+  ],
+  "API-Key aus deinem ElevenLabs-Konto": [
+    "API key from your ElevenLabs account",
+    "Clave API de tu cuenta de ElevenLabs",
+    "Clé API de votre compte ElevenLabs",
+    "您 ElevenLabs 账户的 API 密钥",
+    "ElevenLabs アカウントの API キー",
+    "Chave de API da sua conta ElevenLabs"
+  ],
+  "Sprachzugang gespeichert. Prüfe jetzt die Sprachausgabe.": [
+    "Speech credentials saved. You can now test speech output.",
+    "Acceso de voz guardado. Ahora puedes probar la síntesis de voz.",
+    "Accès vocal enregistré. Vous pouvez maintenant tester la synthèse vocale.",
+    "语音凭据已保存。现在可以测试语音输出。",
+    "音声サービスの認証情報を保存しました。読み上げをテストできます。",
+    "Acesso de voz salvo. Agora você pode testar a saída de voz."
+  ],
+  "Für den Start genügt dein API-Key. Eine eigene Stimme ist freiwillig.": [
+    "Your API key is enough to get started. Choosing a custom voice is optional.",
+    "Tu clave API basta para empezar. Elegir una voz personalizada es opcional.",
+    "Votre clé API suffit pour commencer. Le choix d’une voix personnalisée est facultatif.",
+    "只需 API 密钥即可开始使用。自定义声音为可选项。",
+    "API キーだけで始められます。声のカスタマイズは任意です。",
+    "Sua chave de API é suficiente para começar. Escolher uma voz personalizada é opcional."
+  ],
+  "Stimme anpassen (optional)": [
+    "Customize voice (optional)",
+    "Personalizar voz (opcional)",
+    "Personnaliser la voix (facultatif)",
+    "自定义声音（可选）",
+    "声をカスタマイズ（任意）",
+    "Personalizar voz (opcional)"
+  ],
+  "Voice-ID (optional)": [
+    "Voice ID (optional)",
+    "ID de voz (opcional)",
+    "Identifiant de voix (facultatif)",
+    "声音 ID（可选）",
+    "音声 ID（任意）",
+    "ID de voz (opcional)"
+  ],
+  "Leer lassen für die Standardstimme": [
+    "Leave empty for the default voice",
+    "Déjalo vacío para usar la voz predeterminada",
+    "Laissez vide pour la voix par défaut",
+    "留空则使用默认声音",
+    "空欄で標準の声を使用",
+    "Deixe vazio para usar a voz padrão"
+  ],
+  "Die Voice-ID findest du bei deinem Anbieter. Sie kann Buchstaben und Zahlen enthalten. Ohne eigene ID wird die Standardstimme verwendet.": [
+    "Find the voice ID with your provider. It can contain letters and numbers. Without a custom ID, the default voice is used.",
+    "Encontrarás el ID de voz en tu proveedor. Puede contener letras y números. Sin un ID personalizado se utiliza la voz predeterminada.",
+    "Vous trouverez l’identifiant de voix chez votre fournisseur. Il peut contenir des lettres et des chiffres. Sans identifiant personnalisé, la voix par défaut est utilisée.",
+    "您可以在服务商处找到声音 ID，其中可能包含字母和数字。未填写自定义 ID 时使用默认声音。",
+    "音声 ID はサービス提供元で確認できます。英字と数字を含む場合があります。未入力の場合は標準の声を使用します。",
+    "Encontre o ID da voz no seu provedor. Ele pode conter letras e números. Sem um ID personalizado, a voz padrão é usada."
+  ],
+  "Standardstimme: {0}": [
+    "Default voice: {0}",
+    "Voz predeterminada: {0}",
+    "Voix par défaut : {0}",
+    "默认声音：{0}",
+    "標準の声：{0}",
+    "Voz padrão: {0}"
+  ],
+  "Stimme gespeichert.": [
+    "Voice saved.",
+    "Voz guardada.",
+    "Voix enregistrée.",
+    "声音已保存。",
+    "声を保存しました。",
+    "Voz salva."
+  ],
+  "Stimme speichern": [
+    "Save voice",
+    "Guardar voz",
+    "Enregistrer la voix",
+    "保存声音",
+    "声を保存",
+    "Salvar voz"
+  ],
+  "Standardstimme ausgewählt.": [
+    "Default voice selected.",
+    "Voz predeterminada seleccionada.",
+    "Voix par défaut sélectionnée.",
+    "已选择默认声音。",
+    "標準の声を選択しました。",
+    "Voz padrão selecionada."
+  ],
+  "Standardstimme verwenden": [
+    "Use default voice",
+    "Usar voz predeterminada",
+    "Utiliser la voix par défaut",
+    "使用默认声音",
+    "標準の声を使用",
+    "Usar voz padrão"
+  ],
+  "{0} erhält für die jeweilige Funktion deine Aufnahme oder den Antworttext. Die Nutzung wird über dein Konto dort abgerechnet. Der Mikrofontest bleibt lokal.": [
+    "{0} receives your recording or reply text for the respective function. Usage is billed to your account there. The microphone test stays local.",
+    "{0} recibe tu grabación o el texto de respuesta para cada función. El uso se factura a tu cuenta de ese proveedor. La prueba del micrófono es local.",
+    "{0} reçoit votre enregistrement ou le texte de réponse pour la fonction concernée. L’utilisation est facturée sur votre compte chez ce fournisseur. Le test du microphone reste local.",
+    "{0} 会根据相应功能接收您的录音或回答文本。使用费用由您在该服务商的账户承担。麦克风测试仅在本地进行。",
+    "{0} に、使用する機能に応じて録音または回答文が送信されます。利用料金はそのサービスのアカウントに請求されます。マイクのテストはローカルで行われます。",
+    "{0} recebe sua gravação ou o texto da resposta para cada função. O uso é cobrado na sua conta desse provedor. O teste do microfone permanece local."
+  ],
+  "Sprachzugang entfernt.": [
+    "Speech credentials removed.",
+    "Acceso de voz eliminado.",
+    "Accès vocal supprimé.",
+    "语音凭据已移除。",
+    "音声サービスの認証情報を削除しました。",
+    "Acesso de voz removido."
+  ],
+  "Verbinde zuerst Inworld oder ElevenLabs unter Sprache & Geräte, damit openHiatus deine Aufnahme transkribieren kann.": [
+    "First connect Inworld or ElevenLabs under Speech & devices so openHiatus can transcribe your recording.",
+    "Primero conecta Inworld o ElevenLabs en Voz y dispositivos para que openHiatus pueda transcribir tu grabación.",
+    "Connectez d’abord Inworld ou ElevenLabs dans Voix et appareils pour qu’openHiatus puisse transcrire votre enregistrement.",
+    "请先在“语音与设备”中连接 Inworld 或 ElevenLabs，以便 openHiatus 转录您的录音。",
+    "openHiatus が録音を文字起こしできるように、「音声とデバイス」で Inworld または ElevenLabs を接続してください。",
+    "Primeiro conecte Inworld ou ElevenLabs em Voz e dispositivos para que o openHiatus possa transcrever sua gravação."
   ]
 }

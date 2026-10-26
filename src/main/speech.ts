@@ -5,19 +5,21 @@ import { join } from 'node:path';
 import type { AudioClip } from '../shared/contracts';
 import { isReceiptPhrase } from '../shared/receipts';
 import { toSpokenText } from '../shared/spoken-text';
+import { SPEECH_DEFAULTS, parseSpeechProvider, parseVoiceId, type SpeechProvider } from '../shared/speech-settings';
 
 export const STT_MODEL = 'inworld/inworld-stt-1';
 export const TTS_MODEL = 'inworld-tts-2';
 export const DEFAULT_VOICE = 'Dennis';
-const ORIGIN = 'https://api.inworld.ai';
+const ORIGINS = { inworld: 'https://api.inworld.ai', elevenlabs: 'https://api.elevenlabs.io' };
 const MAX_RECORDING_BYTES = 60 * 16_000 * 2 + 4096;
 const MAX_RESPONSE_BYTES = 24 * 1024 * 1024;
 const MAX_TTS_CHARACTERS = 2000;
 const TIMEOUT_MS = 60_000;
 
 export interface SpeechOptions {
-  getKey: () => string | undefined;
-  getVoice: () => string;
+  getKey: (provider: SpeechProvider) => string | undefined;
+  getVoice: (provider: SpeechProvider) => string;
+  getProvider?: () => SpeechProvider;
   fetch?: typeof fetch;
   /** Receipt phrases are vertont once per voice and kept here, so they play without a provider round trip. */
   cacheDirectory?: string;
@@ -40,7 +42,7 @@ function decodeBase64(value: unknown, maxBytes: number): Buffer {
 }
 
 /** Accept only the demo's actual recording format; a MIME label alone is not validation. */
-function validateRecording(clip: AudioClip): void {
+function validateRecording(clip: AudioClip, provider: SpeechProvider): Buffer {
   if (!clip || !['audio/wav', 'audio/wave', 'audio/x-wav'].includes(clip.mimeType)) {
     throw new SpeechError('Bitte eine WAV-Aufnahme verwenden.');
   }
@@ -68,9 +70,11 @@ function validateRecording(clip: AudioClip): void {
   if (!format || dataBytes < 2 || dataBytes % 2 || dataBytes > 60 * 32000) {
     throw new SpeechError('Die Aufnahme muss Ton enthalten und darf höchstens 60 Sekunden dauern.');
   }
+  if (provider === 'elevenlabs' && dataBytes < 3200) throw new SpeechError('Bitte mindestens eine Zehntelsekunde aufnehmen.');
+  return bytes;
 }
 
-async function readJson(response: Response, signal: AbortSignal): Promise<unknown> {
+async function readBody(response: Response, signal: AbortSignal): Promise<Buffer> {
   const declared = Number(response.headers.get('content-length'));
   if (Number.isFinite(declared) && declared > MAX_RESPONSE_BYTES) {
     await response.body?.cancel().catch(() => {});
@@ -90,8 +94,7 @@ async function readJson(response: Response, signal: AbortSignal): Promise<unknow
       chunks.push(value);
     }
     signal.throwIfAborted();
-    try { return JSON.parse(Buffer.concat(chunks).toString('utf8')); }
-    catch { throw new SpeechError('Der Sprachdienst hat eine ungültige Antwort geliefert.'); }
+    return Buffer.concat(chunks);
   } finally { await reader.cancel().catch(() => {}); }
 }
 
@@ -104,31 +107,40 @@ export class SpeechService {
   private readonly phrases = new Map<string, AudioClip>();
   constructor(private readonly options: SpeechOptions) { this.request = options.fetch ?? fetch; }
 
-  private async post(path: string, payload: unknown, signal?: AbortSignal): Promise<Record<string, unknown>> {
+  private post(provider: SpeechProvider, path: string, payload: unknown, signal?: AbortSignal, binary?: false): Promise<Record<string, unknown>>;
+  private post(provider: SpeechProvider, path: string, payload: unknown, signal: AbortSignal | undefined, binary: true): Promise<Buffer>;
+  private async post(provider: SpeechProvider, path: string, payload: unknown, signal?: AbortSignal, binary = false): Promise<Record<string, unknown> | Buffer> {
     signal?.throwIfAborted();
-    const key = this.options.getKey()?.trim();
-    if (!key) throw new SpeechError('Bitte zuerst den Inworld-Schlüssel in Verbindungen speichern.');
-    if (key.length > 8192 || !/^[A-Za-z0-9+/]+={0,2}$/.test(key)) {
-      throw new SpeechError('Bitte die Base64-Zugangsdaten aus dem Inworld-Portal verwenden.');
+    const key = this.options.getKey(provider)?.trim(), label = SPEECH_DEFAULTS[provider].label;
+    if (!key) throw new SpeechError(`Bitte zuerst den ${label}-Schlüssel in Verbindungen speichern.`);
+    if (key.length > 8192 || /[\u0000-\u0020\u007f]/.test(key) || (provider === 'inworld' && !/^[A-Za-z0-9+/]+={0,2}$/.test(key))) {
+      throw new SpeechError(provider === 'inworld' ? 'Bitte die Base64-Zugangsdaten aus dem Inworld-Portal verwenden.' : 'Bitte einen gültigen ElevenLabs-API-Key eingeben.');
     }
     const timeout = AbortSignal.timeout(TIMEOUT_MS);
     const combined = signal ? AbortSignal.any([signal, timeout]) : timeout;
     try {
-      const response = await this.request(`${ORIGIN}${path}`, {
+      const headers: Record<string, string> = provider === 'inworld' ? { Authorization: `Basic ${key}` } : { 'xi-api-key': key };
+      headers.Accept = binary ? 'audio/mpeg' : 'application/json';
+      if (!(payload instanceof FormData)) headers['Content-Type'] = 'application/json';
+      const response = await this.request(`${ORIGINS[provider]}${path}`, {
         method: 'POST', redirect: 'error', signal: combined,
-        headers: { Authorization: `Basic ${key}`, 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify(payload),
+        headers, body: payload instanceof FormData ? payload : JSON.stringify(payload),
       });
       combined.throwIfAborted();
       if (!response.ok) {
         await response.body?.cancel().catch(() => {});
-        if (response.status === 401 || response.status === 403) throw new SpeechError('Inworld hat den Schlüssel abgelehnt. Bitte Schlüssel und Berechtigungen prüfen.');
-        if (response.status === 429) throw new SpeechError('Das Inworld-Limit ist erreicht. Bitte Guthaben und Anfragelimit prüfen.');
-        throw new SpeechError(`Der Inworld-Sprachdienst hat die Anfrage abgelehnt (HTTP ${response.status}).`);
+        if (response.status === 401 || response.status === 403) throw new SpeechError(`${label} hat den Schlüssel abgelehnt. Bitte Schlüssel und Berechtigungen prüfen.`);
+        if (response.status === 429) throw new SpeechError(`Das ${label}-Limit ist erreicht. Bitte Guthaben und Anfragelimit prüfen.`);
+        if (provider === 'elevenlabs' && binary && response.status === 404) throw new SpeechError('Die ElevenLabs-Stimme ist nicht verfügbar. Prüfe die Voice-ID oder leere das Feld für die Standardstimme.');
+        throw new SpeechError(`Der ${label}-Sprachdienst hat die Anfrage abgelehnt (HTTP ${response.status}).`);
       }
-      const result = record(await readJson(response, combined));
+      const bytes = await readBody(response, combined);
+      if (binary) return bytes;
+      let result: Record<string, unknown> | undefined;
+      try { result = record(JSON.parse(bytes.toString('utf8'))); }
+      catch { throw new SpeechError('Der Sprachdienst hat eine ungültige Antwort geliefert.'); }
       if (!result || result.error || (typeof result.code === 'number' && result.code !== 0)) {
-        throw new SpeechError('Der Inworld-Sprachdienst hat die Anfrage nicht erfolgreich verarbeitet.');
+        throw new SpeechError(`Der ${label}-Sprachdienst hat die Anfrage nicht erfolgreich verarbeitet.`);
       }
       return result;
     } catch (error) {
@@ -142,19 +154,32 @@ export class SpeechService {
 
   async transcribe(clip: AudioClip, signal?: AbortSignal): Promise<string> {
     signal?.throwIfAborted();
-    validateRecording(clip);
-    const result = await this.post('/stt/v1/transcribe', {
-      transcribeConfig: {
-        modelId: STT_MODEL, audioEncoding: 'LINEAR16', language: 'de', sampleRateHertz: 16000, numberOfChannels: 1,
-        voiceProfileConfig: { enableVoiceProfile: false },
-      },
-      audioData: { content: clip.base64 },
-    }, signal);
-    const transcription = record(result.transcription);
-    if (typeof transcription?.transcript !== 'string' || transcription.transcript.length > 20000 || transcription.isFinal === false) {
+    const provider = parseSpeechProvider(this.options.getProvider?.() ?? 'inworld');
+    const bytes = validateRecording(clip, provider);
+    let transcript: unknown;
+    if (provider === 'elevenlabs') {
+      const form = new FormData();
+      form.set('file', new Blob([new Uint8Array(bytes)], { type: 'audio/wav' }), 'recording.wav');
+      form.set('model_id', SPEECH_DEFAULTS.elevenlabs.stt);
+      form.set('tag_audio_events', 'false'); form.set('diarize', 'false'); form.set('timestamps_granularity', 'none');
+      // Omit language_code: Scribe detects the spoken language independently of the UI language.
+      transcript = (await this.post(provider, '/v1/speech-to-text', form, signal)).text;
+    } else {
+      const result = await this.post(provider, '/stt/v1/transcribe', {
+        transcribeConfig: {
+          modelId: STT_MODEL, audioEncoding: 'LINEAR16', language: 'de', sampleRateHertz: 16000, numberOfChannels: 1,
+          voiceProfileConfig: { enableVoiceProfile: false },
+        },
+        audioData: { content: clip.base64 },
+      }, signal);
+      const transcription = record(result.transcription);
+      if (transcription?.isFinal === false) throw new SpeechError('Der Sprachdienst hat kein vollständiges Transkript geliefert.');
+      transcript = transcription?.transcript;
+    }
+    if (typeof transcript !== 'string' || transcript.length > 20000) {
       throw new SpeechError('Der Sprachdienst hat kein vollständiges Transkript geliefert.');
     }
-    const text = transcription.transcript.trim();
+    const text = transcript.trim();
     if (!text) throw new SpeechError('Keine Sprache erkannt. Bitte erneut aufnehmen.');
     return text;
   }
@@ -167,18 +192,25 @@ export class SpeechService {
     if (text.length > MAX_TTS_CHARACTERS) {
       throw new SpeechError('Diese Antwort ist länger als 2.000 Zeichen. Sie bleibt vollständig im Chat; die Sprachausgabe wurde übersprungen.');
     }
-    const voiceId = this.options.getVoice().trim() || DEFAULT_VOICE;
-    if (voiceId.length > 200 || /[\r\n\x00]/.test(voiceId)) throw new SpeechError('Die gewählte Stimme ist ungültig.');
-    const cacheKey = isReceiptPhrase(text) ? createHash('sha256').update(`${TTS_MODEL}|${voiceId}|${text}`).digest('hex') : undefined;
+    const provider = parseSpeechProvider(this.options.getProvider?.() ?? 'inworld');
+    const voiceId = parseVoiceId(this.options.getVoice(provider)) || SPEECH_DEFAULTS[provider].voice;
+    const cacheKey = isReceiptPhrase(text) ? createHash('sha256').update(`${provider}|${SPEECH_DEFAULTS[provider].tts}|${voiceId}|${text}`).digest('hex') : undefined;
     const cached = cacheKey && this.cachedPhrase(cacheKey);
     if (cached) return cached;
-    const result = await this.post('/tts/v1/voice', {
-      text, voiceId, modelId: TTS_MODEL, language: 'de-DE', deliveryMode: 'STABLE',
-      audioConfig: { audioEncoding: 'MP3' },
-    }, signal);
-    const audio = decodeBase64(result.audioContent, 16 * 1024 * 1024);
+    let audio: Buffer;
+    if (provider === 'elevenlabs') {
+      audio = await this.post(provider, `/v1/text-to-speech/${encodeURIComponent(voiceId)}?output_format=mp3_44100_128`, {
+        text, model_id: SPEECH_DEFAULTS.elevenlabs.tts,
+      }, signal, true);
+    } else {
+      const result = await this.post(provider, '/tts/v1/voice', {
+        text, voiceId, modelId: TTS_MODEL, language: 'de-DE', deliveryMode: 'STABLE',
+        audioConfig: { audioEncoding: 'MP3' },
+      }, signal);
+      audio = decodeBase64(result.audioContent, 16 * 1024 * 1024);
+    }
     if (!isMp3(audio)) throw new SpeechError('Der Sprachdienst hat keine gültige MP3-Antwort geliefert.');
-    const clip: AudioClip = { base64: result.audioContent as string, mimeType: 'audio/mpeg' };
+    const clip: AudioClip = { base64: audio.toString('base64'), mimeType: 'audio/mpeg' };
     if (cacheKey) this.storePhrase(cacheKey, audio, clip);
     return clip;
   }

@@ -10,6 +10,8 @@ import { ACTIVITY_OVERLAY_DEFAULT_SIZE, type SidebarMode } from '../../../shared
 import { ProvidersView } from '../../ProvidersView';
 import type { AudioPhase } from '../voice';
 import { AutostartCard } from './autostart-card';
+import { SpeechAccessCard } from './speech-access-card';
+import type { SpeechProvider } from '../../../shared/speech-settings';
 
 export interface SettingsVoicePort {
   phase: AudioPhase;
@@ -22,8 +24,8 @@ export interface SettingsVoicePort {
   cancelAudio(): void;
   clearSpeech(): void;
   stopEarcons(): void;
-  saveSpeechKey(key: string): Promise<void>;
-  removeSpeechKey(): Promise<void>;
+  saveSpeechKey(key: string, provider?: SpeechProvider): Promise<void>;
+  removeSpeechKey(provider?: SpeechProvider): Promise<void>;
 }
 
 export interface SettingsViewProps {
@@ -56,7 +58,6 @@ function Spinner() { return <LoaderCircle size={15} className="spin" aria-hidden
 /** The App keeps this feature mounted: tabs and unsaved access fields belong to this view. */
 export function SettingsView({ state, navigationRequest, onOpenIdentity, onOpenOnboarding, workBusy, summaryInProgress, voice, onPreference, onError, onNotice }: SettingsViewProps) {
   const [tab, setTab] = useState<SettingsTab>(navigationRequest?.tab ?? 'models');
-  const [speechKey, setSpeechKey] = useState('');
   const [busyAction, setBusyAction] = useState('');
   const actionPending = useRef(false);
   const tabButtons = useRef<Array<HTMLButtonElement | null>>([]);
@@ -119,22 +120,9 @@ export function SettingsView({ state, navigationRequest, onOpenIdentity, onOpenO
 
       <section id={`${id}-panel-speech`} role="tabpanel" aria-labelledby={`${id}-tab-speech`} hidden={tab !== 'speech'} className="settings-tab-panel">
         <p className="settings-panel-intro">{t("Deine Sprachverbindung und die Audiogeräte dieses Rechners.")}</p>
-        <section className="settings-card settings-speech-access">
-          <div className="settings-card-head"><span className="service-icon speech"><AudioLines size={22} aria-hidden="true" /></span><div><h2>{t("Stimme & Gehör")}</h2><p>{t("Spracherkennung und Sprachausgabe mit Inworld")}</p></div>
-            <span className={`service-status ${voice.speechReady ? 'good' : ''}`}><span className="status-dot" />{state?.connections.speech === 'verified' ? t("Ausgabe geprüft") : voice.speechReady ? t("Key gespeichert") : t("Nicht verbunden")}</span></div>
-          <label className="field-label" htmlFor={`${id}-speech-key`}>{t("Inworld-Zugang (Base64) ")}{voice.speechReady && <span className="muted">{t("· zum Ersetzen neu eingeben")}</span>}</label>
-          <div className="input-action"><input id={`${id}-speech-key`} type="password" autoComplete="off" spellCheck={false} value={speechKey} disabled={!ready || !!busyAction}
-            placeholder={voice.speechReady ? t("Zugang geschützt gespeichert") : t("Base64-Zugangsdaten aus dem Inworld-Portal")} onChange={event => setSpeechKey(event.target.value)} />
-            <button className="secondary-button" disabled={!ready || !speechKey.trim() || !!busyAction} onClick={() => {
-              const submitted = speechKey.trim();
-              void action('speech-key', async () => { await voice.saveSpeechKey(submitted); setSpeechKey(''); }, t("Inworld-Zugang gespeichert. Prüfe jetzt die Sprachausgabe."));
-            }}>{busyAction === 'speech-key' ? <Spinner /> : <KeyRound size={15} aria-hidden="true" />}{t(" Speichern")}</button></div>
-          <div className="provider-models"><span>STT <strong>inworld/inworld-stt-1</strong></span><span>TTS <strong>inworld-tts-2</strong></span></div>
-          <p className="billing-note">{t("Sprache wird separat über dein Inworld-Konto abgerechnet. Aufnahme und Antworttext werden für die jeweilige Funktion an Inworld gesendet. Der Mikrofontest bleibt lokal.")}</p>
-          {voice.speechReady && <button className="text-button subtle-danger" disabled={workBusy || voice.audioBusy || !!busyAction} onClick={() => void action('remove-speech', async () => {
-            voice.clearSpeech(); voice.cancelAudio(); await voice.removeSpeechKey();
-          }, t("Inworld-Zugang entfernt."))}>{busyAction === 'remove-speech' && <Spinner />}{t("Gespeicherten Sprachzugang entfernen")}</button>}
-        </section>
+        <SpeechAccessCard state={state} idPrefix={id} disabled={workBusy || voice.audioBusy || !!busyAction} onError={onError} onNotice={onNotice}
+          resetAudio={() => { voice.clearSpeech(); voice.cancelAudio(); }} saveKey={voice.saveSpeechKey} removeKey={voice.removeSpeechKey}
+          savePreferences={patch => window.openhiatus.savePreferences(patch)} />
 
         <section className="settings-card settings-audio-devices">
           <div className="settings-card-head"><span className="service-icon"><Headphones size={22} aria-hidden="true" /></span><div><h2>{t("Mikrofon & Lautsprecher")}</h2><p>{t("Geräte auswählen und die Verbindung prüfen")}</p></div></div>
