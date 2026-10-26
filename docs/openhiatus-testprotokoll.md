@@ -1,5 +1,16 @@
 # openHiatus – Testprotokoll
 
+## 0.0.29: GPT-6.1 Terra – 26. Oktober 2026
+
+`gpt-6.1-terra` ergänzt den OpenAI-Standardkatalog. Da Pi 1.3.0 das Modell noch nicht kennt, ergänzt openHiatus dessen Reasoning-, Bild-, Kontext- und Preismetadaten anhand der [offiziellen Modelldokumentation](https://developers.openai.com/api/docs/models/gpt-6.1-terra). Ein späterer SDK-Katalogeintrag hat Vorrang. ChatGPT bietet Terra nur an, wenn der abgerufene Kontokatalog es freigibt. Eigene Modelllisten, bestehende Rollenauswahl und `medium` als Thinking-Vorgabe bleiben erhalten.
+
+- `npm run check`: Architektur, Typprüfung und alle **863 Tests bestanden**. Terra wird über Responses aufgelöst; Gedächtnisanfragen prüfen alle Thinking-Stufen mit/ohne Fast für API und synthetische ChatGPT-Verbindungen. Nicht unterstütztes `minimal` wird zu `low`, `off` zu `none`. Der echte Pi-Computerhost übermittelt ein synthetisches Bildschirmbild, führt den Computerwerkzeug-Aufruf aus und übernimmt eine geänderte Thinking-Stufe beim Wiederaufnehmen.
+- `npm run build`: bestanden.
+- `OPENHIATUS_TEST_MODEL=gpt-6.1-terra node scripts/fast-model-ui-check.mjs`: als Umgebungsvariable gesetzt; bestanden mit Entwicklungs-App und verpackter EXE 0.0.29. Geprüft sind alle vier Modellrollen, tatsächliche Gesprächs-/Arbeitsanfragen an den lokalen Testserver, Fast-Wechsel, Thinking-Vorgabe, Neustart und Layout in sieben Sprachen bei 560 × 440 und 1360 × 900. Screenshot visuell geprüft.
+- `node scripts/package.mjs`: Windows-Paket erstellt. `checkPackagedRuntime` bestätigt weiterhin das Laden der mitgelieferten C++-Laufzeitbibliothek.
+
+Alle Modellantworten und Konten sind synthetisch. Ein Live-Aufruf gegen OpenAI sowie ein sauberer Windows-10-VM-Test sind damit nicht nachgewiesen. Der vollständige unveränderte Installations-/Update-/Deinstallationszyklus wurde für diese Modellergänzung nicht erneut ausgeführt.
+
 ## 0.0.27: Thinking-Stufen pro Modellrolle – 26. Oktober 2026
 
 Gespräch, Arbeit, Gedächtnis und separates Computermodell haben jeweils eine eigene Thinking-Auswahl mit `medium` als Vorgabe. Die Auswahl steht direkt bei der jeweiligen Modelleinstellung und bleibt unabhängig von Fast. Angenommene Aufgaben halten ihre Stufen für Warteschlange, Archivfortsetzung und Computer-Teilaufgaben fest. Gedächtnisberichte erhalten jetzt ebenfalls eine ausdrückliche Thinking-Vorgabe. Details: [Thinking-Stufen](thinking-levels.md).
