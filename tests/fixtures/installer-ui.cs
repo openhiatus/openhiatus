@@ -49,7 +49,9 @@ class InstallerUiCheck {
         SetProcessDPIAware();
         if (!args[1].StartsWith("openHiatus Setup Test ")) throw new Exception("Only the isolated test installer is permitted.");
         string language = args[3], nextText = args[4], installText = args[5], yesText = args[6];
-        using (var process = Process.Start(new ProcessStartInfo(args[0], "/LANG=" + language + " /NORESTART /SP-") { UseShellExecute = false })) {
+        bool install = args.Length > 7;
+        string options = "/LANG=" + language + " /NORESTART /SP-" + (install ? " /DIR=\"" + args[7] + "\" /TASKS=" : "");
+        using (var process = Process.Start(new ProcessStartInfo(args[0], options) { UseShellExecute = false })) {
             var window = WaitWindow(args[1]); int ownedPid = window.Current.ProcessId;
             try {
                 Thread.Sleep(250); Capture(window, Path.Combine(args[2], "openhiatus-setup-" + language + "-welcome.png"));
@@ -57,6 +59,21 @@ class InstallerUiCheck {
                 ((InvokePattern)next.GetCurrentPattern(InvokePattern.Pattern)).Invoke(); Thread.Sleep(250);
                 Capture(window, Path.Combine(args[2], "openhiatus-setup-" + language + "-options.png"));
                 if (Button(window, installText) == null) throw new Exception(language + ": setup must offer translated Install.");
+                if (install) {
+                    ((InvokePattern)Button(window, installText).GetCurrentPattern(InvokePattern.Pattern)).Invoke();
+                    AutomationElement finish = null;
+                    for (int i = 0; i < 1800 && !process.HasExited; i++) {
+                        finish = Button(window, "Fertigstellen"); if (finish != null) break; Thread.Sleep(100);
+                    }
+                    if (finish == null) throw new Exception("Interactive installation did not reach Finish.");
+                    // Keep the default launch choice: the isolated build pins its own data directory.
+                    // The lifecycle harness verifies that Finish actually starts that installed app.
+                    Capture(window, Path.Combine(args[2], "openhiatus-setup-installed.png"));
+                    ((InvokePattern)finish.GetCurrentPattern(InvokePattern.Pattern)).Invoke();
+                    if (!process.WaitForExit(10000) || process.ExitCode != 0) throw new Exception("Interactive test installation did not finish successfully.");
+                    Console.WriteLine("Owned setup: actual Install click, completed installation and Finish passed.");
+                    return;
+                }
                 // Cancel before any files or registry entries are installed.
                 PostMessage(new IntPtr(window.Current.NativeWindowHandle), 0x10, IntPtr.Zero, IntPtr.Zero);
                 for (int i = 0; i < 50 && !process.HasExited; i++) {

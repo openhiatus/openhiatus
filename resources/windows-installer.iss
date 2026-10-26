@@ -64,11 +64,21 @@ Source: "{#PackageDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
 Source: "{#ManifestFile}"; DestDir: "{app}"; DestName: ".openhiatus-install-files.txt"; Attribs: hidden; Flags: ignoreversion
 
 [Icons]
+#ifdef TestProfileDirectory
+; Isolated acceptance builds only. Normal distribution keeps its original launch arguments.
+Name: "{autoprograms}\{#ProductName}"; Filename: "{app}\openHiatus.exe"; Parameters: "--data-dir=""{#TestProfileDirectory}"""; WorkingDir: "{app}"; AppUserModelID: "local.openhiatus.assistant"
+Name: "{autodesktop}\{#ProductName}"; Filename: "{app}\openHiatus.exe"; Parameters: "--data-dir=""{#TestProfileDirectory}"""; WorkingDir: "{app}"; AppUserModelID: "local.openhiatus.assistant"; Tasks: desktopicon
+#else
 Name: "{autoprograms}\{#ProductName}"; Filename: "{app}\openHiatus.exe"; WorkingDir: "{app}"; AppUserModelID: "local.openhiatus.assistant"
 Name: "{autodesktop}\{#ProductName}"; Filename: "{app}\openHiatus.exe"; WorkingDir: "{app}"; AppUserModelID: "local.openhiatus.assistant"; Tasks: desktopicon
+#endif
 
 [Run]
+#ifdef TestProfileDirectory
+Filename: "{app}\openHiatus.exe"; Parameters: "--data-dir=""{#TestProfileDirectory}"""; Description: "{cm:LaunchProgram,{#ProductName}}"; Flags: nowait postinstall skipifsilent
+#else
 Filename: "{app}\openHiatus.exe"; Description: "{cm:LaunchProgram,{#ProductName}}"; Flags: nowait postinstall skipifsilent
+#endif
 
 [Registry]
 Root: HKCU; Subkey: "Software\{#SetupAppId}"; ValueType: string; ValueName: "InstallerLanguage"; ValueData: "{code:InstallerLanguage}"; Flags: uninsdeletevalue uninsdeletekeyifempty

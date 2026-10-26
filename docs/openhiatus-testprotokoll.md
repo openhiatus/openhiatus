@@ -1,5 +1,15 @@
 # openHiatus – Testprotokoll
 
+## 0.0.24: Installation bis zur ersten Antwort – 25. Oktober 2026
+
+`npm run test:installer` besteht mit dem vollständigen Windows-Paket und einer isolierten Setup-Identität. Der Prüftreiber bedient **Weiter → Installieren → Fertigstellen** im echten Setup. Anschließend wird bestätigt, dass die installierte EXE mit dem vorgegebenen Testprofil gestartet wurde. Nach einem kontrollierten Neustart übernimmt der Onboarding-Test dieselbe EXE und dasselbe Profil. Zustimmung, lokaler Modellzugang, freiwilliger Sprachbereich, erste Antwort, Fehler/Retry, Esc sowie Aufschub und Neustart bestehen in sieben Sprachen. Der Testzugang verwendet ausschließlich einen lokalen synthetischen Modellserver.
+
+Der vollständige Installationszyklus bestätigt außerdem Startmenü und optionales Desktop-Symbol, Update von einem synthetischen Altstand, Schutz laufender Apps, Downgrade-Sperre, Entfernung alter Paketdateien, Erhalt unbekannter Dateien und deaktivierter Autostarteinträge, Schutz vor beschädigten Dateilisten, erneute Installation sowie Deinstallation. Die installierte App besteht Gesprächs-/Worker- und Desktopprüfungen ohne globales Node/Codex. Alle sieben Setup-Sprachen, Sprachregistrierungen und der Erhalt einer abweichenden App-Sprache beim Update sind geprüft. Die eigenen Registrierungen und Verknüpfungen werden am Testende entfernt.
+
+`npm run check` mit 834 Tests und `npm run build` bestehen. Die Testprofil-Option weist reguläre App-Identitäten, Pfade außerhalb von `.test-data` und dessen Wurzel zurück. Sie ändert nur isolierte Test-Setups; öffentliche Setups behalten ihre Startargumente. Synthetische Einrichtungsdaten werden im Testordner archiviert, damit ein manueller Durchlauf ein leeres Profil verwenden kann.
+
+Eine echte Kontoanmeldung und reale Audioein-/ausgabe bleiben der anschließenden manuellen Abnahme vorbehalten. Diese lokale Prüfung ist keine frische Windows-VM, kein öffentlicher Download-/SmartScreen-Test und keine signierte Veröffentlichung. Separate Testprofile übernehmen die Setup-Sprache nicht automatisch; diese Verbindung benötigt weiterhin eine Abnahme auf einem neuen regulären Windows-Profil.
+
 ## 0.0.24: Geführter Einstieg – 25. Oktober 2026
 
 Neue Profile beginnen mit einer Einrichtung in vier Schritten: Sprache und ausdrückliche Zugriffsbestätigung, Modellkonto, freiwillige Sprache und eine erste Textantwort. Fortschritt und Aufschub werden dauerhaft gespeichert; bestehende eingerichtete Profile behalten ihren Einstieg. Die Einrichtung lässt sich über die Einstellungen erneut öffnen. Der abschließende Test sendet ausschließlich einen festen Begrüßungsprompt an den gewählten Gesprächszugang. Er bestätigt keine Desktopfunktionen oder Spracherkennung.
