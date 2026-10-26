@@ -1,4 +1,21 @@
 {
+  "Thinking-Stufe": [
+    "Thinking level", "Nivel de razonamiento", "Niveau de raisonnement", "思考级别", "思考レベル", "Nível de raciocínio"
+  ],
+  "medium (Standard)": [
+    "medium (default)", "medium (predeterminado)", "medium (par défaut)", "medium（默认）", "medium（標準）", "medium (padrão)"
+  ],
+  "off (Aus)": [
+    "off (disabled)", "off (desactivado)", "off (désactivé)", "off（关闭）", "off（無効）", "off (desativado)"
+  ],
+  "Thinking steuert den Denkaufwand. Höhere Stufen können länger dauern und mehr kosten. Nicht jedes Modell unterstützt jede Stufe; die Auswahl wird an das Modell angepasst. Änderungen gelten für neue Anfragen. Fast bleibt unabhängig davon.": [
+    "Thinking controls reasoning effort. Higher levels can take longer and cost more. Not every model supports every level; your choice is adapted to the model. Changes apply to new requests. Fast remains independent.",
+    "Thinking controla el esfuerzo de razonamiento. Los niveles más altos pueden tardar más y costar más. No todos los modelos admiten todos los niveles; la selección se adapta al modelo. Los cambios se aplican a nuevas solicitudes. Fast es independiente.",
+    "Thinking règle l’effort de raisonnement. Les niveaux plus élevés peuvent prendre plus de temps et coûter plus cher. Les modèles ne prennent pas tous en charge chaque niveau ; le choix est adapté au modèle. Les modifications s’appliquent aux nouvelles requêtes. Fast reste indépendant.",
+    "Thinking 控制推理投入。较高级别可能耗时更长、费用更高。并非所有模型都支持每个级别，所选级别会根据模型调整。更改适用于新请求。Fast 与此设置相互独立。",
+    "Thinking は推論にかける労力を調整します。高いレベルでは時間や費用が増える場合があります。モデルによって対応レベルが異なるため、選択はモデルに合わせて調整されます。変更は新しいリクエストに適用されます。Fast は独立した設定です。",
+    "Thinking controla o esforço de raciocínio. Níveis mais altos podem demorar mais e custar mais. Nem todo modelo aceita todos os níveis; a escolha é ajustada ao modelo. As alterações valem para novas solicitações. Fast continua independente."
+  ],
   "Arbeitsverlauf": ["Work history", "Historial de trabajo", "Historique du travail", "工作记录", "作業履歴", "Histórico de trabalho"],
   "Hintergrundaufgaben": ["Background tasks", "Tareas en segundo plano", "Tâches en arrière-plan", "后台任务", "バックグラウンドのタスク", "Tarefas em segundo plano"],
   "In Bearbeitung": ["In progress", "En curso", "En cours", "进行中", "進行中", "Em andamento"],

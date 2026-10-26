@@ -28,7 +28,8 @@ const server = createServer(async (request, response) => {
     let body = ''; for await (const chunk of request) body += chunk;
     const input = JSON.parse(body), dialog = input.tools?.some(tool => tool.name === 'start_task');
     assert.equal(input.model, 'gpt-6.1-sol', 'local variant suffix must not reach the provider');
-    requests.push({ role: dialog ? 'dialog' : 'worker', tier: input.service_tier });
+    const thinking = input.input.filter(item => item.type === 'configuration_update').at(-1)?.reasoning?.effort ?? input.reasoning?.effort;
+    requests.push({ role: dialog ? 'dialog' : 'worker', tier: input.service_tier, thinking });
     const tool = dialog && JSON.stringify(input.input).includes('[fast-worker]') && !input.input.some(item => item.type === 'function_call_output');
     const answer = dialog ? 'Die gewählte Modellvariante ist angekommen.' : 'Der Arbeitsauftrag hat Fast angefordert.';
     respond(response, tool, '```openhiatus-reply\n' + JSON.stringify({ spoken: answer, text: answer }) + '\n```');
@@ -60,6 +61,13 @@ try {
     await select.selectOption(fast);
     await expect.poll(() => page.evaluate(async key => (await window.openhiatus.snapshot()).preferences[key], role)).toBe(fast);
   }
+  const thinking = { workThinkingLevel: 'high', dialogThinkingLevel: 'low', memoryThinkingLevel: 'xhigh' };
+  for (const [key, value] of Object.entries(thinking)) {
+    const select = page.locator('#role-' + key); await expect(select).toHaveValue('medium');
+    assert.deepEqual(await select.locator('option').evaluateAll(options => options.map(option => option.value)), ['off', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max']);
+    await select.selectOption(value);
+    await expect.poll(() => page.evaluate(async key => (await window.openhiatus.snapshot()).preferences[key], key)).toBe(value);
+  }
   await expect(page.locator('#openai-models')).toHaveAttribute('placeholder', 'gpt-6.1-sol');
   await page.screenshot({ path: 'artifacts/openhiatus-fast-modellauswahl.png' });
   await page.getByRole('button', { name: 'Gespräch', exact: true }).click();
@@ -71,8 +79,10 @@ try {
   await expect.poll(() => page.evaluate(async () => (await window.openhiatus.snapshot()).task.status), { timeout: 30000 }).toBe('completed');
   assert.ok(requests.some(request => request.role === 'dialog')); assert.ok(requests.some(request => request.role === 'worker'));
   assert.ok(requests.every(request => request.tier === 'priority'));
+  assert.ok(requests.filter(request => request.role === 'dialog').every(request => request.thinking === 'low'));
+  assert.ok(requests.filter(request => request.role === 'worker').every(request => request.thinking === 'high'));
   const job = (await page.evaluate(() => window.openhiatus.snapshot())).jobs[0];
-  assert.equal(job.model, fast);
+  assert.equal(job.model, fast); assert.equal(job.thinkingLevel, 'high');
   assert.ok(job.modelRequests.some(request => request.role === 'worker' && request.requestedServiceTier === 'fast' && request.actualServiceTier === 'default'), 'requested Fast and returned default must stay distinct');
   await page.getByRole('button', { name: 'Einstellungen', exact: true }).click();
   await page.locator('#role-dialogModel').selectOption(base);
@@ -81,14 +91,33 @@ try {
   await page.getByRole('textbox', { name: 'Dein Auftrag', exact: true }).fill('Antworte ohne Arbeitsauftrag.');
   await page.getByRole('button', { name: 'Auftrag senden', exact: true }).click();
   await expect.poll(() => page.evaluate(async () => (await window.openhiatus.snapshot()).task.status), { timeout: 30000 }).toBe('completed');
-  assert.equal(requests.at(-1).tier, undefined, 'switching back removes Fast');
+  assert.equal(requests.at(-1).tier, undefined, 'switching back removes Fast'); assert.equal(requests.at(-1).thinking, 'low');
+  await page.getByRole('button', { name: 'Einstellungen', exact: true }).click();
+  await page.getByRole('tab', { name: 'Bedienung', exact: true }).click();
+  await expect(page.locator('#role-computerThinkingLevel')).toHaveValue('medium');
+  await page.locator('#role-computerThinkingLevel').selectOption('max');
+  await expect.poll(() => page.evaluate(async () => (await window.openhiatus.snapshot()).preferences.computerThinkingLevel)).toBe('max');
   const count = requests.length; await instance.close(); instance = undefined;
   page = await launch();
   const restored = await page.evaluate(() => window.openhiatus.snapshot());
   assert.equal(restored.preferences.model, fast); assert.equal(restored.preferences.dialogModel, base); assert.equal(restored.preferences.memoryModel, fast);
+  assert.equal(restored.preferences.computerThinkingLevel, 'max');
   assert.equal(requests.length, count, 'restart does not replay work'); assert.deepEqual(errors, []);
   await page.getByRole('button', { name: 'Einstellungen', exact: true }).click();
   await expect(page.locator('#role-model')).toHaveValue(fast); await expect(page.locator('#role-memoryModel')).toHaveValue(fast); await expect(page.locator('#role-dialogModel')).toHaveValue(base);
-  const result = { status: 'passed', profile, requests, checks: ['adjacent ordinary and Fast model choices in all three roles', 'base remote model with priority wire parameter', 'real dialog and worker requests', 'separate requested and returned service tier', 'switch back to ordinary processing', 'dialog and work variants visible in conversation', 'restart persists each role without replay', 'no cloud or user profile access'] };
+  for (const [key,value] of Object.entries(thinking)) { assert.equal(restored.preferences[key],value); await expect(page.locator('#role-'+key)).toHaveValue(value); }
+  const main = await instance.browserWindow(page);
+  for (const size of [[560,440],[1360,900]]) {
+    await main.evaluate((window,size)=>window.setContentSize(...size),size);
+    for(const language of ['en','es','fr','de','zh-CN','ja','pt-BR']) {
+      await page.evaluate(language=>window.openhiatus.savePreferences({uiLanguage:language}),language);
+      await expect(page.locator('html')).toHaveAttribute('lang',language);
+      for(const key of Object.keys(thinking)) { await expect(page.locator('#role-'+key)).toHaveValue(thinking[key]); assert.ok(await page.locator('#role-'+key).evaluate(element=>element.getBoundingClientRect().height>=40)); }
+      assert.ok(await page.locator('.model-roles').evaluate(element=>element.scrollWidth<=element.clientWidth+1));
+    }
+  }
+  await page.evaluate(()=>window.openhiatus.savePreferences({uiLanguage:'de'}));
+  await page.locator('.model-roles').scrollIntoViewIfNeeded(); await page.screenshot({path:'artifacts/openhiatus-thinking-roles.png'});
+  const result = { status: 'passed', profile, requests, checks: ['medium default and independent role thinking selections', 'real dialog/worker thinking payloads with and without Fast', 'thinking persistence and seven-language responsive layout', 'adjacent ordinary and Fast model choices in all three roles', 'base remote model with priority wire parameter', 'real dialog and worker requests', 'separate requested and returned service tier', 'switch back to ordinary processing', 'dialog and work variants visible in conversation', 'restart persists each role without replay', 'no cloud or user profile access'] };
   await writeFile('artifacts/openhiatus-fast-modellpruefung.json', JSON.stringify(result, null, 2), 'utf8'); console.log(JSON.stringify(result, null, 2));
 } finally { if (instance) await instance.close(); await new Promise(resolve => server.close(resolve)); }

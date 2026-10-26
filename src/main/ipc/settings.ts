@@ -1,3 +1,4 @@
+import { THINKING_PREFERENCES, parseThinkingLevel } from '../../shared/thinking';
 import type { PreferencesPatch, ProviderInput } from '../../shared/contracts';
 import { parseUiLanguage } from '../../shared/ui-language';
 import { parseOnboarding } from '../../shared/onboarding';
@@ -14,8 +15,9 @@ const booleanPreferences = ['speakReplies', 'voiceConversation', 'earcons', 'mem
 const textPreferences = ['inputDeviceId', 'outputDeviceId', 'voiceId', 'model', 'dialogModel', 'memoryModel', 'computerModel'] as const;
 const deviceMetadata = ['inputDeviceLabel', 'inputDeviceGroupId', 'outputDeviceLabel', 'outputDeviceGroupId'] as const;
 function preferences(value: unknown): PreferencesPatch {
-  const input = inputObject(value, [...booleanPreferences, ...textPreferences, ...deviceMetadata, 'speechProvider', 'elevenlabsVoiceId', 'onboarding', 'uiLanguage', 'skillFavorites', 'computerOverviewScaleDivisor', 'computerDetailScaleDivisor', 'computerImageRetentionCalls', 'computerWorkingMemoryCalls', 'sidebarMode', 'activityOverlaySize', 'assistantProfile'], 'Ungültige Einstellungen.');
+  const input = inputObject(value, [...THINKING_PREFERENCES, ...booleanPreferences, ...textPreferences, ...deviceMetadata, 'speechProvider', 'elevenlabsVoiceId', 'onboarding', 'uiLanguage', 'skillFavorites', 'computerOverviewScaleDivisor', 'computerDetailScaleDivisor', 'computerImageRetentionCalls', 'computerWorkingMemoryCalls', 'sidebarMode', 'activityOverlaySize', 'assistantProfile'], 'Ungültige Einstellungen.');
   const patch: PreferencesPatch = {};
+  for (const key of THINKING_PREFERENCES) if (Object.hasOwn(input, key)) patch[key] = parseThinkingLevel(input[key]);
   if (Object.hasOwn(input, 'speechProvider')) patch.speechProvider = parseSpeechProvider(input.speechProvider);
   if (Object.hasOwn(input, 'elevenlabsVoiceId')) patch.elevenlabsVoiceId = parseVoiceId(input.elevenlabsVoiceId);
   if (Object.hasOwn(input, 'onboarding')) patch.onboarding = parseOnboarding(input.onboarding);

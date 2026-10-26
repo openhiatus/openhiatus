@@ -1,3 +1,4 @@
+import type { ThinkingLevel } from './thinking';
 import type { SkillFavorites } from './skill-favorites';
 import type { OnboardingProgress } from './onboarding';
 import type { SpeechProvider } from './speech-settings';
@@ -14,6 +15,7 @@ import type { MemorySnapshot, MemorySource, MemorySearchResult, MemoryPeriodRequ
 export interface Usage { inputTokens: number; outputTokens: number; cacheReadTokens: number; cacheWriteTokens: number; costUsd?: number; }
 /** Immutable desktop configuration captured when a task is admitted. */
 export interface ComputerTaskSettings {
+  thinkingLevel?: ThinkingLevel;
   delegationEnabled: boolean; model: string; fast: boolean; overviewScaleDivisor: number;
   /** Older jobs keep native details, unlimited image history and the previous tool history. */
   detailScaleDivisor?: number; imageRetentionCalls?: number; workingMemoryCalls?: number;
@@ -30,6 +32,7 @@ export interface Message { id: string; role: 'user' | 'assistant'; text: string;
 export interface Activity { id: string; at: string; kind: 'system' | 'command' | 'file' | 'error'; title: string; detail?: string; }
 export interface Task { id: string; status: TaskStatus; threadId?: string; turnId?: string; error?: string; }
 export interface Preferences {
+  workThinkingLevel?: ThinkingLevel; dialogThinkingLevel?: ThinkingLevel; memoryThinkingLevel?: ThinkingLevel; computerThinkingLevel?: ThinkingLevel;
   speechProvider?: SpeechProvider;
   elevenlabsVoiceId?: string;
   onboarding?: OnboardingProgress;
@@ -46,6 +49,7 @@ export interface Preferences {
 }
 export type PreferencesPatch = Partial<Omit<Preferences, 'fullAccessAcknowledged'>>;
 export interface BackgroundJob {
+  thinkingLevel?: ThinkingLevel;
   id: string; requestId: string; title: string; prompt: string;
   parentRequestId?: string;
   status: 'queued' | 'running' | 'stopping' | 'completed' | 'interrupted' | 'failed';
@@ -141,6 +145,7 @@ export interface AgentAdapter {
 }
 
 export interface AgentRunOptions {
+  thinkingLevel?: ThinkingLevel;
   purpose?: 'dialog';
   serviceTier?: 'fast';
   /** Prepended only for a new session; a resumed session already holds this context. */

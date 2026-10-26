@@ -161,7 +161,7 @@ async function createApp(): Promise<void> {
   const createWorker = (onEvent: (event: AgentEvent) => void, job: BackgroundJob) => {
     // Admission captured these values before asynchronous memory lookup/queueing.
     const computer = job.computer;
-    const desktop = computer?.delegationEnabled ? createDelegatedComputerToolContribution({ model: computer.model, fast: computer.fast, protectDesktop,
+    const desktop = computer?.delegationEnabled ? createDelegatedComputerToolContribution({ model: computer.model, fast: computer.fast, thinkingLevel: computer.thinkingLevel, protectDesktop,
       getOverviewScaleDivisor: () => computer.overviewScaleDivisor,
       getDetailScaleDivisor: () => computer.detailScaleDivisor ?? 1,
       runDesktopOperation,

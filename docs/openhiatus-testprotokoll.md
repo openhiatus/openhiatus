@@ -1,5 +1,17 @@
 # openHiatus – Testprotokoll
 
+## 0.0.27: Thinking-Stufen pro Modellrolle – 26. Oktober 2026
+
+Gespräch, Arbeit, Gedächtnis und separates Computermodell haben jeweils eine eigene Thinking-Auswahl mit `medium` als Vorgabe. Die Auswahl steht direkt bei der jeweiligen Modelleinstellung und bleibt unabhängig von Fast. Angenommene Aufgaben halten ihre Stufen für Warteschlange, Archivfortsetzung und Computer-Teilaufgaben fest. Gedächtnisberichte erhalten jetzt ebenfalls eine ausdrückliche Thinking-Vorgabe. Details: [Thinking-Stufen](thinking-levels.md).
+
+- `npm run check`: Architektur, Typen und alle **855 Tests bestanden**. Die neuen Prüfungen bestätigen Migration, IPC, Speicherung, Rücknahme bei Schreibfehlern, getrennte Rollen und festgehaltene Aufrufkonfiguration. Der echte Pi-Host übermittelt eine gewählte Stufe und übernimmt beim Wiederaufnehmen einer Sitzung eine andere Stufe. Die Tests beachten auch Thinking-Angaben in `configuration_update`-Einträgen. Direkte Berichtsaufrufe prüfen mehrere Stufen mit und ohne Fast, Mindeststufen und Modelle ohne Reasoning.
+- `npm run build`: bestanden.
+- `node scripts/fast-model-ui-check.mjs`: bestanden. Auswahl ausgehend von `medium`, tatsächliche Gesprächs- und Arbeitsanfragen an den lokalen Testserver, unveränderte Stufe beim Fast-Wechsel sowie getrennte Werte nach Neustart. Layout in sieben Sprachen bei 560 × 440 und 1360 × 900 bestanden; Screenshot visuell geprüft.
+- `npm run test:computer-model-ui`: bestanden. Computerstufe unabhängig auswählbar, beim Arbeiten gesperrt und anschließend erhalten. Die ältere Renderer-Fixture benötigte eine ausdrücklich simulierte Autostart-Leseantwort für die inzwischen vorhandene Autostartkarte; es erfolgen weiterhin keine Betriebssystemeingaben oder Cloudanfragen.
+- `node scripts/package.mjs` und `npm run test:package`: Windows-Paket 0.0.27 erstellt und alle zwölf Abläufe bestanden. Der erweiterte Modellrollentest bestätigt in der verpackten App auch Computerstufe und Neustart. Alle verpackten Builddateien stimmen per SHA-256 mit dem geprüften Build überein.
+
+Die Prüfungen verwenden synthetische Profile, Konten und Modellantworten. Die Stufe ist eine Anforderung, die Pi an die Modellfähigkeiten anpasst; sie ist keine Garantie eines bestimmten Verbrauchs oder einer bestimmten Antwortqualität.
+
 ## 0.0.26: ElevenLabs und freiwillige Stimmenwahl – 26. Oktober 2026
 
 Einstellungen und Einrichtung bieten dieselbe Anbieterauswahl für Inworld und ElevenLabs. Der gewählte Anbieter übernimmt STT und TTS; pro Anbieter bleiben Schlüssel und Stimme getrennt erhalten. Eine eigene Voice-ID ist freiwillig und lässt sich wieder auf die Standardstimme zurücksetzen. Alte Profile behalten Inworld. Die neuen Bedienelemente sind in allen sieben Oberflächensprachen verfügbar.

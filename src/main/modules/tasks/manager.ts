@@ -1,3 +1,4 @@
+import { DEFAULT_THINKING_LEVEL, parseThinkingLevel, type ThinkingLevel } from '../../../shared/thinking';
 import { validateUsage } from './usage';
 import { parseModelRequest } from '../../../shared/model-requests';
 import { parseComputerTaskSettings } from '../../../shared/computer-task-settings';
@@ -5,6 +6,7 @@ import { randomUUID } from 'node:crypto';
 import type { BackgroundJob, AgentAdapter, AgentEvent, Usage, ComputerTaskSettings, ModelRequest } from '../../../shared/contracts';
 
 export interface JobRequest {
+  thinkingLevel?: ThinkingLevel;
   requestId: string; title: string; prompt: string; model: string;
   parentRequestId?: string;
   resources: string[];
@@ -64,7 +66,7 @@ export class JobManager {
       return Promise.reject(new Error('Es warten bereits 50 Aufgaben. Bitte zuerst einige abschließen oder stoppen.'));
     }
     const epoch = this.epoch;
-    const request = { ...input, resources: [...input.resources], ...(input.computer ? { computer: parseComputerTaskSettings(input.computer) } : {}) };
+    const request = { ...input, ...(input.thinkingLevel === undefined ? {} : { thinkingLevel: parseThinkingLevel(input.thinkingLevel) }), resources: [...input.resources], ...(input.computer ? { computer: parseComputerTaskSettings(input.computer) } : {}) };
     // Reserve the request synchronously, including while another admission is writing.
     const accepted = this.admissionTail.then(() => this.admit(request, epoch, onAdmitted));
     this.admissions.set(input.requestId, accepted);
@@ -160,7 +162,7 @@ export class JobManager {
           this.runtimes.set(job.id, runtime);
           job.runtimeRetained = true;
           this.deps.changed();
-          void runtime.adapter.run(job.prompt, job.model, undefined).catch(error => {
+          void runtime.adapter.run(job.prompt, job.model, undefined, { thinkingLevel: job.thinkingLevel ?? DEFAULT_THINKING_LEVEL }).catch(error => {
             if (!runtime.ended && job.status === 'running') this.fail(job, error);
           });
         } catch (error) { if (epoch === this.epoch && revision === this.revisions.get(job.id) && job.status === 'running') this.fail(job, error); }

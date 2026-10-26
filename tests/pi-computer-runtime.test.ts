@@ -58,7 +58,7 @@ test('real Pi computer-only host requests Fast, exposes no ambient SDK tools, re
     assert.equal(dirname(directory).toLowerCase(), resolve(tmpdir()).toLowerCase()); assert.ok(basename(directory).startsWith('openhiatus-computer-runtime-'));
     await rm(directory, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   });
-  const input: HostRun = { runId: randomUUID(), text: 'Inspect the synthetic UI and report.', workspace, home, dialog: false, computerOnly: true, serviceTier: 'fast',
+  const input: HostRun = { runId: randomUUID(), text: 'Inspect the synthetic UI and report.', workspace, home, dialog: false, computerOnly: true, serviceTier: 'fast', thinkingLevel: 'high',
     instructions: 'COMPUTER_ONLY_INSTRUCTION_MARKER: use only the provided computer tool.',
     model: { provider: 'openai', modelId: 'gpt-6-luna', apiKey: 'synthetic-local-test-key', api: 'openai-responses', baseUrl: `http://127.0.0.1:${(server.address() as { port: number }).port}/v1` },
     tools: [{ type: 'function', name: 'computer', description: 'Synthetic screenshots only', inputSchema: { type: 'object', properties: { action: { type: 'string' } }, required: ['action'] } }] };
@@ -69,6 +69,8 @@ test('real Pi computer-only host requests Fast, exposes no ambient SDK tools, re
   assert.ok(completion?.method === 'event' && completion.params.event.type === 'completed' && completion.params.event.status === 'completed', JSON.stringify(packets));
   assert.equal(computerCalls, 1); assert.equal(requests.length, 2);
   for (const request of requests) {
+    // This SDK expresses mid-conversation effort in configuration_update items for eligible models.
+    assert.equal(request.input.filter((item: any) => item.type === 'configuration_update').at(-1)?.reasoning?.effort ?? request.reasoning?.effort, 'high');
     assert.equal(request.service_tier, 'priority'); assert.deepEqual(request.tools.map((tool: any) => tool.name), ['computer']);
     assert.ok(JSON.stringify(request).includes('COMPUTER_ONLY_INSTRUCTION_MARKER')); assert.ok(!JSON.stringify(request).includes('PRIVATE_AMBIENT_SKILL_MARKER'));
   }
@@ -85,6 +87,14 @@ test('real Pi computer-only host requests Fast, exposes no ambient SDK tools, re
   await host.receive({ id: 'cross-role', method: 'run', params: { ...input, runId: randomUUID(), threadId, computerOnly: false, serviceTier: undefined } });
   assert.ok(packets.some(packet => packet.method === undefined && packet.id === 'cross-role' && packet.error?.includes('gehört nicht')));
   assert.equal(requests.length, 2, 'Cross-role resume must fail before another provider request.');
+  const resumedRun = randomUUID();
+  await host.receive({ id: 'resume-thinking', method: 'run', params: { ...input, runId: resumedRun, threadId, thinkingLevel: 'low', serviceTier: undefined } });
+  const resumedDeadline = Date.now() + 10000;
+  while (!packets.some(packet => packet.method === 'event' && packet.params.runId === resumedRun && packet.params.event.type === 'completed') && Date.now() < resumedDeadline) await new Promise(done => setTimeout(done, 10));
+  assert.equal(requests.length, 3);
+  const last = requests.at(-1);
+  assert.equal(last.input.filter((item: any) => item.type === 'configuration_update').at(-1)?.reasoning?.effort ?? last.reasoning?.effort, 'low');
+  assert.equal(last.service_tier, undefined);
 });
 
 test('ChatGPT credential callbacks use compatible priority without retrying the rejected fast spelling or hiding returned downgrade', { timeout: 30000 }, async t => {

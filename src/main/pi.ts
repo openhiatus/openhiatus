@@ -1,3 +1,4 @@
+import { parseThinkingLevel, DEFAULT_THINKING_LEVEL } from '../shared/thinking.js';
 import { APP_DISPLAY_NAME } from '../shared/branding.js';
 import { mkdir } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
@@ -96,6 +97,7 @@ export class PiAdapter implements AgentAdapter {
     if (!text.trim() || text.length > MAX_PROMPT_CHARS) throw new Error('Der Auftrag ist leer oder zu groß.');
     if (/^\s*\/goal(?:\s|$)/i.test(text)) throw new Error(`/goal wird in ${APP_DISPLAY_NAME} nicht unterstützt. Bitte einen normalen Arbeitsauftrag formulieren.`);
     if (options?.serviceTier && !this.options.computerOnly) throw new Error('Eine eigene Fast-Stufe ist nur für die getrennte Computerbedienung vorgesehen.');
+    const thinkingLevel = parseThinkingLevel(options?.thinkingLevel ?? DEFAULT_THINKING_LEVEL);
     const imageRetention = computerImageRetentionCalls(this.options.getComputerImageRetentionCalls?.() ?? this.options.computerImageRetentionCalls ?? 0);
     const workingMemory = this.options.role === 'dialog' ? 0 : computerWorkingMemoryCalls(this.options.getComputerWorkingMemoryCalls?.() ?? this.options.computerWorkingMemoryCalls ?? 0);
     const active: Active = { id: randomUUID(), abort: new AbortController(), threadId, stopping: false, pending: new Set(), credentialsPending: new Set(), modelSelection: model };
@@ -114,7 +116,7 @@ export class PiAdapter implements AgentAdapter {
       // A ChatGPT host receives fresh access tokens only for the currently bound request.
       // Refresh credentials remain exclusively in the protected main-process store.
       const input: HostRun = { runId: active.id, text, model: resolved.authType === 'chatgpt' ? { ...resolved, apiKey: '' } : resolved, threadId, home: this.options.home, workspace: this.options.workspace,
-        dialog, ...(this.options.computerOnly ? { computerOnly: true } : {}), ...((options?.serviceTier ?? resolved.serviceTier) ? { serviceTier: options?.serviceTier ?? resolved.serviceTier } : {}),
+        dialog, thinkingLevel, ...(this.options.computerOnly ? { computerOnly: true } : {}), ...((options?.serviceTier ?? resolved.serviceTier) ? { serviceTier: options?.serviceTier ?? resolved.serviceTier } : {}),
         ...(this.options.computerImageRetentionCalls === undefined && !this.options.getComputerImageRetentionCalls ? {} : { computerImageRetentionCalls: imageRetention }),
         ...(this.options.computerWorkingMemoryCalls === undefined && !this.options.getComputerWorkingMemoryCalls ? {} : { computerWorkingMemoryCalls: workingMemory }),
         tools: [...active.tools.definitions], instructions: `${this.options.instructions ?? (dialog ? DIALOG_INSTRUCTIONS : this.options.computerOnly ? 'Complete only the assigned bounded UI task using the supplied computer tools. Report observed results and uncertainties.' : AGENT_INSTRUCTIONS)}\n\n${this.options.getIdentityInstructions?.() ?? ''}`,
