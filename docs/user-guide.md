@@ -44,7 +44,9 @@ New profiles open a guided setup with five steps. Each step explains what to do;
 
 ### Models and Fast
 
-Eligible ChatGPT and OpenAI models appear as adjacent choices such as **gpt-6.1-sol** and **gpt-6.1-sol (fast)**. Each role saves its own choice. The Fast variant requests faster processing with the same underlying model; a choice without `(fast)` sends no explicit Fast request. The provider determines the actual processing tier, which can differ from the request. API Fast requests may cost more. The conversation view shows both the selected conversation and work model, including `(fast)`. Existing model selections remain unchanged. The experimental separate computer model retains its own Fast switch under **Bedienung**.
+The OpenAI API presets include `gpt-6.2-sol` and `gpt-6.2-astra`. If you use a custom API model list, add their IDs there. For an active ChatGPT connection, openHiatus fetches the account's model catalog at startup and offers the models OpenAI lists for that connection. If you set Thinking to **Off** or **Minimal** for either GPT-6.2 model, openHiatus requests **Low**, the lowest supported setting.
+
+Eligible ChatGPT and OpenAI models appear as adjacent choices such as **gpt-6.2-sol** and **gpt-6.2-sol (fast)**. Each role saves its own choice. The Fast variant requests faster processing with the same underlying model; a choice without `(fast)` sends no explicit Fast request. The provider determines the actual processing tier, which can differ from the request. API Fast requests may cost more. The conversation view shows both the selected conversation and work model, including `(fast)`. Existing model selections remain unchanged. The experimental separate computer model retains its own Fast switch under **Bedienung**.
 
 ### Thinking levels
 

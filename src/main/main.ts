@@ -294,6 +294,9 @@ async function createApp(): Promise<void> {
   // Show without taking focus, then keep the normal window minimized in the taskbar.
   if (startedAtLogin) { window.showInactive(); window.minimize(); }
   void controller.start();
+  if (chatgpt.snapshot().planUsage) {
+    void chatgpt.refreshModels().catch(() => { /* Model discovery can fail while cached models remain usable. */ });
+  }
   let registered = false;
   try { registered = globalShortcut.register('CommandOrControl+Alt+F12', () => { stopActivityPresence(); window?.webContents.send('openhiatus:emergency-stop'); void controller?.stop().catch(() => {}); }); } catch { /* Local Stop remains available. */ }
   if (!registered) controller.reportError(new Error('Globaler Stopp-Hotkey ist belegt. Stopp im Fenster und Escape bleiben verfügbar.'));

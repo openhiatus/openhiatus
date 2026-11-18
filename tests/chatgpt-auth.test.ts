@@ -23,6 +23,12 @@ async function fixture(options: { callback?: 'state' | 'error' | 'client' | 'non
   const credentials = { get: (key: string) => values.get(key), set: (key: string, value: string) => { values.set(key, value); writes.push(JSON.parse(value)); }, remove: (key: string) => { values.delete(key); } };
   let now = 1_800_000_000_000, calls = 0, refreshes = 0, modelCalls = 0, revocations = 0, latestUrl: URL | undefined;
   let tokenError = options.tokenError, refreshError: string | undefined, refreshDelay = 0, scopes = options.scopes ?? 'openid profile email offline_access resource.invoke chatgpt.tokens.use.direct';
+  let catalog = [
+    { slug: 'gpt-6.1-sol', display_name: 'Work model', visibility: 'list' },
+    { slug: 'hidden', display_name: 'Hidden', visibility: 'hidden' },
+    { slug: 'gpt-6.1-sol', display_name: 'Duplicate', visibility: 'list' },
+    { slug: 'gpt-5.4', display_name: 'Small model', visibility: 'list' },
+  ];
   const requests: { url: string; init?: RequestInit }[] = [], browserUrls: URL[] = [];
   const mockFetch: typeof fetch = async (url, init) => {
     const address = String(url); requests.push({ url: address, init });
@@ -48,7 +54,7 @@ async function fixture(options: { callback?: 'state' | 'error' | 'client' | 'non
     }
     if (address === `${API}/models`) {
       modelCalls++; assert.match(new Headers(init?.headers).get('authorization') ?? '', /^Bearer access-/);
-      return json({ models: [{ slug: 'gpt-6.1-sol', display_name: 'Work model', visibility: 'list' }, { slug: 'hidden', display_name: 'Hidden', visibility: 'hidden' }, { slug: 'gpt-6.1-sol', display_name: 'Duplicate', visibility: 'list' }, { slug: 'gpt-5.4', display_name: 'Small model', visibility: 'list' }] });
+      return json({ models: catalog });
     }
     if (address === `${AUTH}/api/accounts/oauth/revoke`) {
       revocations++; const body = new URLSearchParams(String(init?.body)); assert.equal(body.get('client_id'), 'oaiapp_openhiatus_test'); assert.equal(body.get('token_type_hint'), 'refresh_token');
@@ -73,6 +79,7 @@ async function fixture(options: { callback?: 'state' | 'error' | 'client' | 'non
   };
   const auth = new ChatGPTAuth(directory, credentials, { fetch: mockFetch, openBrowser, now: () => now, timeoutMs: options.timeoutMs ?? 5000 });
   return { auth, directory, credentials, writes, values, requests, browserUrls, mockFetch, openBrowser,
+    setCatalog: (models: typeof catalog) => { catalog = models; },
     counts: () => ({ calls, refreshes, modelCalls, revocations }), advance: (milliseconds: number) => { now += milliseconds; },
     setTokenError: (value?: string) => { tokenError = value; }, setRefreshError: (value?: string) => { refreshError = value; }, setRefreshDelay: (value: number) => { refreshDelay = value; }, setScopes: (value: string) => { scopes = value; }, now: () => now };
 }
@@ -225,13 +232,23 @@ test('corrupt host metadata is backed up and recovered without breaking startup;
 
 test('direct ChatGPT completion uses only public Responses, stream true/store false, and requires response.completed', async () => {
   const f = await fixture(); await f.auth.signIn();
-  const providers = new ProviderStore(f.directory, f.credentials, f.auth);
+  const auth = new ChatGPTAuth(f.directory, f.credentials, { fetch: f.mockFetch, openBrowser: f.openBrowser, now: f.now });
+  const providers = new ProviderStore(f.directory, f.credentials, auth);
+  assert.throws(() => providers.resolve('chatgpt/gpt-6.2-astra'), /nicht verfügbar/);
+  f.setCatalog([
+    { slug: 'gpt-6.2-sol', display_name: 'GPT-6.2 Sol', visibility: 'list' },
+    { slug: 'gpt-6.2-astra', display_name: 'GPT-6.2 Astra', visibility: 'list' },
+  ]);
+  await auth.refreshModels();
   let status: 'completed' | 'incomplete' | 'failed' = 'completed';
+  let modelId = 'gpt-6.2-sol';
   const client = new ModelClient(providers, { fetch: async (url, init) => {
     assert.equal(String(url), `${API}/responses`);
     assert.equal(new Headers(init?.headers).get('authorization'), 'Bearer access-1');
     const body = JSON.parse(String(init?.body));
     assert.equal(body.stream, true); assert.equal(body.store, false); assert.equal(body.tools, undefined);
+    assert.equal(body.model, modelId);
+    assert.equal(body.reasoning?.effort, 'low');
     assert.equal(body.max_output_tokens, undefined); // Pi recognizes the subscription token; unsupported API fields stay out.
     const response = { id: 'resp_test', status, model: body.model,
       output: [{ type: 'message', id: 'msg_test', role: 'assistant', status: 'completed', content: [{ type: 'output_text', text: 'Finished summary', annotations: [] }] }],
@@ -250,10 +267,13 @@ test('direct ChatGPT completion uses only public Responses, stream true/store fa
     ];
     return new Response(events.map(event => `data: ${JSON.stringify(event)}\n\n`).join(''), { headers: { 'content-type': 'text/event-stream' } });
   } });
-  assert.equal(await client.complete('Summarize', 'chatgpt/gpt-6.1-sol', new AbortController().signal), 'Finished summary');
-  status = 'incomplete'; await assert.rejects(client.complete('Summarize', 'chatgpt/gpt-6.1-sol', new AbortController().signal), /unvollständig|vollständig/);
-  status = 'failed'; await assert.rejects(client.complete('Summarize', 'chatgpt/gpt-6.1-sol', new AbortController().signal), /subscription_sharing_usage_limit_exceeded/);
-  assert.equal(f.auth.snapshot().planUsage, true); assert.equal(f.counts().calls, 1);
+  const complete = () => client.complete('Summarize', `chatgpt/${modelId}`, new AbortController().signal, undefined, 'off');
+  assert.equal(await complete(), 'Finished summary');
+  modelId = 'gpt-6.2-astra';
+  assert.equal(await complete(), 'Finished summary');
+  status = 'incomplete'; await assert.rejects(complete(), /unvollständig|vollständig/);
+  status = 'failed'; await assert.rejects(complete(), /subscription_sharing_usage_limit_exceeded/);
+  assert.equal(auth.snapshot().planUsage, true); assert.equal(f.counts().calls, 1);
 });
 
 test('signout retries an unavailable revocation once, clears local tokens and reports unconfirmed remote revocation', async () => {

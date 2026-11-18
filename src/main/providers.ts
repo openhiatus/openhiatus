@@ -1,6 +1,7 @@
 import { parseThinkingLevel, type ThinkingLevel } from '../shared/thinking';
 import { mkdirSync, readFileSync, writeFileSync, renameSync } from 'node:fs';
 import { join } from 'node:path';
+import type { Model } from '@earendil-works/pi-ai';
 import type { ProviderInput, ProviderView, ModelOption } from '../shared/contracts.js';
 import type { ChatGPTAuth } from './chatgpt-auth.js';
 import { baseModelSelection, isFastModelSelection, supportsFastSelection, withFastModelOptions } from '../shared/model-selection';
@@ -9,8 +10,29 @@ import { applyRequestedServiceTier } from './model-request-diagnostics';
 export interface CredentialStore { get(name: string): string | undefined; set(name: string, value: string): void; remove(name: string): void; }
 interface ProviderConfig { baseUrl?: string; models?: string[]; verified?: boolean; error?: string; }
 export interface ResolvedModel { provider: string; modelId: string; apiKey: string; baseUrl?: string; api: string; authType?: 'chatgpt'; serviceTier?: 'fast'; }
+const OPENAI_BASE_URL = 'https://api.openai.com/v1';
+
+// Remove the fallback definitions once the bundled Pi catalog includes both IDs.
+const GPT_62_CAPABILITIES = {
+  api: 'openai-responses', provider: 'openai', baseUrl: OPENAI_BASE_URL,
+  reasoning: true, input: ['text', 'image'],
+  thinkingLevelMap: { off: null, minimal: null, xhigh: 'xhigh', max: 'max' },
+  compat: { supportsStrictMode: true, supportsExplicitPromptCacheMode: true },
+  // Pi uses contextWindow for input compaction. OpenAI caps input at 922k tokens.
+  contextWindow: 922_000, maxTokens: 128_000,
+} satisfies Omit<Model<'openai-responses'>, 'id' | 'name' | 'cost'>;
+const GPT_62_MODELS: Model<'openai-responses'>[] = [
+  { ...GPT_62_CAPABILITIES, id: 'gpt-6.2-sol', name: 'GPT-6.2 Sol',
+    cost: { input: 2, output: 10, cacheRead: 0.1, cacheWrite: 2.5,
+      tiers: [{ inputTokensAbove: 272_000, input: 4, output: 15, cacheRead: 0.2, cacheWrite: 5 }] } },
+  { ...GPT_62_CAPABILITIES, id: 'gpt-6.2-astra', name: 'GPT-6.2 Astra',
+    cost: { input: 8, output: 40, cacheRead: 0.4, cacheWrite: 10,
+      tiers: [{ inputTokensAbove: 272_000, input: 16, output: 60, cacheRead: 0.8, cacheWrite: 20 }] } },
+];
+
 const PRESETS: Record<string, { label: string; api: string; baseUrl: string; models: string[] }> = {
-  openai: { label: 'OpenAI', api: 'openai-responses', baseUrl: 'https://api.openai.com/v1', models: ['gpt-5.4', 'gpt-5.4-mini'] },
+  openai: { label: 'OpenAI', api: 'openai-responses', baseUrl: OPENAI_BASE_URL,
+    models: ['gpt-5.4', 'gpt-5.4-mini', ...GPT_62_MODELS.map(model => model.id)] },
   anthropic: { label: 'Anthropic', api: 'anthropic-messages', baseUrl: 'https://api.anthropic.com', models: ['claude-sonnet-4-6', 'claude-opus-4-6'] },
   google: { label: 'Google Gemini', api: 'google-generative-ai', baseUrl: 'https://generativelanguage.googleapis.com/v1beta', models: ['gemini-2.5-pro', 'gemini-2.5-flash'] },
   openrouter: { label: 'OpenRouter', api: 'openai-completions', baseUrl: 'https://openrouter.ai/api/v1', models: ['anthropic/claude-sonnet-4.6'] },
@@ -104,7 +126,7 @@ export class ProviderStore {
   private resolveChatGPT(modelId: string): ResolvedModel {
     if (!this.chatgpt?.snapshot().planUsage) throw new Error('Bitte mit ChatGPT anmelden und die Nutzung des ChatGPT-Plans freigeben.');
     if (!this.chatgpt.listModels().some(model => model.id === `chatgpt/${modelId}`)) throw new Error('Dieses Modell ist für die ChatGPT-Verbindung nicht verfügbar. Bitte die Modellliste aktualisieren.');
-    return { provider: 'openai', modelId, apiKey: '', baseUrl: 'https://api.openai.com/v1', api: 'openai-responses', authType: 'chatgpt' };
+    return { provider: 'openai', modelId, apiKey: '', baseUrl: OPENAI_BASE_URL, api: 'openai-responses', authType: 'chatgpt' };
   }
   async resolveForRun(selection: string, signal?: AbortSignal): Promise<ResolvedModel> {
     const resolved = this.resolve(selection);
@@ -144,9 +166,10 @@ export function redactError(error: unknown, secrets: string[] = []): string {
 }
 export async function piModel(resolved: ResolvedModel): Promise<any> {
   const ai = await import('@earendil-works/pi-ai/compat');
-  const known = ai.getModels(resolved.provider as any).find(model => model.id === resolved.modelId);
+  const known = ai.getModels(resolved.provider as any).find(model => model.id === resolved.modelId)
+    ?? (resolved.provider === 'openai' ? GPT_62_MODELS.find(model => model.id === resolved.modelId) : undefined);
   if (known) return { ...known, ...(resolved.baseUrl ? { baseUrl: resolved.baseUrl } : {}),
-    ...(resolved.authType === 'chatgpt' ? { api: 'openai-responses', provider: 'openai', baseUrl: 'https://api.openai.com/v1',
+    ...(resolved.authType === 'chatgpt' ? { api: 'openai-responses', provider: 'openai', baseUrl: OPENAI_BASE_URL,
       cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 } } : {}) };
   return { id: resolved.modelId, name: resolved.modelId, api: resolved.api, provider: resolved.provider, baseUrl: resolved.baseUrl,
     reasoning: false, input: ['text', 'image'], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 128000, maxTokens: 16384 };
